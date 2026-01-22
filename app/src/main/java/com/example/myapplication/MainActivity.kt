@@ -230,10 +230,10 @@ class MainActivity : AppCompatActivity() {
 
         statusLabel.text = "☕ 中场休息"
 
-        // ⭐⭐⭐ 显示上半场总时间（比赛时间 + 补时）
-        val firstHalfTotalTime = mainTime + stoppageTime
-        mainTimeLabel.text = formatTime(firstHalfTotalTime)
+        // ⭐⭐⭐ 显示上半场结束时的比赛时间（不加补时）
+        mainTimeLabel.text = formatTime(mainTime)
         mainTimeLabel.setTextColor(0xFF888888.toInt())
+
 
         updateButtonStyle("halftime")
         updateStateIndicator("等待下半场开始")
@@ -244,9 +244,9 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer",
             "📊 上半场总结：" +
                     "比赛时间: ${formatTime(mainTime)}, " +
-                    "补时: $stoppageStr, " +
-                    "总计: ${formatTime(firstHalfTotalTime)}"
+                    "补时: $stoppageStr"
         )
+
 
         // 重置补时计时器准备下半场
         stoppageTime = 0
@@ -289,11 +289,9 @@ class MainActivity : AppCompatActivity() {
         updateButtonStyle("restart")
         updateStateIndicator("点击重新开始")
 
-        // ⭐⭐⭐ 显示下半场结束时的总时间（mainTime已经包含了从0开始的累计）
-        val totalTime = mainTime + stoppageTime
+        // ⭐⭐⭐ 显示下半场结束时的比赛时间（不加补时）
+        mainTimeLabel.text = formatTime(mainTime)
 
-        // 显示比赛总时间
-        mainTimeLabel.text = formatTime(totalTime)
 
 
         val stoppageStr = formatTime(stoppageTime)
@@ -305,12 +303,12 @@ class MainActivity : AppCompatActivity() {
         addLog("📊 上半场补时: $firstHalfStr")
         addLog("📊 下半场补时: $stoppageStr")
         addLog("📊 总补时: $totalStr")
-        addLog("⏰ 总比赛时间: ${formatTime(totalTime)}")
 
         // 显示比赛总结
         showMatchSummary()
 
-        Log.i("FootballTimer", "📢 比赛结束！总补时: $totalStr, 总时间: ${formatTime(totalTime)}")
+        Log.i("FootballTimer", "📢 比赛结束！总补时: $totalStr")
+
     }
 
 
