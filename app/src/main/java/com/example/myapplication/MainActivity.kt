@@ -483,6 +483,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showEventDialog() {
         val events = listOf(
+            EventItem("⚽  进  球", "进球", "#00FF00"),
             EventItem("🟨  黄  牌", "黄牌", "#DAA520"),
             EventItem("🟥  红  牌", "红牌", "#B22222"),
             EventItem("🏥  伤  停", "伤停", "#1E90FF"),
@@ -507,6 +508,7 @@ class MainActivity : AppCompatActivity() {
     private fun logEvent(eventType: String) {
         // 根据事件类型选择emoji
         val emojiMap = mapOf(
+            "进球" to "⚽",
             "黄牌" to "🟨",
             "红牌" to "🟥",
             "伤停" to "🏥",
