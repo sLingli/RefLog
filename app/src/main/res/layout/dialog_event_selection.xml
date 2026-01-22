@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📋 选择事件类型"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="16dp"/>
+
+    <!-- 第一行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnGoal"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="⚽\n进球"
+            android:textSize="16sp"
+            android:background="#4CAF50"/>
+
+        <Button
+            android:id="@+id/btnYellow"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="🟨\n黄牌"
+            android:textSize="16sp"
+            android:background="#DAA520"/>
+    </LinearLayout>
+
+    <!-- 第二行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnRed"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="🟥\n红牌"
+            android:textSize="16sp"
+            android:background="#B22222"/>
+
+        <Button
+            android:id="@+id/btnInjury"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="🏥\n伤停"
+            android:textSize="16sp"
+            android:background="#1E90FF"/>
+    </LinearLayout>
+
+    <!-- 第三行 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnSubstitution"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="🔄\n换人"
+            android:textSize="16sp"
+            android:background="#9932CC"/>
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_margin="8dp"
+            android:text="✕\n取消"
+            android:textSize="16sp"
+            android:background="#808080"/>
+    </LinearLayout>
+
+</LinearLayout>

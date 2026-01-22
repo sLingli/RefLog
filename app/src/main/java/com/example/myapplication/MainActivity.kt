@@ -482,28 +482,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEventDialog() {
-        val events = listOf(
-            EventItem("⚽  进  球", "进球", "#00FF00"),
-            EventItem("🟨  黄  牌", "黄牌", "#DAA520"),
-            EventItem("🟥  红  牌", "红牌", "#B22222"),
-            EventItem("🏥  伤  停", "伤停", "#1E90FF"),
-            EventItem("🔄  换  人", "换人", "#9932CC")
-        )
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_event_selection, null)
 
-        AlertDialog.Builder(this)
-            .setTitle("📋 选择事件类型")
-            .setItems(events.map { it.displayText }.toTypedArray()) { _, which ->
-                val eventType = events[which].type
-                logEvent(eventType)
-            }
-            .setNegativeButton("✕ 取消") { dialog, _ ->
-                dialog.dismiss()
-                // 如果取消，继续计时？
-                // 这里不自动继续，需要用户手动点击继续
-            }
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
             .create()
-            .show()
+
+        // 设置按钮点击事件
+        dialogView.findViewById<Button>(R.id.btnGoal).setOnClickListener {
+            logEvent("进球")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnYellow).setOnClickListener {
+            logEvent("黄牌")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnRed).setOnClickListener {
+            logEvent("红牌")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnInjury).setOnClickListener {
+            logEvent("伤停")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnSubstitution).setOnClickListener {
+            logEvent("换人")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+            // 取消后不记录事件
+        }
+
+        dialog.show()
     }
+
 
     private fun logEvent(eventType: String) {
         // 根据事件类型选择emoji
@@ -575,19 +594,21 @@ class MainActivity : AppCompatActivity() {
         val halfTimeMin = halfTimeSeconds / 60
 
         // 统计信息
+        val goalCount = matchEvents.count { it.event == "进球" }  // ⭐ 添加这一行
         val yellowCount = matchEvents.count { it.event == "黄牌" }
         val redCount = matchEvents.count { it.event == "红牌" }
         val subCount = matchEvents.count { it.event == "换人" }
         val injuryCount = matchEvents.count { it.event == "伤停" }
-
         val statsText = """
-            比赛设置：每半场 $halfTimeMin 分钟
-            
-            🟨 黄牌: $yellowCount
-            🟥 红牌: $redCount
-            🔄 换人: $subCount
-            🏥 伤停: $injuryCount
+        比赛设置：每半场 $halfTimeMin 分钟
+    
+        ⚽ 进球: $goalCount
+        🟨 黄牌: $yellowCount
+        🟥 红牌: $redCount
+        🔄 换人: $subCount
+        🏥 伤停: $injuryCount
         """.trimIndent()
+
 
         // 事件列表
         val eventsText = if (matchEvents.isNotEmpty()) {
