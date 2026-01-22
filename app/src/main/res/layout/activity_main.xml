@@ -91,34 +91,47 @@
                 android:layout_marginLeft="8dp" />
         </LinearLayout>
 
-        <!-- 主控制按钮 -->
-        <Button
-            android:id="@+id/mainButton"
+        <!-- 控制按钮区域 - 两个按钮并排 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginVertical="8dp"
-            android:padding="16dp"
-            android:text="▶  开  始"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:background="#006400"
-            android:stateListAnimator="@null"
-            android:elevation="4dp" />
+            android:orientation="horizontal"
+            android:layout_marginVertical="8dp">
 
-        <!-- 结束半场按钮 -->
-        <Button
-            android:id="@+id/endHalfButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginVertical="4dp"
-            android:padding="12dp"
-            android:text="⏹ 结束半场"
-            android:textColor="#AAAAAA"
-            android:textSize="16sp"
-            android:background="#1A1A1A"
-            android:stateListAnimator="@null"
-            android:visibility="gone" />
+            <!-- 主控制按钮 -->
+            <Button
+                android:id="@+id/mainButton"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:padding="16dp"
+                android:text="▶  开  始"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:background="#006400"
+                android:stateListAnimator="@null"
+                android:elevation="4dp" />
+
+            <!-- 结束半场按钮 -->
+            <Button
+                android:id="@+id/endHalfButton"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:padding="12dp"
+                android:text="⏹ 结束半场"
+                android:textColor="#AAAAAA"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:background="#1A1A1A"
+                android:stateListAnimator="@null"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
 
         <!-- 事件记录标题 -->
         <TextView
