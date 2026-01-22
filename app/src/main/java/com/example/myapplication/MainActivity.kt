@@ -289,13 +289,12 @@ class MainActivity : AppCompatActivity() {
         updateButtonStyle("restart")
         updateStateIndicator("点击重新开始")
 
-        // ⭐⭐⭐ 计算总时间：上半场总时间(比赛+补时) + 下半场总时间(比赛+补时)
-        val firstHalfTotal = (halfTimeSeconds + firstHalfStoppage)
-        val secondHalfTotal = mainTime + stoppageTime
-        val totalTime = firstHalfTotal + secondHalfTotal
+        // ⭐⭐⭐ 显示下半场结束时的总时间（mainTime已经包含了从0开始的累计）
+        val totalTime = mainTime + stoppageTime
 
         // 显示比赛总时间
         mainTimeLabel.text = formatTime(totalTime)
+
 
         val stoppageStr = formatTime(stoppageTime)
         val firstHalfStr = formatTime(firstHalfStoppage)
