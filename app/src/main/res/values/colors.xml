@@ -1,5 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Material 3 颜色主题 - 足球风格深色主题 -->
+
+    <!-- 主色 - 绿色（足球场） -->
+    <color name="md_theme_primary">#4CAF50</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#1B5E20</color>
+    <color name="md_theme_onPrimaryContainer">#C8E6C9</color>
+
+    <!-- 次要色 - 橙色（警告/补时） -->
+    <color name="md_theme_secondary">#FF9800</color>
+    <color name="md_theme_onSecondary">#000000</color>
+    <color name="md_theme_secondaryContainer">#E65100</color>
+    <color name="md_theme_onSecondaryContainer">#FFE0B2</color>
+
+    <!-- 背景色 -->
+    <color name="md_theme_background">#121212</color>
+    <color name="md_theme_surface">#1E1E1E</color>
+    <color name="md_theme_surfaceVariant">#2D2D2D</color>
+    <color name="md_theme_onSurface">#E0E0E0</color>
+    <color name="md_theme_onSurfaceVariant">#BDBDBD</color>
+
+    <!-- 错误色 - 红色（红牌） -->
+    <color name="md_theme_error">#CF6679</color>
+    <color name="md_theme_onError">#000000</color>
+
+    <!-- 事件颜色 -->
+    <color name="event_goal">#4CAF50</color>
+    <color name="event_yellow">#FFD600</color>
+    <color name="event_red">#D32F2F</color>
+    <color name="event_injury">#2196F3</color>
+    <color name="event_substitution">#9C27B0</color>
+    <color name="event_cancel">#757575</color>
+
+    <!-- 计时器颜色 -->
+    <color name="timer_normal">#4CAF50</color>
+    <color name="timer_warning">#FF9800</color>
+    <color name="timer_danger">#F44336</color>
+    <color name="timer_inactive">#666666</color>
 </resources>

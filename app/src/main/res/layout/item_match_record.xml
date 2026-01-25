@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/card_background">
+
+    <!-- 日期和时长 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvRecordDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="2024-01-01"
+            android:textSize="14sp"
+            android:textColor="#4CAF50"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvRecordDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="45分钟/半场"
+            android:textSize="12sp"
+            android:textColor="#888888" />
+
+    </LinearLayout>
+
+    <!-- 补时信息 -->
+    <TextView
+        android:id="@+id/tvRecordStoppage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="补时: 上半场 00:00 | 下半场 00:00"
+        android:textSize="12sp"
+        android:textColor="#FF9800"
+        android:layout_marginTop="4dp" />
+
+    <!-- 事件统计 -->
+    <TextView
+        android:id="@+id/tvRecordEvents"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚽0 🟨0 🟥0 🔄0 🏥0"
+        android:textSize="14sp"
+        android:textColor="#CCCCCC"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

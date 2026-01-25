@@ -1,101 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="16dp"
+    android:background="#1E1E1E">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="📋 选择事件类型"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="16dp"/>
-
-    <!-- 第一行 -->
+    <!-- 第一行：黄牌 + 红牌 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/btnGoal"
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="1"
-            android:layout_margin="8dp"
-            android:text="⚽\n进球"
-            android:textSize="16sp"
-            android:background="#4CAF50"/>
-
-        <Button
+        <!-- 黄牌：纯黄色，无文字无图标 -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnYellow"
             android:layout_width="0dp"
-            android:layout_height="80dp"
+            android:layout_height="72dp"
             android:layout_weight="1"
-            android:layout_margin="8dp"
-            android:text="🟨\n黄牌"
-            android:textSize="16sp"
-            android:background="#DAA520"/>
-    </LinearLayout>
+            android:layout_margin="4dp"
+            app:backgroundTint="#FFEB3B"
+            app:cornerRadius="12dp" />
 
-    <!-- 第二行 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <Button
+        <!-- 红牌：纯红色，无文字无图标 -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRed"
             android:layout_width="0dp"
-            android:layout_height="80dp"
+            android:layout_height="72dp"
             android:layout_weight="1"
-            android:layout_margin="8dp"
-            android:text="🟥\n红牌"
-            android:textSize="16sp"
-            android:background="#B22222"/>
+            android:layout_margin="4dp"
+            app:backgroundTint="#F44336"
+            app:cornerRadius="12dp" />
 
-        <Button
-            android:id="@+id/btnInjury"
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="1"
-            android:layout_margin="8dp"
-            android:text="🏥\n伤停"
-            android:textSize="16sp"
-            android:background="#1E90FF"/>
     </LinearLayout>
 
-    <!-- 第三行 -->
+    <!-- 第二行：伤停 + 进球 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:orientation="horizontal">
 
-        <Button
+        <!-- 伤停：蓝色 -->
+
+        <!-- 进球：透明背景 + 足球图标 -->
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnInjury"
+            android:layout_width="0dp"
+            android:layout_height="72dp"
+            android:layout_margin="4dp"
+            android:layout_weight="1"
+            android:text="🏥\n伤停"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            app:backgroundTint="#2196F3"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGoal"
+            android:layout_width="0dp"
+            android:layout_height="72dp"
+            android:layout_weight="1"
+            android:layout_margin="4dp"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#333333"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/sports_soccer"
+            app:iconSize="36dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconTint="#FFFFFF"
+            style="@style/Widget.Material3.Button.IconButton.Filled" />
+
+    </LinearLayout>
+
+    <!-- 第三行：换人 + 取消 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- 换人：紫色 -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubstitution"
             android:layout_width="0dp"
-            android:layout_height="80dp"
+            android:layout_height="72dp"
             android:layout_weight="1"
-            android:layout_margin="8dp"
+            android:layout_margin="4dp"
             android:text="🔄\n换人"
-            android:textSize="16sp"
-            android:background="#9932CC"/>
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#9C27B0"
+            app:cornerRadius="12dp" />
 
-        <Button
+        <!-- 取消：灰色 -->
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             android:layout_width="0dp"
-            android:layout_height="80dp"
+            android:layout_height="72dp"
             android:layout_weight="1"
-            android:layout_margin="8dp"
+            android:layout_margin="4dp"
             android:text="✕\n取消"
-            android:textSize="16sp"
-            android:background="#808080"/>
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#616161"
+            app:cornerRadius="12dp" />
+
     </LinearLayout>
 
 </LinearLayout>

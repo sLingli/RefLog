@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#1E1E1E"
+    android:gravity="center">
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- 取消按钮：红色圆形 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNo"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginEnd="16dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="#F44336"
+            app:cornerRadius="40dp"
+            app:icon="@drawable/outline_close_24"
+            app:iconSize="36dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconTint="#FFFFFF" />
+
+        <!-- 确认按钮：绿色圆形 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnYes"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="16dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="#4CAF50"
+            app:cornerRadius="40dp"
+            app:icon="@drawable/outline_check_24"
+            app:iconSize="36dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconTint="#FFFFFF" />
+
+    </LinearLayout>
+
+</LinearLayout>

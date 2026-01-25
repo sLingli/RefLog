@@ -12,10 +12,16 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.widget.NumberPicker
+
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -36,17 +42,20 @@ class MainActivity : AppCompatActivity() {
 
     // ==================== UI 组件 ====================
     private lateinit var statusLabel: TextView
-    private lateinit var stateIndicator: TextView
+
     private lateinit var mainTimeLabel: TextView
     private lateinit var stoppageTitleLabel: TextView
     private lateinit var stoppageTimeLabel: TextView
     private lateinit var mainButton: Button
     private lateinit var endHalfButton: Button
-    private lateinit var logText: TextView
+
 
     // ==================== 状态变量 ====================
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
+    private lateinit var btnHistory: Button
+    private lateinit var recordManager: MatchRecordManager
+
 
     // 计时器变量
     private var mainTime: Long = 0  // 主计时器（秒）
@@ -68,6 +77,11 @@ class MainActivity : AppCompatActivity() {
     // 定时器Handler
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var updateRunnable: Runnable
+
+    // 事件选择相关
+    private var pendingEventType: String = ""  // 待处理的事件类型
+    private var selectedTeam: String = ""       // 选择的队伍
+
 
     // ==================== 生命周期方法 ====================
 
@@ -102,17 +116,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeUI() {
         statusLabel = findViewById(R.id.statusLabel)
-        stateIndicator = findViewById(R.id.stateIndicator)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTitleLabel = findViewById(R.id.stoppageTitleLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
-        logText = findViewById(R.id.logText)
 
         // 设置按钮点击事件
         mainButton.setOnClickListener { toggleTimer() }
         endHalfButton.setOnClickListener { endHalf() }
+        // 初始化历史记录
+        btnHistory = findViewById(R.id.btnHistory)
+        recordManager = MatchRecordManager(this)
+
+// 历史记录按钮点击事件
+        btnHistory.setOnClickListener { showHistoryDialog() }
+
     }
 
     override fun onDestroy() {
@@ -162,7 +181,7 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
-        updateStateIndicator("比赛进行中")
+
 
         addLog("🏁 比赛开始")
         val halfTimeMin = halfTimeSeconds / 60
@@ -177,7 +196,6 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
-        updateStateIndicator("比赛进行中")
     }
 
 
@@ -202,7 +220,6 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
-        updateStateIndicator("比赛进行中")
         updateStoppageTimeDisplay()
 
         // ⭐⭐⭐ 确保计时器运行 ⭐⭐⭐
@@ -217,11 +234,34 @@ class MainActivity : AppCompatActivity() {
     private fun endHalf() {
         if (state == STATE_READY) return
 
-        when (currentHalf) {
-            HALF_FIRST -> endFirstHalf()
-            HALF_SECOND -> endSecondHalf()
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
+
+        val btnNo = dialogView.findViewById<Button>(R.id.btnNo)
+        val btnYes = dialogView.findViewById<Button>(R.id.btnYes)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        // 取消按钮
+        btnNo.setOnClickListener {
+            dialog.dismiss()
         }
+
+        // 确认按钮
+        btnYes.setOnClickListener {
+            dialog.dismiss()
+            when (currentHalf) {
+                HALF_FIRST -> endFirstHalf()
+                HALF_SECOND -> endSecondHalf()
+            }
+        }
+
+        dialog.show()
     }
+
+
 
     private fun endFirstHalf() {
         state = STATE_HALFTIME
@@ -236,7 +276,6 @@ class MainActivity : AppCompatActivity() {
 
 
         updateButtonStyle("halftime")
-        updateStateIndicator("等待下半场开始")
 
         val stoppageStr = formatTime(stoppageTime)
         addLog("📊 上半场结束 | 比赛: ${formatTime(mainTime)} | 补时: $stoppageStr")
@@ -253,8 +292,7 @@ class MainActivity : AppCompatActivity() {
         halfTimeAlertShown = false
         updateStoppageTimeDisplay()
 
-        // ❌ 不要停止计时器！否则下半场无法启动
-        // handler.removeCallbacks(updateRunnable)
+
     }
 
     private fun updateMainTimeDisplay() {
@@ -287,7 +325,6 @@ class MainActivity : AppCompatActivity() {
         statusLabel.text = "🏆 比赛结束"
         mainTimeLabel.setTextColor(0xFF888888.toInt())
         updateButtonStyle("restart")
-        updateStateIndicator("点击重新开始")
 
         // ⭐⭐⭐ 显示下半场结束时的比赛时间（不加补时）
         mainTimeLabel.text = formatTime(mainTime)
@@ -303,6 +340,8 @@ class MainActivity : AppCompatActivity() {
         addLog("📊 上半场补时: $firstHalfStr")
         addLog("📊 下半场补时: $stoppageStr")
         addLog("📊 总补时: $totalStr")
+
+        saveMatchRecord()
 
         // 显示比赛总结
         showMatchSummary()
@@ -327,16 +366,13 @@ class MainActivity : AppCompatActivity() {
 
         // 更新UI
         statusLabel.text = "⚽ 上半场"
-        statusLabel.setTextColor(0xFF00FF00.toInt())
+        statusLabel.setTextColor(getColor(R.color.timer_normal))
         mainTimeLabel.text = "00:00"
-        mainTimeLabel.setTextColor(0xFF00FF00.toInt())
+        mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
         stoppageTimeLabel.text = "00:00"
         updateButtonStyle("start")
         updateStoppageDisplay(active = false)
-        updateStateIndicator("准备开始 - 点击开始设置时间")
 
-        // 清空日志
-        logText.text = ""
 
         // 隐藏结束按钮
         endHalfButton.visibility = View.GONE
@@ -428,7 +464,7 @@ class MainActivity : AppCompatActivity() {
                 if (mainTime >= halfTimeSeconds && !halfTimeAlertShown) {
                     halfTimeAlertShown = true
                     triggerAlert("${halfTimeMin}分钟", "准备中场休息")
-                    mainTimeLabel.setTextColor(0xFFFF6600.toInt())
+                    mainTimeLabel.setTextColor(getColor(R.color.timer_warning))
                     statusLabel.text = "⚠️ 上半场补时"
                 }
             }
@@ -442,7 +478,7 @@ class MainActivity : AppCompatActivity() {
                 if (mainTime >= targetTime && !fullTimeAlertShown) {
                     fullTimeAlertShown = true
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
-                    mainTimeLabel.setTextColor(0xFFFF0000.toInt())
+                    mainTimeLabel.setTextColor(getColor(R.color.timer_danger))
                     statusLabel.text = "⚠️ 下半场补时"
 
                     Log.d("时间提醒",
@@ -475,7 +511,6 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("start")
         updateStoppageDisplay(active = true)
-        updateStateIndicator("⏸ 暂停中（补时计时）")
 
         // 显示事件选择弹窗
         showEventDialog()
@@ -486,166 +521,229 @@ class MainActivity : AppCompatActivity() {
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        // 黄牌 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnYellow).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog("黄牌")
+        }
+
+        // 红牌 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnRed).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog("红牌")
+        }
+
+        // 进球 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnGoal).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog("进球")
+        }
+
+        // 伤停 - 直接记录（不需要选择队伍和号码）
+        dialogView.findViewById<View>(R.id.btnInjury).setOnClickListener {
+            dialog.dismiss()
+            recordSimpleEvent("伤停", "🏥", 30)
+        }
+
+        // 换人 - 直接记录（不需要选择队伍和号码）
+        dialogView.findViewById<View>(R.id.btnSubstitution).setOnClickListener {
+            dialog.dismiss()
+            recordSimpleEvent("换人", "🔄", 30)
+        }
+
+        // 取消
+        dialogView.findViewById<View>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
+        val timeStr = formatTime(mainTime)
+        val halfName = if (currentHalf == HALF_FIRST) "上半场" else "下半场"
+        val minute = (mainTime / 60).toInt()
+
+        matchEvents.add(MatchEvent(
+            timeStr = timeStr,
+            event = eventType,
+            emoji = emoji,
+            detail = "",
+            half = halfName,
+            minute = minute
+        ))
+
+        if (state == STATE_PAUSED) {
+            stoppageTime += stoppageSeconds
+        }
+
+        updateStoppageTimeDisplay()
+        addLog("$emoji [$timeStr] $eventType (+${stoppageSeconds}秒)")
+    }
+
+
+
+
+
+
+    private fun showTimeSettingDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_time_setting, null)
+
+        val tvTimeValue = dialogView.findViewById<TextView>(R.id.tvTimeValue)
+        val btnDecrease = dialogView.findViewById<Button>(R.id.btnDecrease)
+        val btnIncrease = dialogView.findViewById<Button>(R.id.btnIncrease)
+        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
+        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirm)
+
+        // 当前选择的时间（默认45分钟）
+        var selectedTime = 45
+
+        // 更新显示
+        fun updateDisplay() {
+            tvTimeValue.text = selectedTime.toString()
+        }
+
+        // 减少按钮
+        btnDecrease.setOnClickListener {
+            if (selectedTime > 5) {
+                selectedTime -= 5
+                updateDisplay()
+            }
+        }
+
+        // 增加按钮
+        btnIncrease.setOnClickListener {
+            if (selectedTime < 45) {
+                selectedTime += 5
+                updateDisplay()
+            }
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
             .setCancelable(false)
             .create()
 
-        // 设置按钮点击事件
-        dialogView.findViewById<Button>(R.id.btnGoal).setOnClickListener {
-            logEvent("进球")
+        // 取消按钮
+        btnCancel.setOnClickListener {
             dialog.dismiss()
         }
 
-        dialogView.findViewById<Button>(R.id.btnYellow).setOnClickListener {
-            logEvent("黄牌")
-            dialog.dismiss()
-        }
+        // 确认按钮
+        btnConfirm.setOnClickListener {
+            // 设置比赛时间
+            halfTimeSeconds = selectedTime * 60L
+            matchTimeSet = true
 
-        dialogView.findViewById<Button>(R.id.btnRed).setOnClickListener {
-            logEvent("红牌")
-            dialog.dismiss()
-        }
 
-        dialogView.findViewById<Button>(R.id.btnInjury).setOnClickListener {
-            logEvent("伤停")
             dialog.dismiss()
-        }
 
-        dialogView.findViewById<Button>(R.id.btnSubstitution).setOnClickListener {
-            logEvent("换人")
-            dialog.dismiss()
-        }
-
-        dialogView.findViewById<Button>(R.id.btnCancel).setOnClickListener {
-            dialog.dismiss()
-            // 取消后不记录事件
+            // 开始比赛
+            startTimer()
         }
 
         dialog.show()
     }
 
 
-    private fun logEvent(eventType: String) {
-        // 根据事件类型选择emoji
-        val emojiMap = mapOf(
-            "进球" to "⚽",
-            "黄牌" to "🟨",
-            "红牌" to "🟥",
-            "伤停" to "🏥",
-            "换人" to "🔄"
-        )
-        val emoji = emojiMap[eventType] ?: "📝"
-
-        // 计算当前是第几分钟
-        val minute = (mainTime / 60).toInt()
-        val currentTimeStr = formatTime(mainTime)
-
-        // 确定当前是上半场还是下半场
-        val halfName = if (currentHalf == HALF_FIRST) "上半场" else "下半场"
-
-        // 保存事件记录
-        matchEvents.add(MatchEvent(
-            minute = minute,
-            timeStr = currentTimeStr,
-            half = halfName,
-            event = eventType,
-            emoji = emoji
-        ))
-
-        // 添加到日志显示
-        addLog("$emoji $eventType")
-    }
-
-    private fun showTimeSettingDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_time_setting, null)
-        val timeEditText = dialogView.findViewById<EditText>(R.id.timeEditText)
-
-        AlertDialog.Builder(this)
-            .setTitle("⚙️ 设置比赛时间")
-            .setView(dialogView)
-            .setMessage("每半场时间（分钟）\n常用：45（正式）/ 20（友谊）/ 5（测试）")
-            .setPositiveButton("✓ 开始比赛") { _, _ ->
-                try {
-                    val halfTimeInput = timeEditText.text.toString().toInt()
-                    var halfTime = halfTimeInput
-
-                    // 验证输入范围
-                    if (halfTime < 1) halfTime = 1
-                    if (halfTime > 60) halfTime = 60
-
-                    // 设置比赛时间
-                    halfTimeSeconds = halfTime * 60L
-                    matchTimeSet = true
-
-                    updateStateIndicator("每半场 $halfTime 分钟")
-
-                    // 继续开始比赛
-                    startTimer()
-
-                } catch (e: NumberFormatException) {
-                    Toast.makeText(this, "请输入有效的数字", Toast.LENGTH_SHORT).show()
-                }
-            }
-            .setNegativeButton("✕ 取消", null)
-            .create()
-            .show()
-    }
-
     private fun showMatchSummary() {
         val halfTimeMin = halfTimeSeconds / 60
 
         // 统计信息
-        val goalCount = matchEvents.count { it.event == "进球" }  // ⭐ 添加这一行
+        val goalCount = matchEvents.count { it.event == "进球" }
         val yellowCount = matchEvents.count { it.event == "黄牌" }
         val redCount = matchEvents.count { it.event == "红牌" }
         val subCount = matchEvents.count { it.event == "换人" }
         val injuryCount = matchEvents.count { it.event == "伤停" }
-        val statsText = """
-        比赛设置：每半场 $halfTimeMin 分钟
-    
-        ⚽ 进球: $goalCount
-        🟨 黄牌: $yellowCount
-        🟥 红牌: $redCount
-        🔄 换人: $subCount
-        🏥 伤停: $injuryCount
-        """.trimIndent()
 
+        // 补时统计
+        val firstHalfStr = formatTime(firstHalfStoppage)
+        val secondHalfStr = formatTime(stoppageTime)
+        val totalStoppage = firstHalfStoppage + stoppageTime
+        val totalStr = formatTime(totalStoppage)
 
-        // 事件列表
+        // 构建事件记录文本
+        // 构建事件记录文本
         val eventsText = if (matchEvents.isNotEmpty()) {
-            buildString {
-                append("事件记录（按时间顺序）：\n\n")
-                matchEvents.forEach { event ->
-                    append("  ${event.emoji} 第 ${event.minute}' [${event.half}] ${event.event}\n")
+            matchEvents.joinToString("\n") { event ->
+                if (event.detail.isNotEmpty()) {
+                    "  ${event.emoji} ${event.timeStr} [${event.half}] ${event.event} - ${event.detail}"
+                } else {
+                    "  ${event.emoji} ${event.timeStr} [${event.half}] ${event.event}"
                 }
             }
         } else {
-            "本场比赛没有记录任何事件"
+            "  本场比赛没有记录任何事件"
         }
 
+
+        val summaryText = """
+═══════════════════════
+📊 比赛统计
+═══════════════════════
+比赛设置：每半场 $halfTimeMin 分钟
+
+⚽ 进球: $goalCount
+🟨 黄牌: $yellowCount
+🟥 红牌: $redCount
+🔄 换人: $subCount
+🏥 伤停: $injuryCount
+
+═══════════════════════
+⏱ 补时统计
+═══════════════════════
+上半场补时: $firstHalfStr
+下半场补时: $secondHalfStr
+总补时: $totalStr
+
+═══════════════════════
+📋 事件记录
+═══════════════════════
+$eventsText
+    """.trimIndent()
+
         AlertDialog.Builder(this)
-            .setTitle("📊 比赛事件总结")
-            .setMessage("$statsText\n\n$eventsText")
+            .setTitle("🏆 比赛结束")
+            .setMessage(summaryText)
             .setPositiveButton("确  定") { dialog, _ ->
                 dialog.dismiss()
             }
+            .setCancelable(false)
             .create()
             .show()
     }
 
+
+
     // ==================== UI 更新方法 ====================
 
     private fun updateButtonStyle(mode: String) {
-        val styles = mapOf(
-            "start" to Triple("▶  继  续", 0xFF006400.toInt(), "green_button"),
-            "pause" to Triple("⏸  暂  停", 0xFF8B0000.toInt(), "red_button"),
-            "halftime" to Triple("▶ 开始下半场", 0xFF006400.toInt(), "green_button"),
-            "restart" to Triple("🔄 重新开始", 0xFF444444.toInt(), "gray_button")
-        )
-
-        val (text, color, _) = styles[mode] ?: styles["start"]!!
-        mainButton.text = text
-        mainButton.setBackgroundColor(color)
+        when (mode) {
+            "start" -> {
+                mainButton.text = "▶ 继续"
+                mainButton.setBackgroundColor(0xFF2E7D32.toInt())
+            }
+            "pause" -> {
+                mainButton.text = "⏸ 暂停"
+                mainButton.setBackgroundColor(0xFFC62828.toInt())
+            }
+            "halftime" -> {
+                mainButton.text = "▶ 下半场"
+                mainButton.setBackgroundColor(0xFF2E7D32.toInt())
+            }
+            "restart" -> {
+                mainButton.text = "🔄 重新开始"
+                mainButton.setBackgroundColor(0xFF424242.toInt())
+            }
+        }
     }
+
+
+
+
 
     private fun updateStoppageDisplay(active: Boolean) {
         // 这个方法主要控制文字颜色，实际计时状态由updateStoppageTimeDisplay()控制
@@ -657,24 +755,20 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun updateStateIndicator(text: String) {
-        stateIndicator.text = text
-    }
 
     private fun updateStoppageTimeDisplay() {
-        // 显示当前的补时时间
         stoppageTimeLabel.text = formatTime(stoppageTime)
 
-        // 根据状态改变颜色
         val color = if (state == STATE_PAUSED) {
-            0xFFFF6600.toInt()  // 橙色（正在计时补时）
+            getColor(R.color.timer_warning)
         } else {
-            0xFF666666.toInt()   // 灰色（停止计补时）
+            getColor(R.color.timer_inactive)
         }
 
         stoppageTimeLabel.setTextColor(color)
         stoppageTitleLabel.setTextColor(color)
     }
+
 
 
     private fun updateEndHalfButton() {
@@ -684,28 +778,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addLog(message: String) {
-        // 获取当前时间和阶段
         val currentTime = formatTime(mainTime)
-
-        // 阶段标识
         val halfIndicator = when (currentHalf) {
             HALF_FIRST -> "H1"
             HALF_SECOND -> "H2"
             else -> "--"
         }
-
-        // 格式化日志条目
-        val logEntry = "[$halfIndicator $currentTime] $message\n"
-
-        // 添加到日志显示
-        logText.append(logEntry)
-
-        // 自动滚动到底部
-        val scrollView = findViewById<android.widget.ScrollView>(R.id.logScrollView)
-        scrollView.post {
-            scrollView.fullScroll(android.view.View.FOCUS_DOWN)
-        }
+        Log.d("FootballTimer", "[$halfIndicator $currentTime] $message")
     }
+
+
 
     // ==================== 工具方法 ====================
 
@@ -714,20 +796,305 @@ class MainActivity : AppCompatActivity() {
         val secs = seconds % 60
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
     }
+    private fun saveMatchRecord() {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val currentDate = dateFormat.format(Date())
+
+        val eventsList = matchEvents.map { event ->
+            if (event.detail.isNotEmpty()) {
+                "${event.emoji} ${event.timeStr} ${event.event} - ${event.detail}"
+            } else {
+                "${event.emoji} ${event.timeStr} ${event.event}"
+            }
+        }
+
+        // 统计主客队进球
+        val homeGoals = matchEvents.count { it.event == "进球" && it.detail.contains("主队") }
+        val awayGoals = matchEvents.count { it.event == "进球" && it.detail.contains("客队") }
+
+        val record = MatchRecord(
+            date = currentDate,
+            halfTimeMinutes = (halfTimeSeconds / 60).toInt(),
+            firstHalfStoppage = formatTime(firstHalfStoppage),
+            secondHalfStoppage = formatTime(stoppageTime),
+            totalStoppage = formatTime(firstHalfStoppage + stoppageTime),
+            goalCount = matchEvents.count { it.event == "进球" },
+            yellowCount = matchEvents.count { it.event == "黄牌" },
+            redCount = matchEvents.count { it.event == "红牌" },
+            substitutionCount = matchEvents.count { it.event == "换人" },
+            injuryCount = matchEvents.count { it.event == "伤停" },
+            events = eventsList,
+            homeGoals = homeGoals,
+            awayGoals = awayGoals
+        )
+
+        recordManager.saveRecord(record)
+        Log.i("FootballTimer", "📁 比赛记录已保存: 主队 $homeGoals - $awayGoals 客队")
+    }
+
+
+    private fun showHistoryDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
+
+        val recordsContainer = dialogView.findViewById<LinearLayout>(R.id.recordsContainer)
+        val tvNoRecords = dialogView.findViewById<TextView>(R.id.tvNoRecords)
+        val btnClearHistory = dialogView.findViewById<Button>(R.id.btnClearHistory)
+        val btnCloseHistory = dialogView.findViewById<Button>(R.id.btnCloseHistory)
+
+        val records = recordManager.getAllRecords()
+
+        if (records.isEmpty()) {
+            tvNoRecords.visibility = View.VISIBLE
+            recordsContainer.visibility = View.GONE
+        } else {
+            tvNoRecords.visibility = View.GONE
+            recordsContainer.visibility = View.VISIBLE
+
+            // 动态添加记录项
+            records.forEach { record ->
+                val itemView = LayoutInflater.from(this).inflate(R.layout.item_match_record, recordsContainer, false)
+
+                itemView.findViewById<TextView>(R.id.tvRecordDate).text = record.date
+                itemView.findViewById<TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
+                itemView.findViewById<TextView>(R.id.tvRecordStoppage).text =
+                    "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
+                itemView.findViewById<TextView>(R.id.tvRecordEvents).text =
+                    "⚽${record.goalCount} 🟨${record.yellowCount} 🟥${record.redCount} 🔄${record.substitutionCount} 🏥${record.injuryCount}"
+
+                // 点击查看详情
+                itemView.setOnClickListener {
+                    showRecordDetail(record)
+                }
+
+                recordsContainer.addView(itemView)
+            }
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        // 清空按钮
+        btnClearHistory.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("确认清空")
+                .setMessage("确定要清空所有历史记录吗？")
+                .setPositiveButton("✓") { _, _ ->
+                    recordManager.clearAllRecords()
+                    dialog.dismiss()
+                    Toast.makeText(this, "历史记录已清空", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("✗", null)
+                .show()
+        }
+
+        // 关闭按钮
+        btnCloseHistory.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    // 显示队伍选择弹窗
+    private fun showTeamSelectionDialog(eventType: String) {
+        pendingEventType = eventType
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_team_selection, null)
+
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvTeamSelectionTitle)
+        val btnHomeTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnHomeTeam)
+        val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
+
+        // 根据事件类型设置标题
+        val eventEmoji = when (eventType) {
+            "黄牌" -> "🟨"
+            "红牌" -> "🟥"
+            "进球" -> "⚽"
+            else -> ""
+        }
+        tvTitle.text = "$eventEmoji $eventType - 选择队伍"
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        btnHomeTeam.setOnClickListener {
+            selectedTeam = "主队"
+            dialog.dismiss()
+            showNumberSelectionDialog(eventType, selectedTeam)
+        }
+
+        btnAwayTeam.setOnClickListener {
+            selectedTeam = "客队"
+            dialog.dismiss()
+            showNumberSelectionDialog(eventType, selectedTeam)
+        }
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    // 显示号码选择弹窗
+    private fun showNumberSelectionDialog(eventType: String, team: String) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_number_selection, null)
+
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvNumberTitle)
+        val tvTeamInfo = dialogView.findViewById<TextView>(R.id.tvTeamInfo)
+        val tvSelectedNumber = dialogView.findViewById<TextView>(R.id.tvSelectedNumber)
+        val pickerTens = dialogView.findViewById<NumberPicker>(R.id.pickerTens)
+        val pickerOnes = dialogView.findViewById<NumberPicker>(R.id.pickerOnes)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelNumber)
+        val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmNumber)
+
+        // 设置标题
+        val eventEmoji = when (eventType) {
+            "黄牌" -> "🟨"
+            "红牌" -> "🟥"
+            "进球" -> "⚽"
+            else -> ""
+        }
+        tvTitle.text = "$eventEmoji $eventType"
+
+        // 设置队伍信息颜色
+        tvTeamInfo.text = team
+        tvTeamInfo.setTextColor(if (team == "主队") 0xFF1565C0.toInt() else 0xFFC62828.toInt())
+
+        // 设置十位数滚轮 (0-9)
+        pickerTens.minValue = 0
+        pickerTens.maxValue = 9
+        pickerTens.value = 0
+        pickerTens.wrapSelectorWheel = true
+
+        // 设置个位数滚轮 (0-9)
+        pickerOnes.minValue = 0
+        pickerOnes.maxValue = 9
+        pickerOnes.value = 1
+        pickerOnes.wrapSelectorWheel = true
+
+        // 更新显示的号码
+        fun updateSelectedNumber() {
+            val number = pickerTens.value * 10 + pickerOnes.value
+            tvSelectedNumber.text = "# ${String.format("%02d", number)}"
+        }
+
+        updateSelectedNumber()
+
+        pickerTens.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
+        pickerOnes.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnConfirm.setOnClickListener {
+            val number = pickerTens.value * 10 + pickerOnes.value
+            val numberStr = String.format("%02d", number)
+            dialog.dismiss()
+
+            // 记录事件
+            recordEventWithDetails(eventType, team, numberStr)
+        }
+
+        dialog.show()
+    }
+
+    // 记录带详细信息的事件
+    private fun recordEventWithDetails(eventType: String, team: String, number: String) {
+        val emoji = when (eventType) {
+            "黄牌" -> "🟨"
+            "红牌" -> "🟥"
+            "进球" -> "⚽"
+            else -> "📝"
+        }
+
+        val teamEmoji = if (team == "主队") "🏠" else "✈️"
+        val detailText = "$team #$number"
+        val timeStr = formatTime(mainTime)
+        val halfName = if (currentHalf == HALF_FIRST) "上半场" else "下半场"
+        val minute = (mainTime / 60).toInt()
+
+        matchEvents.add(MatchEvent(
+            timeStr = timeStr,
+            event = eventType,
+            emoji = emoji,
+            detail = detailText,
+            half = halfName,
+            minute = minute
+        ))
+
+        // ✂️ --- 我把那段自动加秒的代码删掉了 ---
+
+        updateStoppageTimeDisplay()
+        // 删掉日志里的 (+60秒) 字样
+        addLog("$emoji [$timeStr] $eventType - $teamEmoji $detailText")
+    }
+
+
+
+
+    private fun showRecordDetail(record: MatchRecord) {
+        val eventsText = if (record.events.isNotEmpty()) {
+            record.events.joinToString("\n")
+        } else {
+            "无事件记录"
+        }
+
+        val detailText = """
+日期: ${record.date}
+时长: ${record.halfTimeMinutes}分钟/半场
+
+═══ 补时统计 ═══
+上半场: ${record.firstHalfStoppage}
+下半场: ${record.secondHalfStoppage}
+总计: ${record.totalStoppage}
+
+═══ 事件统计 ═══
+⚽ 进球: ${record.goalCount}
+🟨 黄牌: ${record.yellowCount}
+🟥 红牌: ${record.redCount}
+🔄 换人: ${record.substitutionCount}
+🏥 伤停: ${record.injuryCount}
+
+═══ 事件记录 ═══
+$eventsText
+    """.trimIndent()
+
+        AlertDialog.Builder(this)
+            .setTitle("📋 比赛详情")
+            .setMessage(detailText)
+            .setPositiveButton("关闭", null)
+            .show()
+    }
+
 
     // ==================== 数据类 ====================
 
     data class MatchEvent(
-        val minute: Int,
         val timeStr: String,
-        val half: String,
         val event: String,
-        val emoji: String
+        val emoji: String = "",
+        val detail: String = "",
+        val half: String = "",
+        val minute: Int = 0
     )
+
 
     data class EventItem(
         val displayText: String,
         val type: String,
         val color: String
     )
+
 }
