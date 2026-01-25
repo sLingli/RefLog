@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.res.Resources
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
@@ -19,6 +20,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.widget.NumberPicker
+import android.content.res.ColorStateList
+import android.util.DisplayMetrics
 
 
 
@@ -651,72 +654,110 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun showMatchSummary() {
-        val halfTimeMin = halfTimeSeconds / 60
+    private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_match_summary, null)
 
-        // 统计信息
-        val goalCount = matchEvents.count { it.event == "进球" }
-        val yellowCount = matchEvents.count { it.event == "黄牌" }
-        val redCount = matchEvents.count { it.event == "红牌" }
-        val subCount = matchEvents.count { it.event == "换人" }
-        val injuryCount = matchEvents.count { it.event == "伤停" }
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvSummaryTitle)
+        val tvStatMatchTime = dialogView.findViewById<TextView>(R.id.tvStatMatchTime)
+        val tvStatGoals = dialogView.findViewById<TextView>(R.id.tvStatGoals)
+        val tvStatYellow = dialogView.findViewById<TextView>(R.id.tvStatYellow)
+        val tvStatRed = dialogView.findViewById<TextView>(R.id.tvStatRed)
+        val tvStatStoppage = dialogView.findViewById<TextView>(R.id.tvStatStoppage)
+        val listEvents = dialogView.findViewById<LinearLayout>(R.id.listSummaryEvents)
+        val btnClose = dialogView.findViewById<Button>(R.id.btnSummaryClose)
 
-        // 补时统计
-        val firstHalfStr = formatTime(firstHalfStoppage)
-        val secondHalfStr = formatTime(stoppageTime)
-        val totalStoppage = firstHalfStoppage + stoppageTime
-        val totalStr = formatTime(totalStoppage)
-
-        // 构建事件记录文本
-        // 构建事件记录文本
-        val eventsText = if (matchEvents.isNotEmpty()) {
-            matchEvents.joinToString("\n") { event ->
-                if (event.detail.isNotEmpty()) {
-                    "  ${event.emoji} ${event.timeStr} [${event.half}] ${event.event} - ${event.detail}"
-                } else {
-                    "  ${event.emoji} ${event.timeStr} [${event.half}] ${event.event}"
-                }
-            }
+        // 🕵️‍♂️ 精准修复类型冲突：强制所有分支都转为确定的类型
+        val hTime: Int = if (isHistory) {
+            (historyRecord?.halfTimeMinutes ?: 0).toInt()
         } else {
-            "  本场比赛没有记录任何事件"
+            // 先转成 Long 计算再转回 Int，防止溢出或类型冲突
+            (halfTimeSeconds.toLong() / 60L).toInt()
         }
 
+        val st1: Long = if (isHistory) {
+            historyRecord?.firstHalfStoppage?.toLongOrNull() ?: 0L
+        } else {
+            // 假设主界面的变量已经是 Long 或可以转 Long
+            try { firstHalfStoppage.toLong() } catch(e: Exception) { 0L }
+        }
 
-        val summaryText = """
-═══════════════════════
-📊 比赛统计
-═══════════════════════
-比赛设置：每半场 $halfTimeMin 分钟
+        val st2: Long = if (isHistory) {
+            historyRecord?.secondHalfStoppage?.toLongOrNull() ?: 0L
+        } else {
+            try { stoppageTime.toLong() } catch(e: Exception) { 0L }
+        }
 
-⚽ 进球: $goalCount
-🟨 黄牌: $yellowCount
-🟥 红牌: $redCount
-🔄 换人: $subCount
-🏥 伤停: $injuryCount
+        // 🕵️‍♂️ 统一获取事件列表：现在 MatchRecord 里已经是 List<MatchEvent> 了
+        val eventsToShow: List<MatchEvent> = if (isHistory) {
+            historyRecord?.events ?: listOf()
+        } else {
+            matchEvents
+        }
 
-═══════════════════════
-⏱ 补时统计
-═══════════════════════
-上半场补时: $firstHalfStr
-下半场补时: $secondHalfStr
-总补时: $totalStr
+        if (isHistory) tvTitle.text = "📜 历史详情"
 
-═══════════════════════
-📋 事件记录
-═══════════════════════
-$eventsText
-    """.trimIndent()
+        // 1. 填充统计数据
+        tvStatMatchTime.text = "时长: 每半场 ${hTime}分"
+        tvStatGoals.text = "总进球: ${eventsToShow.count { it.event == "进球" }}"
+        tvStatYellow.text = "黄牌: ${eventsToShow.count { it.event == "黄牌" }}"
+        tvStatRed.text = "红牌: ${eventsToShow.count { it.event == "红牌" }}"
+        tvStatStoppage.text = "上半场补时: ${formatTime(st1)}\n下半场补时: ${formatTime(st2)}"
 
-        AlertDialog.Builder(this)
-            .setTitle("🏆 比赛结束")
-            .setMessage(summaryText)
-            .setPositiveButton("确  定") { dialog, _ ->
-                dialog.dismiss()
+        // 2. 填充事件明细
+        listEvents.removeAllViews()
+        if (eventsToShow.isEmpty()) {
+            val tv = TextView(this)
+            tv.text = "暂无事件记录"
+            tv.setTextColor(android.graphics.Color.GRAY)
+            listEvents.addView(tv)
+        } else {
+            eventsToShow.forEach { event ->
+                val eventRow = TextView(this)
+                // ✅ 现在这里绝对稳了！
+                eventRow.text = "[${event.timeStr}] ${event.detail} ${event.event}"
+
+                val density = resources.displayMetrics.density
+                val paddingPx = (4 * density).toInt()
+                eventRow.setPadding(0, paddingPx, 0, paddingPx)
+                eventRow.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+                eventRow.textSize = 13f
+
+                val iconRes = when(event.event) {
+                    "进球" -> R.drawable.sports_soccer
+                    "黄牌", "红牌" -> R.drawable.ic_card
+                    "换人" -> R.drawable.ic_substitute
+                    "伤停" -> R.drawable.ic_medical    // 🔥 明确把伤停指向医疗图标
+                    else -> R.drawable.ic_history
+                }
+
+                eventRow.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0)
+                eventRow.compoundDrawablePadding = (8 * density).toInt()
+
+                try {
+                    val iconColor = when(event.event){
+                        "进球" -> android.graphics.Color.WHITE
+                        "黄牌" -> android.graphics.Color.YELLOW
+                        "红牌" -> android.graphics.Color.RED
+                        "伤停" -> android.graphics.Color.parseColor("#2196F3") // 🔥 蓝色医疗，更专业
+                        else -> android.graphics.Color.GREEN // 换人等其他事件用绿色
+                    }
+                    eventRow.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(iconColor)
+                } catch (e: Exception) {}
+
+                listEvents.addView(eventRow)
             }
-            .setCancelable(false)
+        }
+
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+            .setView(dialogView)
             .create()
-            .show()
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
+
+    // 辅助函数：dp转px
+    fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
 
 
 
@@ -802,13 +843,7 @@ $eventsText
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentDate = dateFormat.format(Date())
 
-        val eventsList = matchEvents.map { event ->
-            if (event.detail.isNotEmpty()) {
-                "${event.emoji} ${event.timeStr} ${event.event} - ${event.detail}"
-            } else {
-                "${event.emoji} ${event.timeStr} ${event.event}"
-            }
-        }
+        // ✂️ 删掉了之前那个 eventsList 的 map 转换逻辑，因为我们不需要 String 了
 
         // 统计主客队进球
         val homeGoals = matchEvents.count { it.event == "进球" && it.detail.contains("主队") }
@@ -817,15 +852,18 @@ $eventsText
         val record = MatchRecord(
             date = currentDate,
             halfTimeMinutes = (halfTimeSeconds / 60).toInt(),
-            firstHalfStoppage = formatTime(firstHalfStoppage),
-            secondHalfStoppage = formatTime(stoppageTime),
-            totalStoppage = formatTime(firstHalfStoppage + stoppageTime),
+            firstHalfStoppage = formatTime(firstHalfStoppage.toLong()),
+            secondHalfStoppage = formatTime(stoppageTime.toLong()),
+            totalStoppage = formatTime((firstHalfStoppage + stoppageTime).toLong()),
             goalCount = matchEvents.count { it.event == "进球" },
             yellowCount = matchEvents.count { it.event == "黄牌" },
             redCount = matchEvents.count { it.event == "红牌" },
             substitutionCount = matchEvents.count { it.event == "换人" },
             injuryCount = matchEvents.count { it.event == "伤停" },
-            events = eventsList,
+
+            // 🔥【核心修改】：直接把原始的对象列表存进去！
+            events = matchEvents.toList(), // 使用 .toList() 复制一份，防止后续改动影响历史记录
+
             homeGoals = homeGoals,
             awayGoals = awayGoals
         )
@@ -865,7 +903,7 @@ $eventsText
 
                 // 点击查看详情
                 itemView.setOnClickListener {
-                    showRecordDetail(record)
+                    showMatchSummary(isHistory = true, historyRecord = record)
                 }
 
                 recordsContainer.addView(itemView)
@@ -1046,51 +1084,10 @@ $eventsText
 
 
 
-    private fun showRecordDetail(record: MatchRecord) {
-        val eventsText = if (record.events.isNotEmpty()) {
-            record.events.joinToString("\n")
-        } else {
-            "无事件记录"
-        }
-
-        val detailText = """
-日期: ${record.date}
-时长: ${record.halfTimeMinutes}分钟/半场
-
-═══ 补时统计 ═══
-上半场: ${record.firstHalfStoppage}
-下半场: ${record.secondHalfStoppage}
-总计: ${record.totalStoppage}
-
-═══ 事件统计 ═══
-⚽ 进球: ${record.goalCount}
-🟨 黄牌: ${record.yellowCount}
-🟥 红牌: ${record.redCount}
-🔄 换人: ${record.substitutionCount}
-🏥 伤停: ${record.injuryCount}
-
-═══ 事件记录 ═══
-$eventsText
-    """.trimIndent()
-
-        AlertDialog.Builder(this)
-            .setTitle("📋 比赛详情")
-            .setMessage(detailText)
-            .setPositiveButton("关闭", null)
-            .show()
-    }
-
 
     // ==================== 数据类 ====================
 
-    data class MatchEvent(
-        val timeStr: String,
-        val event: String,
-        val emoji: String = "",
-        val detail: String = "",
-        val half: String = "",
-        val minute: Int = 0
-    )
+
 
 
     data class EventItem(

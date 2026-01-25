@@ -1,5 +1,16 @@
 package com.example.myapplication
 
+// 1. 先定义“事件”的格式
+data class MatchEvent(
+    val timeStr: String,
+    val event: String,
+    val emoji: String = "",
+    val detail: String = "",
+    val half: String = "",
+    val minute: Int = 0
+)
+
+// 2. 再定义“整场比赛记录”的格式
 data class MatchRecord(
     val id: Long = System.currentTimeMillis(),
     val date: String,
@@ -12,8 +23,7 @@ data class MatchRecord(
     val redCount: Int,
     val substitutionCount: Int,
     val injuryCount: Int,
-    val events: List<String>,
-    // 新增：进球详情
+    val events: List<MatchEvent>, // 这里现在引用的是上面的 MatchEvent
     val homeGoals: Int = 0,
     val awayGoals: Int = 0
 )
