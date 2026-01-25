@@ -8,7 +8,7 @@
     android:background="#1E1E1E"
     android:gravity="center">
 
-    <!-- 标题 -->
+    <!-- 标题（建议保留，告诉用户现在要干嘛） -->
     <TextView
         android:id="@+id/tvTeamSelectionTitle"
         android:layout_width="wrap_content"
@@ -26,44 +26,59 @@
         android:orientation="horizontal"
         android:gravity="center">
 
-        <!-- 主队按钮 -->
+        <!-- 主队按钮 (ic_home) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnHomeTeam"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:text="🏠\n主队"
-            android:textSize="16sp"
-            android:textColor="#FFFFFF"
+            android:text=""
+            app:icon="@drawable/ic_home"
+            app:iconSize="40dp"
+            app:iconGravity="textStart"
+            app:iconTint="#FFFFFF"
             app:backgroundTint="#1565C0"
-            app:cornerRadius="16dp" />
+            app:cornerRadius="16dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:padding="0dp" />
 
-        <!-- 客队按钮 -->
+        <!-- 客队按钮 (ic_flight) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAwayTeam"
             android:layout_width="0dp"
             android:layout_height="80dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:text="✈️\n客队"
-            android:textSize="16sp"
-            android:textColor="#FFFFFF"
+            android:text=""
+            app:icon="@drawable/ic_flight"
+            app:iconSize="40dp"
+            app:iconGravity="textStart"
+            app:iconTint="#FFFFFF"
             app:backgroundTint="#C62828"
-            app:cornerRadius="16dp" />
+            app:cornerRadius="16dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:padding="0dp" />
 
     </LinearLayout>
 
-    <!-- 取消按钮 -->
+    <!-- 取消按钮 (outline_close) -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCancelTeam"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="16dp"
-        android:text="取消"
-        android:textSize="14sp"
-        android:textColor="#AAAAAA"
-        app:backgroundTint="#424242"
-        app:cornerRadius="12dp" />
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        android:text=""
+        app:icon="@drawable/outline_close_24"
+        app:iconSize="28dp"
+        app:iconGravity="textStart"
+        app:iconTint="#AAAAAA"
+        app:backgroundTint="#333333"
+        app:cornerRadius="30dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:padding="0dp" />
 
 </LinearLayout>

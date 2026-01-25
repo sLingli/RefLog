@@ -186,6 +186,7 @@ class MainActivity : AppCompatActivity() {
         addLog("🏁 比赛开始")
         val halfTimeMin = halfTimeSeconds / 60
         Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
+        animateHistoryButton(false)
     }
 
 
@@ -347,6 +348,7 @@ class MainActivity : AppCompatActivity() {
         showMatchSummary()
 
         Log.i("FootballTimer", "📢 比赛结束！总补时: $totalStr")
+        animateHistoryButton(true)
 
     }
 
@@ -381,6 +383,7 @@ class MainActivity : AppCompatActivity() {
         // (计时器会每秒检查一次，但不会增加时间，因为state不是RUNNING)
 
         Log.i("FootballTimer", "📢 比赛已重置")
+        animateHistoryButton(true)
     }
 
 
@@ -571,17 +574,16 @@ class MainActivity : AppCompatActivity() {
             timeStr = timeStr,
             event = eventType,
             emoji = emoji,
-            detail = "",
+            detail = "", // 简单事件没有详情
             half = halfName,
             minute = minute
         ))
 
-        if (state == STATE_PAUSED) {
-            stoppageTime += stoppageSeconds
-        }
+        // 🔥 删掉了 if (state == STATE_PAUSED) { stoppageTime += stoppageSeconds }
+        // 🔥 删掉了 updateStoppageTimeDisplay()，因为时间没变不需要更新
 
-        updateStoppageTimeDisplay()
-        addLog("$emoji [$timeStr] $eventType (+${stoppageSeconds}秒)")
+        // 修改日志，删掉 (+秒)
+        addLog("$emoji [$timeStr] $eventType")
     }
 
 
@@ -1096,5 +1098,38 @@ $eventsText
         val type: String,
         val color: String
     )
+    // 🎬 这是一个专门控制历史记录按钮“变魔术”的函数
+    private fun animateHistoryButton(show: Boolean) {
+        // 1. 通过 ID 找到你的按钮
+        val historyBtn = findViewById<View>(R.id.btnHistory) ?: return
 
+        if (show) {
+            // 让按钮【现身】✨
+            if (historyBtn.visibility == View.VISIBLE && historyBtn.alpha == 1f) return
+
+            historyBtn.visibility = View.VISIBLE
+            historyBtn.alpha = 0f          // 先透明
+            historyBtn.scaleX = 0.8f       // 先缩小
+            historyBtn.scaleY = 0.8f
+
+            historyBtn.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(400)
+                .setInterpolator(android.view.animation.OvershootInterpolator()) // 弹一下，显高级
+                .start()
+        } else {
+            // 让按钮【隐身】👻
+            if (historyBtn.visibility == View.GONE) return
+
+            historyBtn.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(300)
+                .withEndAction { historyBtn.visibility = View.GONE } // 动画播完彻底消失
+                .start()
+        }
+    }
 }
