@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -7,14 +8,19 @@
     android:padding="8dp"
     android:gravity="center_horizontal">
 
+    <!-- 标题：去掉了指令文字，换成了专业的矢量图标 apparel -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="👕 滑动选择球衣"
+        android:text="设定主客队颜色"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="12dp"
+
+        app:drawableStartCompat="@drawable/apparel"
+        android:drawablePadding="8dp"
+        android:drawableTint="#FFFFFF" />
 
     <!-- 选中区域的高亮框（可选，增加仪式感） -->
     <FrameLayout
