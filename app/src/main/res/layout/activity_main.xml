@@ -16,7 +16,6 @@
         <!-- 状态栏 -->
 
         <!-- 主计时器卡片 -->
-
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -31,14 +30,15 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:padding="20dp">
+                android:paddingVertical="20dp"
+                android:paddingHorizontal="16dp">
 
                 <TextView
                     android:id="@+id/statusLabel"
-                    android:layout_width="233dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="12dp"
                     android:gravity="center"
                     android:text="⚽ 上半场"
                     android:textColor="#4CAF50"
@@ -53,34 +53,29 @@
                     android:textColor="#4CAF50"
                     android:textSize="56sp"
                     android:fontFamily="monospace"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp"/>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- 🔥 补时区域重构：直接把图标放进 TextView 里，完美居中 -->
+                <TextView
+                    android:id="@+id/stoppageTimeLabel"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:padding="14dp">
+                    android:gravity="center_vertical"
+                    android:text="00:00"
+                    android:fontFamily="monospace"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="#666666"
+                    app:drawableStartCompat="@drawable/more_time"
+                    android:drawablePadding="8dp"
+                    android:drawableTint="#666666" />
 
-                    <TextView
-                        android:id="@+id/stoppageTitleLabel"
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:text=""
-                        android:background="@drawable/more_time"
-                        android:backgroundTint="#666666" />
+                <!-- 注意：之前那个独立的 stoppageTitleLabel 已经被合并了，
+                     因为我们不需要一个空的 TextView 来占位了。
+                     现在的 stoppageTitleLabel 其实就是上面的 stoppageTimeLabel
+                     (或者你可以把变量名指过来) -->
 
-                    <TextView
-                        android:id="@+id/stoppageTimeLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:fontFamily="monospace"
-                        android:text="00:00"
-                        android:textColor="#666666"
-                        android:textSize="26sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
