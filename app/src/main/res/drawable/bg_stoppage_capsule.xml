@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 颜色：极浅的灰色，像玻璃一样 -->
+    <solid android:color="#1AFFFFFF" />
+    <corners android:radius="50dp" /> <!-- 完整的圆角 -->
+</shape>

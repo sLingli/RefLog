@@ -4,146 +4,162 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:padding="12dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center_horizontal"> <!-- 🔥 全局水平居中 -->
 
+        <!-- 标题 -->
         <TextView
             android:id="@+id/tvSummaryTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="比赛总结"
-            android:textColor="#00FF00"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_gravity="center"
-            android:layout_marginBottom="12dp"
-            android:drawableStart="@drawable/ic_trophy"
+            android:textColor="#4CAF50"
+            app:drawableStartCompat="@drawable/ic_trophy"
             android:drawablePadding="8dp"
-            android:drawableTint="#00FF00" />
+            android:drawableTint="#4CAF50"
+            android:layout_marginBottom="12dp"/>
 
-        <!-- 统计面板：使用单独的 TextView 以支持 Vector Drawable -->
+        <!-- 统计卡片 -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#1A1A1A"
-            app:cardCornerRadius="12dp"
-            app:strokeColor="#333333"
-            app:strokeWidth="1dp">
+            app:cardBackgroundColor="#1E1E1E"
+            app:cardCornerRadius="16dp"
+            app:strokeWidth="0dp"
+            android:layout_marginBottom="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="16dp"
+                android:gravity="center"> <!-- 🔥 卡片内容居中 -->
 
-                <!-- 比赛时长 -->
+                <!-- 时长 -->
                 <TextView
                     android:id="@+id/tvStatMatchTime"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_history"
+                    android:text="时长: 每半场 45分"
+                    android:textColor="#CCCCCC"
                     android:drawablePadding="8dp"
+                    app:drawableStartCompat="@drawable/ic_history"
                     android:drawableTint="#AAAAAA"
-                    android:textColor="#FFFFFF"
-                    android:textSize="13sp"
-                    android:text="时长: 每半场 45分" />
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- 进球统计 -->
+                <!-- 比分 -->
                 <TextView
                     android:id="@+id/tvStatGoals"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:drawableStart="@drawable/sports_soccer"
-                    android:drawablePadding="8dp"
-                    android:drawableTint="#FFFFFF"
+                    android:text="比分: 0 : 0"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
                     android:textColor="#FFFFFF"
-                    android:textSize="13sp"
-                    android:text="总进球: 0" />
+                    android:drawablePadding="8dp"
+                    app:drawableStartCompat="@drawable/sports_soccer"
+                    android:drawableTint="#FFFFFF"
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- 红黄牌统计 -->
+                <!-- 红黄牌行：使用居中的水平布局 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp">
 
                     <TextView
                         android:id="@+id/tvStatYellow"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:drawableStart="@drawable/ic_card"
-                        android:drawablePadding="8dp"
+                        android:text="黄牌: 0"
+                        android:textColor="#FFEB3B"
+                        android:drawablePadding="4dp"
+                        app:drawableStartCompat="@drawable/ic_card"
                         android:drawableTint="#FFEB3B"
-                        android:textColor="#FFFFFF"
-                        android:textSize="13sp"
-                        android:text="黄牌: 0" />
+                        android:layout_marginEnd="16dp"/>
 
                     <TextView
                         android:id="@+id/tvStatRed"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:drawableStart="@drawable/ic_card"
-                        android:drawablePadding="8dp"
-                        android:drawableTint="#F44336"
-                        android:textColor="#FFFFFF"
-                        android:textSize="13sp"
-                        android:text="红牌: 0" />
+                        android:text="红牌: 0"
+                        android:textColor="#F44336"
+                        android:drawablePadding="4dp"
+                        app:drawableStartCompat="@drawable/ic_card"
+                        android:drawableTint="#F44336"/>
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+                <!-- 分割线 -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#333333"
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- 补时统计 -->
+                <!-- 补时 -->
                 <TextView
                     android:id="@+id/tvStatStoppage"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/more_time"
-                    android:drawablePadding="8dp"
-                    android:drawableTint="#00FF00"
+                    android:text="补时: 上 00:00 | 下 00:00"
                     android:textColor="#00FF00"
-                    android:textSize="13sp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="上半场补时: 00:00\n下半场补时: 00:00" />
+                    android:textSize="12sp"
+                    android:drawablePadding="8dp"
+                    app:drawableStartCompat="@drawable/more_time"
+                    android:drawableTint="#00FF00"/>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
+        <!-- 事件明细标题 -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="事件明细"
-            android:textColor="#00FF00"
-            android:textSize="15sp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
-            android:drawableStart="@drawable/ic_event_note"
-            android:drawablePadding="8dp"
-            android:drawableTint="#00FF00" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
 
-        <!-- 事件列表容器：我们会在代码里动态往这里添加行 -->
+            <!-- 事件明细标题：已换成矢量图标 ic_event_note -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="事件明细"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#4CAF50"
+                app:drawableStartCompat="@drawable/ic_event_note"
+                android:drawablePadding="8dp"
+                android:drawableTint="#4CAF50"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"/>
+        </LinearLayout>
+
+        <!-- 列表容器 -->
         <LinearLayout
             android:id="@+id/listSummaryEvents"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:gravity="center"/> <!-- 🔥 列表内容居中 -->
 
-        <com.google.android.material.button.MaterialButton
+        <Button
             android:id="@+id/btnSummaryClose"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="20dp"
-            android:text="确 定"
-            android:textColor="#000000"
-            android:textStyle="bold"
-            app:backgroundTint="#00FF00"
-            app:cornerRadius="26dp"/>
+            android:layout_height="48dp"
+            android:text="确定"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#4CAF50"
+            app:cornerRadius="24dp"/>
 
     </LinearLayout>
 </ScrollView>

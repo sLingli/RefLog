@@ -1,111 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#1E1E1E"
-    android:padding="12dp">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#000000"
+    android:padding="8dp"
+    android:gravity="center_horizontal">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:text="👕 滑动选择球衣"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🎨 设定球衣颜色"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+    <!-- 选中区域的高亮框（可选，增加仪式感） -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="150dp">
 
-        <!-- 主队颜色选择区 -->
+        <!-- 背景高亮条，指示选中位置 -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:background="#1AFFFFFF"
+            android:alpha="0.5"/>
+
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="主队"
-                android:textColor="#AAAAAA"
-                android:layout_marginEnd="8dp"/>
-
-            <!-- 主队预览 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/previewHome"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:cornerRadius="24dp"
-                app:backgroundTint="#1565C0"/>
-
-            <!-- 这里放一个颜色盘容器，代码里动态填充，或者手动写几个 -->
-            <HorizontalScrollView
+            <!-- 主队滚轮 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHomeColors"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp">
-                <LinearLayout
-                    android:id="@+id/containerHomeColors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
-        </LinearLayout>
+                android:overScrollMode="never"/>
 
-        <!-- 客队颜色选择区 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="24dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="客队"
-                android:textColor="#AAAAAA"
-                android:layout_marginEnd="8dp"/>
-
-            <!-- 客队预览 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/previewAway"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:cornerRadius="24dp"
-                app:backgroundTint="#C62828"/>
-
-            <HorizontalScrollView
+            <!-- 客队滚轮 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAwayColors"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp">
-                <LinearLayout
-                    android:id="@+id/containerAwayColors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
+                android:overScrollMode="never"/>
         </LinearLayout>
+    </FrameLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnConfirmColor"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="下一步: 比赛时间"
-            android:textColor="#000000"
-            app:backgroundTint="#00FF00"
-            app:cornerRadius="26dp"/>
-
-    </LinearLayout>
-</ScrollView>
+    <Button
+        android:id="@+id/btnConfirmColor"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="确定"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="#4CAF50"/>
+</LinearLayout>

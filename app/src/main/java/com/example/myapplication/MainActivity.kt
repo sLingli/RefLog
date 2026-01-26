@@ -191,23 +191,22 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun startTimer() {
-        // 1. 如果还没设置比赛时间，先去选颜色 -> 选时间
         if (!matchTimeSet) {
             showColorSelectionDialog()
             return
         }
 
-        // 🔥🔥🔥 核心动画：让按钮分裂动作丝滑流畅 🔥🔥🔥
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
 
-        // 2. 调用更新样式的函数（逻辑整合在 updateButtonStyle 里，方便管理）
+        // 🔥 状态栏更新：这里会自动变成 "上半场 + 足球图标"
+        updateStatusLabel()
+
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
 
-        // 3. 隐藏历史按钮 (让 TransitionManager 自动处理消失动画)
         val btnHistory = findViewById<View>(R.id.btnHistory)
         btnHistory.visibility = View.GONE
 
@@ -229,20 +228,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun startSecondHalf() {
         currentHalf = HALF_SECOND
-
-        // ⭐⭐⭐ 核心：下半场主时间从半场时间的末尾开始 ⭐⭐⭐
-        // 比如半场2分钟，上半场在 02:30 结束，下半场应该从 02:00 开始
-        // 或者按足球习惯，从 45:00 开始计时
-        mainTime = halfTimeSeconds  // ✅ 正确：从半场时间的开始处
+        mainTime = halfTimeSeconds
 
         state = STATE_RUNNING
         stoppageTime = 0
         lastUpdateTime = System.currentTimeMillis()
         fullTimeAlertShown = false
 
-        statusLabel.text = "⚽ 下半场"
+        // 🔥 状态栏更新：这里会自动变成 "下半场 + 足球图标"
+        updateStatusLabel()
 
-        // ⭐⭐⭐ 更新显示：显示起始时间 ⭐⭐⭐
         mainTimeLabel.text = formatTime(mainTime)
         mainTimeLabel.setTextColor(0xFF00FF00.toInt())
 
@@ -250,7 +245,6 @@ class MainActivity : AppCompatActivity() {
         updateStoppageDisplay(active = false)
         updateStoppageTimeDisplay()
 
-        // ⭐⭐⭐ 确保计时器运行 ⭐⭐⭐
         startUpdateLoop()
 
         addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
@@ -263,7 +257,6 @@ class MainActivity : AppCompatActivity() {
         if (state == STATE_READY) return
 
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
-
         val btnNo = dialogView.findViewById<Button>(R.id.btnNo)
         val btnYes = dialogView.findViewById<Button>(R.id.btnYes)
 
@@ -272,17 +265,21 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
-        // 取消按钮
-        btnNo.setOnClickListener {
-            dialog.dismiss()
-        }
+        btnNo.setOnClickListener { dialog.dismiss() }
 
-        // 确认按钮
         btnYes.setOnClickListener {
             dialog.dismiss()
             when (currentHalf) {
-                HALF_FIRST -> endFirstHalf()
-                HALF_SECOND -> endSecondHalf()
+                HALF_FIRST -> {
+                    endFirstHalf()
+                    // 🔥 结束上半场后，状态变为中场休息，这里刷新一下图标 (变成咖啡)
+                    updateStatusLabel()
+                }
+                HALF_SECOND -> {
+                    endSecondHalf()
+                    // 🔥 结束下半场后，状态变为比赛结束，这里刷新一下图标 (变成奖杯)
+                    updateStatusLabel()
+                }
             }
         }
 
@@ -381,7 +378,6 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun resetMatch() {
-        // 重置状态变量
         state = STATE_READY
         currentHalf = HALF_FIRST
         mainTime = 0
@@ -393,21 +389,22 @@ class MainActivity : AppCompatActivity() {
         fullTimeAlertShown = false
         matchEvents.clear()
 
-        // 更新UI
-        statusLabel.text = "⚽ 上半场"
-        statusLabel.setTextColor(getColor(R.color.timer_normal))
+        // 🔥 状态栏更新：这里会自动变成 "准备开始 + 足球图标"
+        updateStatusLabel()
+
+        // 注意：原本的 statusLabel.setTextColor(getColor(R.color.timer_normal)) 可以删了
+        // 因为 updateStatusLabel 里已经会自动把图标染成和文字一样的颜色 (通常是绿色)
+
         mainTimeLabel.text = "00:00"
         mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
         stoppageTimeLabel.text = "00:00"
+
         updateButtonStyle("start")
         updateStoppageDisplay(active = false)
 
-
-        // 隐藏结束按钮
-        endHalfButton.visibility = View.GONE
-
-        // ⭐⭐⭐ 重要：这里不要停止计时器！让它保持在ready状态 ⭐⭐⭐
-        // (计时器会每秒检查一次，但不会增加时间，因为state不是RUNNING)
+        // 显式确保结束按钮隐藏
+        val endBtn = findViewById<View>(R.id.endHalfButton)
+        endBtn.visibility = View.GONE
 
         Log.i("FootballTimer", "📢 比赛已重置")
         animateHistoryButton(true)
@@ -690,7 +687,7 @@ class MainActivity : AppCompatActivity() {
         val listEvents = dialogView.findViewById<LinearLayout>(R.id.listSummaryEvents)
         val btnClose = dialogView.findViewById<Button>(R.id.btnSummaryClose)
 
-        // 计算逻辑保持不变
+        // 数据准备
         val hTime: Int = if (isHistory) {
             (historyRecord?.halfTimeMinutes ?: 0).toInt()
         } else {
@@ -715,49 +712,44 @@ class MainActivity : AppCompatActivity() {
             matchEvents
         }
 
-        // 1. 设置标题 (去掉 Emoji，只留文字，图标交给 XML)
-        if (isHistory) {
-            tvTitle.text = "历史详情"
-        } else {
-            tvTitle.text = "比赛总结"
-        }
+        // 1. 设置标题
+        tvTitle.text = if (isHistory) "历史详情" else "比赛总结"
 
-        // 2. 填充统计数据
+        // 2. 🔥 填充统计数据 (这部分是新修改的)
+
+        // 2.1 算比分：主队进球 vs 客队进球
+        val homeGoals = eventsToShow.count { it.event == "进球" && it.detail.contains("主队") }
+        val awayGoals = eventsToShow.count { it.event == "进球" && it.detail.contains("客队") }
+
         tvStatMatchTime.text = "时长: 每半场 ${hTime}分"
-        tvStatGoals.text = "总进球: ${eventsToShow.count { it.event == "进球" }}"
+        // 新格式： 比分: 3 : 2
+        tvStatGoals.text = "比分: $homeGoals : $awayGoals"
+
         tvStatYellow.text = "黄牌: ${eventsToShow.count { it.event == "黄牌" }}"
         tvStatRed.text = "红牌: ${eventsToShow.count { it.event == "红牌" }}"
-        tvStatStoppage.text = "上半场补时: ${formatTime(st1)}\n下半场补时: ${formatTime(st2)}"
 
-        // 3. 填充事件明细
+        // 2.2 算补时：一行显示两个
+        // 新格式： 补时: 上 02:00 | 下 03:00
+        tvStatStoppage.text = "补时: 上 ${formatTime(st1)} | 下 ${formatTime(st2)}"
+
+        // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
         listEvents.removeAllViews()
         if (eventsToShow.isEmpty()) {
             val tv = TextView(this)
             tv.text = "暂无事件记录"
             tv.setTextColor(android.graphics.Color.GRAY)
+            tv.gravity = android.view.Gravity.CENTER
             listEvents.addView(tv)
         } else {
             eventsToShow.forEach { event ->
-                val eventRow = TextView(this)
+                // 1. 创建一个水平容器
+                val rowContainer = LinearLayout(this)
+                rowContainer.orientation = LinearLayout.HORIZONTAL
+                rowContainer.gravity = android.view.Gravity.CENTER // 让里面的东西居中
+                rowContainer.setPadding(0, 8, 0, 8) // 上下间距
 
-                // 🔥🔥🔥 核心修改：逻辑判断，去掉啰嗦的后缀 🔥🔥🔥
-                // 原来是："[00:02] 主队 #06 进球" -> 现在图标已经代表进球了，文字就别重复了
-                val contentText = if (event.detail.isNotEmpty()) {
-                    event.detail // 如果有详情(如"主队 #06")，就只显示详情
-                } else {
-                    event.event  // 如果没详情(如"伤停")，才显示事件名
-                }
-
-                // 最终拼接： [时间] + 精简后的内容
-                eventRow.text = "[${event.timeStr}] $contentText"
-
-                val density = resources.displayMetrics.density
-                val paddingPx = (4 * density).toInt()
-                eventRow.setPadding(0, paddingPx, 0, paddingPx)
-                eventRow.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
-                eventRow.textSize = 13f
-
-                // 图标逻辑 (你之前的代码完全没问题，保留即可)
+                // 2. 创建图标 ImageView
+                val iconView = android.widget.ImageView(this)
                 val iconRes = when(event.event) {
                     "进球" -> R.drawable.sports_soccer
                     "黄牌", "红牌" -> R.drawable.ic_card
@@ -765,10 +757,16 @@ class MainActivity : AppCompatActivity() {
                     "伤停" -> R.drawable.ic_medical
                     else -> R.drawable.ic_history
                 }
+                iconView.setImageResource(iconRes)
 
-                eventRow.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0)
-                eventRow.compoundDrawablePadding = (8 * density).toInt()
+                // 设置图标大小 (20dp)
+                val density = resources.displayMetrics.density
+                val iconSize = (20 * density).toInt()
+                val params = LinearLayout.LayoutParams(iconSize, iconSize)
+                params.marginEnd = (8 * density).toInt() // 图标和字的间距
+                iconView.layoutParams = params
 
+                // 设置图标颜色
                 try {
                     val iconColor = when(event.event){
                         "进球" -> android.graphics.Color.WHITE
@@ -777,10 +775,22 @@ class MainActivity : AppCompatActivity() {
                         "伤停" -> android.graphics.Color.parseColor("#2196F3")
                         else -> android.graphics.Color.GREEN
                     }
-                    eventRow.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(iconColor)
+                    iconView.setColorFilter(iconColor)
                 } catch (e: Exception) {}
 
-                listEvents.addView(eventRow)
+                // 3. 创建文字 TextView
+                val textView = TextView(this)
+                val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
+                textView.text = "[${event.timeStr}] $contentText"
+                textView.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+                textView.textSize = 13f
+
+                // 4. 装填进容器
+                rowContainer.addView(iconView)
+                rowContainer.addView(textView)
+
+                // 5. 添加到列表
+                listEvents.addView(rowContainer)
             }
         }
 
@@ -849,6 +859,40 @@ class MainActivity : AppCompatActivity() {
                 endHalfButton.visibility = View.GONE // 再次隐藏，主按钮变长
             }
         }
+    }
+
+
+    // 放在 updateButtonStyle 附近就行
+    private fun updateStatusLabel() {
+        var textStr = ""
+        var iconRes = 0
+
+        if (state == STATE_READY) {
+            textStr = "准备开始"
+            iconRes = R.drawable.sports_soccer
+        } else if (state == STATE_RUNNING || state == STATE_PAUSED) {
+            // 🔥 修复点：直接使用 currentHalf 的值（它本身就是 "上半场" 或 "下半场"）
+            // 不需要再判断 if (currentHalf == 1) 了
+            textStr = currentHalf
+            iconRes = R.drawable.sports_soccer
+        } else if (state == STATE_HALFTIME) {
+            textStr = "中场休息"
+            iconRes = R.drawable.ic_coffee
+        } else if (state == STATE_FINISHED) {
+            textStr = "比赛结束"
+            iconRes = R.drawable.ic_trophy
+        }
+
+        // 更新 UI
+        statusLabel.text = textStr
+
+        // 只有当有图标资源时才设置
+        if (iconRes != 0) {
+            statusLabel.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0)
+        }
+
+        // 染色
+        statusLabel.compoundDrawableTintList = statusLabel.textColors
     }
 
 
@@ -1222,16 +1266,13 @@ class MainActivity : AppCompatActivity() {
     private fun showColorSelectionDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
 
-        val previewHome = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.previewHome)
-        val previewAway = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.previewAway)
-        val containerHome = dialogView.findViewById<LinearLayout>(R.id.containerHomeColors)
-        val containerAway = dialogView.findViewById<LinearLayout>(R.id.containerAwayColors)
+        val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
+        val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
         val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
 
-        // 定义一组常用球衣颜色 (红, 蓝, 绿, 黄, 白, 黑, 紫, 橙)
         val colors = listOf(
-            0xFFF44336.toInt(), // 红
-            0xFF2196F3.toInt(), // 蓝
+            0xFFF44336.toInt(), // 红 (Index 0)
+            0xFF2196F3.toInt(), // 蓝 (Index 1)
             0xFF4CAF50.toInt(), // 绿
             0xFFFFEB3B.toInt(), // 黄
             0xFFFFFFFF.toInt(), // 白
@@ -1240,50 +1281,52 @@ class MainActivity : AppCompatActivity() {
             0xFFFF9800.toInt()  // 橙
         )
 
-        // 临时变量，还没点确定前不修改全局变量
-        var tempHomeColor = homeTeamColor
-        var tempAwayColor = awayTeamColor
+        var tempHomeColor = colors[1] // 默认蓝
+        var tempAwayColor = colors[0] // 默认红
 
-        // 设置初始预览颜色
-        previewHome.backgroundTintList = ColorStateList.valueOf(tempHomeColor)
-        previewAway.backgroundTintList = ColorStateList.valueOf(tempAwayColor)
+        fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
+            rv.layoutManager = CenterScaleLayoutManager(this)
+            val adapter = ColorWheelAdapter(colors) { }
+            rv.adapter = adapter
 
-        // 辅助函数：创建颜色小圆点
-        fun createColorButton(color: Int, isHome: Boolean) {
-            val size = (36 * resources.displayMetrics.density).toInt()
-            val margin = (4 * resources.displayMetrics.density).toInt()
+            // 📐 核心修正 1：Padding 精确计算
+            // 容器高度 150dp，Item高度 60dp -> 空余 90dp -> 上下各 45dp
+            val density = resources.displayMetrics.density
+            val padding = (45 * density).toInt()
+            rv.setPadding(0, padding, 0, padding)
+            rv.clipToPadding = false
 
-            val btn = com.google.android.material.button.MaterialButton(this)
-            val params = LinearLayout.LayoutParams(size, size)
-            params.setMargins(margin, 0, margin, 0)
-            btn.layoutParams = params
+            val snapHelper = androidx.recyclerview.widget.LinearSnapHelper()
+            snapHelper.attachToRecyclerView(rv)
 
-            btn.backgroundTintList = ColorStateList.valueOf(color)
-            btn.cornerRadius = size / 2
-            btn.insetTop = 0
-            btn.insetBottom = 0
-            // 如果是白色，加个灰色边框防止看不见
-            if (color == 0xFFFFFFFF.toInt()) {
-                btn.strokeWidth = (1 * resources.displayMetrics.density).toInt()
-                btn.strokeColor = ColorStateList.valueOf(0xFF888888.toInt())
-            }
-
-            btn.setOnClickListener {
-                if (isHome) {
-                    tempHomeColor = color
-                    previewHome.backgroundTintList = ColorStateList.valueOf(color)
-                } else {
-                    tempAwayColor = color
-                    previewAway.backgroundTintList = ColorStateList.valueOf(color)
+            rv.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                    if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) {
+                        val centerView = snapHelper.findSnapView(rv.layoutManager)
+                        centerView?.let {
+                            val pos = rv.layoutManager?.getPosition(it) ?: 0
+                            val color = colors[pos % colors.size]
+                            onSelect(color)
+                        }
+                    }
                 }
-            }
+            })
 
-            if (isHome) containerHome.addView(btn) else containerAway.addView(btn)
+            // 🎯 核心修正 2：初始定位逻辑
+            // 算出中间位置，并加上 initialIndex 偏移
+            val centerStart = Int.MAX_VALUE / 2
+            val startPos = centerStart - (centerStart % colors.size) + initialIndex
+
+            // 使用 scrollToPositionWithOffset(pos, 0) 让它停在 Padding 的边缘（也就是正中间）
+            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
+
+            onSelect(colors[initialIndex])
         }
 
-        // 填充颜色盘
-        colors.forEach { createColorButton(it, true) }
-        colors.forEach { createColorButton(it, false) }
+        // 主队：默认蓝 (Index 1)
+        setupWheel(rvHome, 1) { tempHomeColor = it }
+        // 客队：默认红 (Index 0)
+        setupWheel(rvAway, 0) { tempAwayColor = it }
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -1291,12 +1334,9 @@ class MainActivity : AppCompatActivity() {
             .create()
 
         btnConfirm.setOnClickListener {
-            // 保存选择的颜色
             homeTeamColor = tempHomeColor
             awayTeamColor = tempAwayColor
-
             dialog.dismiss()
-            // 🔥 关键链条：选完颜色 -> 去选时间
             showTimeSettingDialog()
         }
 
