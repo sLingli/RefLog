@@ -52,8 +52,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainTimeLabel: TextView
 
     private lateinit var stoppageTimeLabel: TextView
-    private lateinit var mainButton: Button
-    private lateinit var endHalfButton: Button
+    // ✅ 修改成这样
+    private lateinit var mainButton: com.google.android.material.button.MaterialButton
+    private lateinit var endHalfButton: com.google.android.material.button.MaterialButton
 
 
     // ==================== 状态变量 ====================
@@ -810,53 +811,60 @@ class MainActivity : AppCompatActivity() {
     // ==================== UI 更新方法 ====================
 
     private fun updateButtonStyle(mode: String) {
-        // 1. 获取按钮控件
-        // 假设你已经在 MainActivity 里定义了这两个变量，如果没有，就用 findViewById
-        // val mainButton = findViewById<Button>(R.id.btnStart)
-        // val endHalfButton = findViewById<Button>(R.id.btnEndMatch)
 
-        // 🔥 动画魔法：只在必须要有布局变动（分裂/合并）时才生效
-        // 我们在这里加一个判断，防止不必要的重绘
+        val btnMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.mainButton)
+        val btnEnd = findViewById<com.google.android.material.button.MaterialButton>(R.id.endHalfButton)
+
+        // 🔥 动画魔法：让按钮分裂/合并时丝滑过渡
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
         when (mode) {
             "start" -> {
-                // 🟥 初始状态：单按钮
-                mainButton.text = "▶ 开始半场"
+                // 🟩 初始状态：单按钮 (开始半场)
+                mainButton.text = "开始"
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
                 mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE // 隐藏结束键，让主按钮变长
+                endHalfButton.visibility = View.GONE
             }
 
             "pause" -> {
-                // 🟥 比赛进行中（显示红暂停）：双按钮
-                mainButton.text = "⏸ 暂停"
+                // 🟥 比赛进行中状态：双按钮 (显示暂停 + 结束)
+                mainButton.text = "暂停"
+                mainButton.setIconResource(R.drawable.pause_circle)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt()) // 红
 
-                // 🔥 关键点：确保这里是 VISIBLE，不要让它闪烁
+                // 确保结束按钮正确显示
+                endHalfButton.text = "结束"
+                endHalfButton.setIconResource(R.drawable.stop_circle)
+
                 mainButton.visibility = View.VISIBLE
                 endHalfButton.visibility = View.VISIBLE
             }
 
             "resume" -> {
-                // 🟥 比赛暂停中（显示绿继续）：双按钮
-                mainButton.text = "▶ 继续"
+                // 🟩 比赛暂停中状态：双按钮 (显示继续 + 结束)
+                mainButton.text = "继续"
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
-                // 🔥 关键点：这里也是 VISIBLE。
-                // 从 "pause" 切到 "resume"，endHalfButton 一直是 VISIBLE，所以它不会动，只有颜色和文字在变。
+                // 确保结束按钮保持显示
+                endHalfButton.text = "结束"
+                endHalfButton.setIconResource(R.drawable.stop_circle)
+
                 mainButton.visibility = View.VISIBLE
                 endHalfButton.visibility = View.VISIBLE
             }
 
             "halftime" -> {
-                // 🟥 中场/结束：单按钮
-                mainButton.text = "▶ 下半场"
+                // 🟩 中场休息状态：单按钮 (下半场)
+                mainButton.text = "下半场"
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
                 mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE // 再次隐藏，主按钮变长
+                endHalfButton.visibility = View.GONE
             }
         }
     }

@@ -24,9 +24,9 @@
         <!-- 背景高亮条，指示选中位置 -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="64dp"
             android:layout_gravity="center"
-            android:background="#1AFFFFFF"
+            android:background="#33FFFFFF"
             android:alpha="0.5"/>
 
         <LinearLayout
