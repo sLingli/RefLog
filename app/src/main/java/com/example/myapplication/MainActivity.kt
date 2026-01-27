@@ -348,14 +348,16 @@ class MainActivity : AppCompatActivity() {
     private fun endSecondHalf() {
         state = STATE_FINISHED
 
-        statusLabel.text = "🏆 比赛结束"
+        // 🔥 状态栏更新：显示“比赛结束 + 奖杯图标”
+        updateStatusLabel()
+
         mainTimeLabel.setTextColor(0xFF888888.toInt())
-        updateButtonStyle("restart")
 
-        // ⭐⭐⭐ 显示下半场结束时的比赛时间（不加补时）
+        // 🔥 关键：切换按钮为“重置比赛”样式
+        updateButtonStyle("finished")
+
+        // 显示比赛时间
         mainTimeLabel.text = formatTime(mainTime)
-
-
 
         val stoppageStr = formatTime(stoppageTime)
         val firstHalfStr = formatTime(firstHalfStoppage)
@@ -369,12 +371,11 @@ class MainActivity : AppCompatActivity() {
 
         saveMatchRecord()
 
-        // 显示比赛总结
+        // 自动弹出总结页
         showMatchSummary()
 
         Log.i("FootballTimer", "📢 比赛结束！总补时: $totalStr")
         animateHistoryButton(true)
-
     }
 
 
@@ -865,6 +866,21 @@ class MainActivity : AppCompatActivity() {
 
                 mainButton.visibility = View.VISIBLE
                 endHalfButton.visibility = View.GONE
+            }
+
+            "finished" -> {
+                // 🟥 状态：重置比赛
+                mainButton.text = "重置比赛"
+
+                // 换成你准备好的矢量图 ic_substitute (或者 ic_refresh 也可以)
+                mainButton.setIconResource(R.drawable.ic_substitute)
+
+                // 颜色可以是红色，或者换个颜色提示用户这是“重置”
+                // 这里暂时保持深红色，或者换成深灰色避免误触
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
+
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.GONE // 既然已经结束了，就不需要再显示“结束”按钮了
             }
         }
     }
