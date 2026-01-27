@@ -989,34 +989,79 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun showHistoryDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
+        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
 
-        val recordsContainer = dialogView.findViewById<LinearLayout>(R.id.recordsContainer)
-        val tvNoRecords = dialogView.findViewById<TextView>(R.id.tvNoRecords)
-        val btnClearHistory = dialogView.findViewById<Button>(R.id.btnClearHistory)
-        val btnCloseHistory = dialogView.findViewById<Button>(R.id.btnCloseHistory)
+        val recordsContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.recordsContainer)
+        val tvNoRecords = dialogView.findViewById<android.widget.TextView>(R.id.tvNoRecords)
+        val btnClearHistory = dialogView.findViewById<android.widget.Button>(R.id.btnClearHistory)
+        val btnCloseHistory = dialogView.findViewById<android.widget.Button>(R.id.btnCloseHistory)
 
         val records = recordManager.getAllRecords()
 
         if (records.isEmpty()) {
-            tvNoRecords.visibility = View.VISIBLE
-            recordsContainer.visibility = View.GONE
+            tvNoRecords.visibility = android.view.View.VISIBLE
+            recordsContainer.visibility = android.view.View.GONE
         } else {
-            tvNoRecords.visibility = View.GONE
-            recordsContainer.visibility = View.VISIBLE
+            tvNoRecords.visibility = android.view.View.GONE
+            recordsContainer.visibility = android.view.View.VISIBLE
 
-            // 动态添加记录项
             records.forEach { record ->
-                val itemView = LayoutInflater.from(this).inflate(R.layout.item_match_record, recordsContainer, false)
+                val itemView = android.view.LayoutInflater.from(this).inflate(R.layout.item_match_record, recordsContainer, false) as android.view.ViewGroup
 
-                itemView.findViewById<TextView>(R.id.tvRecordDate).text = record.date
-                itemView.findViewById<TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
-                itemView.findViewById<TextView>(R.id.tvRecordStoppage).text =
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text =
                     "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
-                itemView.findViewById<TextView>(R.id.tvRecordEvents).text =
-                    "⚽${record.goalCount} 🟨${record.yellowCount} 🟥${record.redCount} 🔄${record.substitutionCount} 🏥${record.injuryCount}"
 
-                // 点击查看详情
+                // 1. 隐藏旧的 Emoji 文本
+                val oldTv = itemView.findViewById<android.widget.TextView>(R.id.tvRecordEvents)
+                oldTv.visibility = android.view.View.GONE
+
+                // 2. 创建矢量图标行
+                val statsLayout = android.widget.LinearLayout(this)
+                statsLayout.orientation = android.widget.LinearLayout.HORIZONTAL
+                statsLayout.gravity = android.view.Gravity.CENTER_VERTICAL
+                statsLayout.setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
+
+                // 3. 定义内部函数：添加图标项
+                fun addStat(iconRes: Int, count: Int, color: Int) {
+                    val itemContainer = android.widget.LinearLayout(this)
+                    itemContainer.orientation = android.widget.LinearLayout.HORIZONTAL
+                    itemContainer.gravity = android.view.Gravity.CENTER_VERTICAL
+
+                    val lp = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    lp.setMargins(0, 0, (12 * resources.displayMetrics.density).toInt(), 0)
+                    itemContainer.layoutParams = lp
+
+                    val iv = android.widget.ImageView(this)
+                    iv.setImageResource(iconRes)
+                    iv.setColorFilter(color)
+                    val size = (16 * resources.displayMetrics.density).toInt()
+                    iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
+
+                    val tv = android.widget.TextView(this)
+                    tv.text = count.toString()
+                    tv.setTextColor(android.graphics.Color.WHITE)
+                    tv.textSize = 13f
+                    tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
+
+                    itemContainer.addView(iv)
+                    itemContainer.addView(tv)
+                    statsLayout.addView(itemContainer)
+                }
+
+                // 添加各项数据 (确保你的 R.drawable 里有这些图标)
+                addStat(R.drawable.sports_soccer, record.goalCount, android.graphics.Color.WHITE)
+                addStat(R.drawable.ic_card, record.yellowCount, android.graphics.Color.YELLOW)
+                addStat(R.drawable.ic_card, record.redCount, android.graphics.Color.RED)
+                addStat(R.drawable.ic_substitute, record.substitutionCount, android.graphics.Color.GREEN)
+                addStat(R.drawable.ic_medical, record.injuryCount, android.graphics.Color.parseColor("#2196F3"))
+
+                itemView.addView(statsLayout)
+
                 itemView.setOnClickListener {
                     showMatchSummary(isHistory = true, historyRecord = record)
                 }
@@ -1025,33 +1070,31 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val dialog = AlertDialog.Builder(this)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setView(dialogView)
             .setCancelable(true)
             .create()
 
-        // 清空按钮
+        // 清空按钮确认
         btnClearHistory.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("确认清空")
-                .setMessage("确定要清空所有历史记录吗？")
-                .setPositiveButton("✓") { _, _ ->
-                    recordManager.clearAllRecords()
-                    dialog.dismiss()
-                    Toast.makeText(this, "历史记录已清空", Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("✗", null)
-                .show()
+            val confirmView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
+            val confirmDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(confirmView)
+                .create()
+
+            confirmView.findViewById<android.view.View>(R.id.btnNo).setOnClickListener { confirmDialog.dismiss() }
+            confirmView.findViewById<android.view.View>(R.id.btnYes).setOnClickListener {
+                recordManager.clearAllRecords()
+                confirmDialog.dismiss()
+                dialog.dismiss()
+                android.widget.Toast.makeText(this, "历史记录已清空", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            confirmDialog.show()
         }
 
-        // 关闭按钮
-        btnCloseHistory.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnCloseHistory.setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
-
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
@@ -1304,7 +1347,44 @@ class MainActivity : AppCompatActivity() {
             rv.setPadding(0, padding, 0, padding)
             rv.clipToPadding = false
 
-            val snapHelper = androidx.recyclerview.widget.LinearSnapHelper()
+            // 🔥 终极版：带惯性 + 带回弹阻尼的吸附器
+            val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
+
+                // 1. 保持之前的惯性增强（让它滚得远）
+                override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
+                    return super.calculateScrollDistance(velocityX, (velocityY * 1.5).toInt())
+                }
+
+                // 2. 核心魔法：重写滚动控制器，制造“回弹”效果
+                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
+                    if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
+
+                    return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
+
+                        // A. 让“停车”的过程变慢，显得更有质感
+                        override fun calculateTimeForDeceleration(dx: Int): Int {
+                            // 原来的速度太快，我们让它慢一倍，营造“沉重感”
+                            return super.calculateTimeForDeceleration(dx) * 2
+                        }
+
+                        // B. 加入“回弹插值器” (OvershootInterpolator)
+                        override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
+                            val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
+                            val dx = snapDistances!![0]
+                            val dy = snapDistances[1]
+
+                            // 计算需要的时间
+                            val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
+
+                            if (time > 0) {
+                                // 🔥 重点在这里：OvershootInterpolator(1.2f)
+                                // 1.2f 是回弹力度，数字越大回弹越猛。建议 1.0f - 1.5f 之间
+                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(3.0f))
+                            }
+                        }
+                    }
+                }
+            }
             snapHelper.attachToRecyclerView(rv)
 
             rv.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
