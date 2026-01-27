@@ -1352,7 +1352,7 @@ class MainActivity : AppCompatActivity() {
 
                 // 1. 保持之前的惯性增强（让它滚得远）
                 override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
-                    return super.calculateScrollDistance(velocityX, (velocityY * 1.5).toInt())
+                    return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
                 }
 
                 // 2. 核心魔法：重写滚动控制器，制造“回弹”效果
@@ -1364,7 +1364,7 @@ class MainActivity : AppCompatActivity() {
                         // A. 让“停车”的过程变慢，显得更有质感
                         override fun calculateTimeForDeceleration(dx: Int): Int {
                             // 原来的速度太快，我们让它慢一倍，营造“沉重感”
-                            return super.calculateTimeForDeceleration(dx) * 2
+                            return super.calculateTimeForDeceleration(dx) * 5
                         }
 
                         // B. 加入“回弹插值器” (OvershootInterpolator)
@@ -1379,7 +1379,7 @@ class MainActivity : AppCompatActivity() {
                             if (time > 0) {
                                 // 🔥 重点在这里：OvershootInterpolator(1.2f)
                                 // 1.2f 是回弹力度，数字越大回弹越猛。建议 1.0f - 1.5f 之间
-                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(3.0f))
+                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
                             }
                         }
                     }
