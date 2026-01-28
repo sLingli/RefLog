@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 弹窗的背景颜色，建议用深灰色 #1E1E1E -->
+    <solid android:color="#1E1E1E" />
+    <!-- 圆角半径，24dp 看起来非常舒服 -->
+    <corners android:radius="24dp" />
+</shape>

@@ -278,6 +278,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
 
@@ -568,6 +569,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
@@ -651,6 +653,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
 
@@ -777,6 +780,7 @@ class MainActivity : AppCompatActivity() {
 
         btnClose.setOnClickListener { dialog.dismiss() }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 辅助函数：dp转px
@@ -1078,10 +1082,12 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this, "历史记录已清空", android.widget.Toast.LENGTH_SHORT).show()
             }
             confirmDialog.show()
+            confirmDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
 
         btnCloseHistory.setOnClickListener { dialog.dismiss() }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
@@ -1149,6 +1155,7 @@ class MainActivity : AppCompatActivity() {
 
         btnCancel.setOnClickListener { dialog.dismiss() }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 显示号码选择弹窗
@@ -1214,6 +1221,7 @@ class MainActivity : AppCompatActivity() {
             recordEventWithDetails(eventType, team, numberStr)
         }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 记录带详细信息的事件
@@ -1408,5 +1416,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 }

@@ -5,7 +5,9 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="12dp"
-    android:background="#1E1E1E">
+    android:background="@drawable/bg_dialog_rounded"
+    android:clipToOutline="true" >
+
 
     <!-- 第一行：黄牌 + 红牌 -->
     <LinearLayout
