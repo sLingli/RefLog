@@ -220,7 +220,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun resumeTimer() {
         state = STATE_RUNNING
-        lastUpdateTime = System.currentTimeMillis()  // ✅ 重置时间基准
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
@@ -435,45 +434,38 @@ class MainActivity : AppCompatActivity() {
         // 检查是否有足够的时间差（至少1秒）
         if (lastUpdateTime > 0 && (currentTime - lastUpdateTime) >= 1000) {
 
-            // ⭐⭐⭐ 调试日志，查看状态 ⭐⭐⭐
-            Log.d("计时器",
-                "状态: $state, " +
-                        "半场: $currentHalf, " +
-                        "mainTime: ${formatTime(mainTime)}, " +
-                        "lastUpdateTime存在: ${lastUpdateTime > 0}"
-            )
+            // ⭐⭐⭐ 核心逻辑：只要比赛开始了（运行中 或 暂停中），主计时器就得一直跑！ ⭐⭐⭐
+            if (state == STATE_RUNNING || state == STATE_PAUSED) {
 
-            when (state) {
-                STATE_RUNNING -> {
-                    // 主计时器运行中 - 增加比赛时间（上半场和下半场都一样）
-                    mainTime++  // 每秒加1秒
+                // 1. 主计时器：永不停歇的火车，只要没吹终场哨，它就一直加
+                mainTime++
 
-                    // ⭐⭐⭐ 这里有一个重要区别：要实时更新显示 ⭐⭐⭐
-                    runOnUiThread {
-                        mainTimeLabel.text = formatTime(mainTime)
-                    }
-
-                    // 检查关键时间点
-                    checkTimeAlerts()
+                // 2. 补时计时器：只有在“暂停”状态下，才记录浪费的时间
+                if (state == STATE_PAUSED) {
+                    stoppageTime++
                 }
-                STATE_PAUSED -> {
-                    // 暂停中 - 增加补时时间
-                    stoppageTime++  // 每秒加1秒
 
-                    // 更新补时显示
-                    runOnUiThread {
-                        updateStoppageTimeDisplay()
-                    }
+                // 3. 实时更新 UI 显示
+                runOnUiThread {
+                    // 主时间永远显示当前跑到的时间 (如 45:01, 45:02...)
+                    mainTimeLabel.text = formatTime(mainTime)
+
+                    // 补时显示 (胶囊区域)
+                    updateStoppageTimeDisplay()
+
+                    // 确保结束按钮状态正确
+                    updateEndHalfButton()
                 }
+
+                // 4. 检查关键时间点（比如 45 分钟到了震动提醒）
+                checkTimeAlerts()
+
+                // 调试日志
+                Log.d("计时器", "状态: $state, 主时间: ${formatTime(mainTime)}, 补时: ${formatTime(stoppageTime)}")
             }
 
             // 更新时间基准
             lastUpdateTime = currentTime
-
-            // ⭐⭐⭐ 确保更新按钮状态 ⭐⭐⭐
-            runOnUiThread {
-                updateEndHalfButton()
-            }
 
         } else if (lastUpdateTime == 0L) {
             // 如果是第一次，初始化时间基准
@@ -494,7 +486,7 @@ class MainActivity : AppCompatActivity() {
                     halfTimeAlertShown = true
                     triggerAlert("${halfTimeMin}分钟", "准备中场休息")
                     mainTimeLabel.setTextColor(getColor(R.color.timer_warning))
-                    statusLabel.text = "⚠️ 上半场补时"
+                    statusLabel.text = "上半场补时"
                 }
             }
             HALF_SECOND -> {
@@ -508,7 +500,7 @@ class MainActivity : AppCompatActivity() {
                     fullTimeAlertShown = true
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
                     mainTimeLabel.setTextColor(getColor(R.color.timer_danger))
-                    statusLabel.text = "⚠️ 下半场补时"
+                    statusLabel.text = "下半场补时"
 
                     Log.d("时间提醒",
                         "下半场提醒触发：" +
@@ -536,7 +528,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun pauseTimer() {
         state = STATE_PAUSED
-        lastUpdateTime = System.currentTimeMillis()
 
         updateButtonStyle("start")
         updateStoppageDisplay(active = true)
@@ -1114,7 +1105,6 @@ class MainActivity : AppCompatActivity() {
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
-
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_team_selection, null)
 
         val tvTitle = dialogView.findViewById<TextView>(R.id.tvTeamSelectionTitle)
@@ -1122,27 +1112,34 @@ class MainActivity : AppCompatActivity() {
         val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
 
-        // 1. 设置标题
-        // 这里的 emoji 其实在标题栏不太重要了，因为下面的按钮才是主角
-        val eventEmoji = when (eventType) {
-            "黄牌" -> "🟨"
-            "红牌" -> "🟥"
-            "进球" -> "⚽"
-            else -> ""
+        // 🔥🔥🔥 核心修改：用矢量图替换标题 Emoji 🔥🔥🔥
+        val (iconRes, iconColor) = when (eventType) {
+            "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
+            "进球" -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            else -> 0 to 0
         }
-        tvTitle.text = "$eventEmoji $eventType - 选择队伍"
 
-        // 2. 🔥🔥🔥 核心魔法：应用主客队颜色 🔥🔥🔥
+        tvTitle.text = "$eventType - 选择队伍"
+        if (iconRes != 0) {
+            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
+            drawable?.setTint(iconColor)
+            // 设置图标大小为 20dp
+            val size = (20 * resources.displayMetrics.density).toInt()
+            drawable?.setBounds(0, 0, size, size)
+            tvTitle.setCompoundDrawables(drawable, null, null, null)
+            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
+        }
+
+        // 2. 应用主客队颜色
         btnHomeTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(homeTeamColor)
         btnAwayTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(awayTeamColor)
 
-        // 3. 智能反色逻辑：如果球衣是白色，把字和图标改成黑色
-        // (0xFFFFFFFF.toInt() 就是纯白色)
+        // 3. 智能反色逻辑
         if (homeTeamColor == 0xFFFFFFFF.toInt()) {
             btnHomeTeam.setTextColor(android.graphics.Color.BLACK)
             btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
         } else {
-            // 其他深色球衣，字和图标保持白色
             btnHomeTeam.setTextColor(android.graphics.Color.WHITE)
             btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
         }
@@ -1155,12 +1152,8 @@ class MainActivity : AppCompatActivity() {
             btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
         }
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
-        // 4. 点击事件
         btnHomeTeam.setOnClickListener {
             selectedTeam = "主队"
             dialog.dismiss()
@@ -1173,10 +1166,7 @@ class MainActivity : AppCompatActivity() {
             showNumberSelectionDialog(eventType, selectedTeam)
         }
 
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnCancel.setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 
@@ -1192,60 +1182,56 @@ class MainActivity : AppCompatActivity() {
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelNumber)
         val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmNumber)
 
-        // 设置标题
-        val eventEmoji = when (eventType) {
-            "黄牌" -> "🟨"
-            "红牌" -> "🟥"
-            "进球" -> "⚽"
-            else -> ""
+        // 🔥🔥🔥 核心修改：用矢量图替换标题 Emoji 🔥🔥🔥
+        val (iconRes, iconColor) = when (eventType) {
+            "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
+            "进球" -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            else -> 0 to 0
         }
-        tvTitle.text = "$eventEmoji $eventType"
+
+        tvTitle.text = eventType
+        if (iconRes != 0) {
+            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
+            drawable?.setTint(iconColor)
+            val size = (20 * resources.displayMetrics.density).toInt()
+            drawable?.setBounds(0, 0, size, size)
+            tvTitle.setCompoundDrawables(drawable, null, null, null)
+            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
+        }
 
         // 设置队伍信息颜色
         tvTeamInfo.text = team
         tvTeamInfo.setTextColor(if (team == "主队") 0xFF1565C0.toInt() else 0xFFC62828.toInt())
 
-        // 设置十位数滚轮 (0-9)
+        // 设置滚轮逻辑 (保持不变)
         pickerTens.minValue = 0
         pickerTens.maxValue = 9
         pickerTens.value = 0
         pickerTens.wrapSelectorWheel = true
-
-        // 设置个位数滚轮 (0-9)
         pickerOnes.minValue = 0
         pickerOnes.maxValue = 9
         pickerOnes.value = 1
         pickerOnes.wrapSelectorWheel = true
 
-        // 更新显示的号码
         fun updateSelectedNumber() {
             val number = pickerTens.value * 10 + pickerOnes.value
             tvSelectedNumber.text = "# ${String.format("%02d", number)}"
         }
 
         updateSelectedNumber()
-
         pickerTens.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
         pickerOnes.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
+        btnCancel.setOnClickListener { dialog.dismiss() }
         btnConfirm.setOnClickListener {
             val number = pickerTens.value * 10 + pickerOnes.value
             val numberStr = String.format("%02d", number)
             dialog.dismiss()
-
-            // 记录事件
             recordEventWithDetails(eventType, team, numberStr)
         }
-
         dialog.show()
     }
 
