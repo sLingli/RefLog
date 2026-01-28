@@ -1100,37 +1100,71 @@ class MainActivity : AppCompatActivity() {
 
                 itemView.addView(statsLayout)
 
-                // 3. 核心交互逻辑
+
                 var startX = 0f
                 var isSwiped = false
+
+
+                var startRawX = 0f
+                var startTranslationX = 0f
+                val maxSwipeDistance = -200f
 
                 itemView.setOnTouchListener { v, event ->
                     when (event.action) {
                         android.view.MotionEvent.ACTION_DOWN -> {
-                            startX = event.x
+                            startRawX = event.rawX
+                            startTranslationX = v.translationX
+
+                            v.parent.requestDisallowInterceptTouchEvent(true)
                             true
                         }
-                        android.view.MotionEvent.ACTION_UP -> {
-                            val deltaX = startX - event.x
 
-                            if (deltaX > 100) {
-                                // 向左滑：展开
-                                v.animate().translationX(-200f).setDuration(200).start()
-                                btnDelete.animate().alpha(1f).setDuration(200).start() // 按钮浮现
-                                btnDelete.isEnabled = true // 按钮变为可点
-                                isSwiped = true
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            val deltaX = event.rawX - startRawX
+
+                            val targetX = (startTranslationX + deltaX).coerceIn(maxSwipeDistance, 0f)
+
+                            v.translationX = targetX
+
+
+                            val progress = Math.abs(targetX / maxSwipeDistance)
+                            btnDelete.alpha = progress
+
+                            true
+                        }
+
+                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                            val currentX = v.translationX
+                            val totalDelta = Math.abs(event.rawX - startRawX)
+
+
+                            if (totalDelta < 10) {
+                                if (currentX == 0f) {
+
+                                    showMatchSummary(isHistory = true, historyRecord = record)
+                                } else {
+
+                                    v.animate().translationX(0f).setDuration(200).start()
+                                    btnDelete.animate().alpha(0f).setDuration(200).start()
+                                    btnDelete.isEnabled = false
+                                }
                             }
-                            else if (deltaX < -100 || (isSwiped && Math.abs(deltaX) < 10)) {
-                                // 向右滑 或 在展开状态下轻点：收回
-                                v.animate().translationX(0f).setDuration(200).start()
-                                btnDelete.animate().alpha(0f).setDuration(200).start() // 按钮消失
-                                btnDelete.isEnabled = false // 按钮不可点
-                                isSwiped = false
+                            // 2. 判断滑动意图
+                            else {
+
+                                if (currentX < maxSwipeDistance / 2) {
+                                    v.animate().translationX(maxSwipeDistance).setDuration(200).start()
+                                    btnDelete.animate().alpha(1f).setDuration(200).start()
+                                    btnDelete.isEnabled = true
+                                } else {
+                                    v.animate().translationX(0f).setDuration(200).start()
+                                    btnDelete.animate().alpha(0f).setDuration(200).start()
+                                    btnDelete.isEnabled = false
+                                }
                             }
-                            else if (Math.abs(deltaX) < 10 && !isSwiped) {
-                                // 正常轻点（未展开）：查看详情
-                                showMatchSummary(isHistory = true, historyRecord = record)
-                            }
+
+                            // 恢复父容器滑动
+                            v.parent.requestDisallowInterceptTouchEvent(false)
                             true
                         }
                         else -> false
