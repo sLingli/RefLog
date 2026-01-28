@@ -790,10 +790,10 @@ class MainActivity : AppCompatActivity() {
             val params = window.attributes
 
             // 设置对齐方式为：底部对齐
-            window.setGravity(android.view.Gravity.BOTTOM)
+            window.setGravity(android.view.Gravity.TOP)
 
             // 设置 Y 轴偏移量 (距离底部的距离)
-            params.y = (300 * resources.displayMetrics.density).toInt()
+            params.y = (200 * resources.displayMetrics.density).toInt()
 
             window.attributes = params
         }
