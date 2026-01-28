@@ -2,6 +2,7 @@ package com.example.myapplication
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -19,13 +20,10 @@ class MatchRecordManager(context: Context) {
         val records = getAllRecords().toMutableList()
         records.add(0, record)  // 新记录添加到最前面
 
-        // 最多保留50条记录
-        if (records.size > 50) {
-            records.removeAt(records.size - 1)
-        }
-
         val json = gson.toJson(records)
         prefs.edit().putString(KEY_RECORDS, json).apply()
+
+        Log.i("RecordManager", "✅ 比赛记录已保存，当前总计: ${records.size} 条")
     }
 
     // 获取所有记录

@@ -998,49 +998,79 @@ class MainActivity : AppCompatActivity() {
             tvNoRecords.visibility = android.view.View.GONE
             recordsContainer.visibility = android.view.View.VISIBLE
 
+            @SuppressLint("ClickableViewAccessibility")
             records.forEach { record ->
-                val itemView = android.view.LayoutInflater.from(this).inflate(R.layout.item_match_record, recordsContainer, false) as android.view.ViewGroup
+                val itemWrapper = android.widget.FrameLayout(this)
+                val wrapperParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                wrapperParams.setMargins(0, 0, 0, (8 * resources.displayMetrics.density).toInt())
+                itemWrapper.layoutParams = wrapperParams
+
+
+                val btnDelete = android.widget.ImageView(this).apply {
+                    setImageResource(R.drawable.outline_delete_24)
+                    setColorFilter(android.graphics.Color.WHITE)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(android.graphics.Color.parseColor("#D32F2F"))
+                    }
+                    val btnSize = (42 * resources.displayMetrics.density).toInt()
+                    layoutParams = android.widget.FrameLayout.LayoutParams(btnSize, btnSize).apply {
+                        gravity = android.view.Gravity.CENTER_VERTICAL or android.view.Gravity.END
+                        marginEnd = (16 * resources.displayMetrics.density).toInt()
+                    }
+                    setPadding(24, 24, 24, 24)
+                    elevation = 2f
+                    alpha = 0f
+                    isEnabled = false
+                }
+
+                // 2. 顶层内容布局
+                val itemView = android.view.LayoutInflater.from(this).inflate(R.layout.item_match_record, itemWrapper, false) as android.view.ViewGroup
+
+                itemView.setBackgroundResource(R.drawable.bg_dialog_rounded)
+
+
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text = "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
+                itemView.findViewById<android.view.View>(R.id.tvRecordEvents).visibility = android.view.View.GONE
 
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text =
                     "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
 
-                // 1. 隐藏旧的 Emoji 文本
                 val oldTv = itemView.findViewById<android.widget.TextView>(R.id.tvRecordEvents)
                 oldTv.visibility = android.view.View.GONE
 
-                // 2. 创建矢量图标行
                 val statsLayout = android.widget.LinearLayout(this)
                 statsLayout.orientation = android.widget.LinearLayout.HORIZONTAL
                 statsLayout.gravity = android.view.Gravity.CENTER_VERTICAL
                 statsLayout.setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
 
-                // 3. 定义内部函数：添加图标项
                 fun addStat(iconRes: Int, count: Int, color: Int) {
                     val itemContainer = android.widget.LinearLayout(this)
                     itemContainer.orientation = android.widget.LinearLayout.HORIZONTAL
                     itemContainer.gravity = android.view.Gravity.CENTER_VERTICAL
-
                     val lp = android.widget.LinearLayout.LayoutParams(
                         android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
                         android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     lp.setMargins(0, 0, (12 * resources.displayMetrics.density).toInt(), 0)
                     itemContainer.layoutParams = lp
-
                     val iv = android.widget.ImageView(this)
                     iv.setImageResource(iconRes)
                     iv.setColorFilter(color)
                     val size = (16 * resources.displayMetrics.density).toInt()
                     iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
-
                     val tv = android.widget.TextView(this)
                     tv.text = count.toString()
                     tv.setTextColor(android.graphics.Color.WHITE)
                     tv.textSize = 13f
                     tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
-
                     itemContainer.addView(iv)
                     itemContainer.addView(tv)
                     statsLayout.addView(itemContainer)
@@ -1054,11 +1084,58 @@ class MainActivity : AppCompatActivity() {
 
                 itemView.addView(statsLayout)
 
-                itemView.setOnClickListener {
-                    showMatchSummary(isHistory = true, historyRecord = record)
+                // 3. 核心交互逻辑
+                var startX = 0f
+                var isSwiped = false
+
+                itemView.setOnTouchListener { v, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            startX = event.x
+                            true
+                        }
+                        android.view.MotionEvent.ACTION_UP -> {
+                            val deltaX = startX - event.x
+
+                            if (deltaX > 100) {
+                                // 向左滑：展开
+                                v.animate().translationX(-200f).setDuration(200).start()
+                                btnDelete.animate().alpha(1f).setDuration(200).start() // 按钮浮现
+                                btnDelete.isEnabled = true // 按钮变为可点
+                                isSwiped = true
+                            }
+                            else if (deltaX < -100 || (isSwiped && Math.abs(deltaX) < 10)) {
+                                // 向右滑 或 在展开状态下轻点：收回
+                                v.animate().translationX(0f).setDuration(200).start()
+                                btnDelete.animate().alpha(0f).setDuration(200).start() // 按钮消失
+                                btnDelete.isEnabled = false // 按钮不可点
+                                isSwiped = false
+                            }
+                            else if (Math.abs(deltaX) < 10 && !isSwiped) {
+                                // 正常轻点（未展开）：查看详情
+                                showMatchSummary(isHistory = true, historyRecord = record)
+                            }
+                            true
+                        }
+                        else -> false
+                    }
                 }
 
-                recordsContainer.addView(itemView)
+                // 4. 删除按钮点击
+                btnDelete.setOnClickListener {
+
+                    recordManager.deleteRecord(record.id)
+                    itemWrapper.animate().alpha(0f).translationX(-500f).setDuration(300).withEndAction {
+                        recordsContainer.removeView(itemWrapper)
+                        if (recordsContainer.childCount == 0) {
+                            tvNoRecords.visibility = android.view.View.VISIBLE
+                        }
+                    }.start()
+                }
+
+                itemWrapper.addView(btnDelete)
+                itemWrapper.addView(itemView)
+                recordsContainer.addView(itemWrapper)
             }
         }
 
@@ -1067,8 +1144,16 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(true)
             .create()
 
-        // 清空按钮确认
+        // 清空按钮点击事件
         btnClearHistory.setOnClickListener {
+
+            if (records.isEmpty()) {
+
+                android.widget.Toast.makeText(this, "暂无历史记录可清空", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+
             val confirmView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
             val confirmDialog = androidx.appcompat.app.AlertDialog.Builder(this)
                 .setView(confirmView)
@@ -1081,6 +1166,7 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
                 android.widget.Toast.makeText(this, "历史记录已清空", android.widget.Toast.LENGTH_SHORT).show()
             }
+
             confirmDialog.show()
             confirmDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
