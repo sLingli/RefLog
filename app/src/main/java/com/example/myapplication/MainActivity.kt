@@ -774,13 +774,29 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
 
         btnClose.setOnClickListener { dialog.dismiss() }
         dialog.show()
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        val window = dialog.window
+        if (window != null) {
+            window.setLayout(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            val params = window.attributes
+
+            // 设置对齐方式为：底部对齐
+            window.setGravity(android.view.Gravity.BOTTOM)
+
+            // 设置 Y 轴偏移量 (距离底部的距离)
+            params.y = (300 * resources.displayMetrics.density).toInt()
+
+            window.attributes = params
+        }
     }
 
     // 辅助函数：dp转px
