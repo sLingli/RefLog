@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. 🔥 第一步：必须先找到所有按钮和文字控件
+        // 1. 第一步：必须先找到所有按钮和文字控件
         initializeUI()
 
         // 2. 第二步：然后再去设置它们的状态（这时候控件肯定都在了）
@@ -126,11 +126,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeUI() {
-        // 绑定 XML 里的控件 ID
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
-
-        // 🔥 重点检查这里：确保这一行存在且正确！
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
 
         // 绑定按钮
@@ -202,7 +199,6 @@ class MainActivity : AppCompatActivity() {
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
 
-        // 🔥 状态栏更新：这里会自动变成 "上半场 + 足球图标"
         updateStatusLabel()
 
         updateButtonStyle("pause")
@@ -235,7 +231,6 @@ class MainActivity : AppCompatActivity() {
         lastUpdateTime = System.currentTimeMillis()
         fullTimeAlertShown = false
 
-        // 🔥 状态栏更新：这里会自动变成 "下半场 + 足球图标"
         updateStatusLabel()
 
         mainTimeLabel.text = formatTime(mainTime)
@@ -272,12 +267,11 @@ class MainActivity : AppCompatActivity() {
             when (currentHalf) {
                 HALF_FIRST -> {
                     endFirstHalf()
-                    // 🔥 结束上半场后，状态变为中场休息，这里刷新一下图标 (变成咖啡)
+
                     updateStatusLabel()
                 }
                 HALF_SECOND -> {
                     endSecondHalf()
-                    // 🔥 结束下半场后，状态变为比赛结束，这里刷新一下图标 (变成奖杯)
                     updateStatusLabel()
                 }
             }
@@ -295,7 +289,7 @@ class MainActivity : AppCompatActivity() {
 
         statusLabel.text = "☕ 中场休息"
 
-        // ⭐⭐⭐ 显示上半场结束时的比赛时间（不加补时）
+
         mainTimeLabel.text = formatTime(mainTime)
         mainTimeLabel.setTextColor(0xFF888888.toInt())
 
@@ -347,12 +341,12 @@ class MainActivity : AppCompatActivity() {
     private fun endSecondHalf() {
         state = STATE_FINISHED
 
-        // 🔥 状态栏更新：显示“比赛结束 + 奖杯图标”
+
         updateStatusLabel()
 
         mainTimeLabel.setTextColor(0xFF888888.toInt())
 
-        // 🔥 关键：切换按钮为“重置比赛”样式
+
         updateButtonStyle("finished")
 
         // 显示比赛时间
@@ -390,11 +384,9 @@ class MainActivity : AppCompatActivity() {
         fullTimeAlertShown = false
         matchEvents.clear()
 
-        // 🔥 状态栏更新：这里会自动变成 "准备开始 + 足球图标"
+
         updateStatusLabel()
 
-        // 注意：原本的 statusLabel.setTextColor(getColor(R.color.timer_normal)) 可以删了
-        // 因为 updateStatusLabel 里已经会自动把图标染成和文字一样的颜色 (通常是绿色)
 
         mainTimeLabel.text = "00:00"
         mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
@@ -434,10 +426,10 @@ class MainActivity : AppCompatActivity() {
         // 检查是否有足够的时间差（至少1秒）
         if (lastUpdateTime > 0 && (currentTime - lastUpdateTime) >= 1000) {
 
-            // ⭐⭐⭐ 核心逻辑：只要比赛开始了（运行中 或 暂停中），主计时器就得一直跑！ ⭐⭐⭐
+
             if (state == STATE_RUNNING || state == STATE_PAUSED) {
 
-                // 1. 主计时器：永不停歇的火车，只要没吹终场哨，它就一直加
+                // 1. 主计时器：只要没吹终场哨，它就一直加
                 mainTime++
 
                 // 2. 补时计时器：只有在“暂停”状态下，才记录浪费的时间
@@ -447,7 +439,7 @@ class MainActivity : AppCompatActivity() {
 
                 // 3. 实时更新 UI 显示
                 runOnUiThread {
-                    // 主时间永远显示当前跑到的时间 (如 45:01, 45:02...)
+
                     mainTimeLabel.text = formatTime(mainTime)
 
                     // 补时显示 (胶囊区域)
@@ -490,10 +482,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             HALF_SECOND -> {
-                // ⭐⭐⭐ 修改：下半场判断应该是从半场时间到两倍半场时间 ⭐⭐⭐
-                // 比如半场45分钟：上半场0-45，下半场45-90
-                // 判断：mainTime >= (halfTimeSeconds * 1.5)？不，应该是 mainTime >= (halfTimeSeconds * 2)
-                // 因为下半场从 halfTimeSeconds 开始计时，到 halfTimeSeconds*2 结束
+
 
                 val targetTime = halfTimeSeconds * 2  // 比如45*2=90分钟
                 if (mainTime >= targetTime && !fullTimeAlertShown) {
@@ -520,8 +509,7 @@ class MainActivity : AppCompatActivity() {
 
         addLog("⏰ ${timeStr}到 - $message")
 
-        // 可以在这里添加手表震动
-        // vibrateWatch()
+
     }
 
     // ==================== 事件弹窗 ====================
@@ -596,8 +584,6 @@ class MainActivity : AppCompatActivity() {
             minute = minute
         ))
 
-        // 🔥 删掉了 if (state == STATE_PAUSED) { stoppageTime += stoppageSeconds }
-        // 🔥 删掉了 updateStoppageTimeDisplay()，因为时间没变不需要更新
 
         // 修改日志，删掉 (+秒)
         addLog("$emoji [$timeStr] $eventType")
@@ -708,7 +694,6 @@ class MainActivity : AppCompatActivity() {
         // 1. 设置标题
         tvTitle.text = if (isHistory) "历史详情" else "比赛总结"
 
-        // 2. 🔥 填充统计数据 (这部分是新修改的)
 
         // 2.1 算比分：主队进球 vs 客队进球
         val homeGoals = eventsToShow.count { it.event == "进球" && it.detail.contains("主队") }
@@ -721,8 +706,7 @@ class MainActivity : AppCompatActivity() {
         tvStatYellow.text = "黄牌: ${eventsToShow.count { it.event == "黄牌" }}"
         tvStatRed.text = "红牌: ${eventsToShow.count { it.event == "红牌" }}"
 
-        // 2.2 算补时：一行显示两个
-        // 新格式： 补时: 上 02:00 | 下 03:00
+
         tvStatStoppage.text = "补时: 上 ${formatTime(st1)} | 下 ${formatTime(st2)}"
 
         // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
@@ -807,7 +791,7 @@ class MainActivity : AppCompatActivity() {
         val btnMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.mainButton)
         val btnEnd = findViewById<com.google.android.material.button.MaterialButton>(R.id.endHalfButton)
 
-        // 🔥 动画魔法：让按钮分裂/合并时丝滑过渡
+
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
         when (mode) {
@@ -877,7 +861,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    // 放在 updateButtonStyle 附近就行
+
     private fun updateStatusLabel() {
         var textStr = ""
         var iconRes = 0
@@ -930,14 +914,14 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun updateStoppageTimeDisplay() {
-        // 只做一件事：把最新的毫秒数格式化成 00:00 显示出来
+
         stoppageTimeLabel.text = formatTime(stoppageTime)
     }
 
 
 
     private fun updateEndHalfButton() {
-        // 只有在比赛进行中或暂停时才显示结束按钮
+
         val shouldShow = state == STATE_RUNNING || state == STATE_PAUSED
         endHalfButton.visibility = if (shouldShow) View.VISIBLE else View.GONE
     }
@@ -965,7 +949,6 @@ class MainActivity : AppCompatActivity() {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentDate = dateFormat.format(Date())
 
-        // ✂️ 删掉了之前那个 eventsList 的 map 转换逻辑，因为我们不需要 String 了
 
         // 统计主客队进球
         val homeGoals = matchEvents.count { it.event == "进球" && it.detail.contains("主队") }
@@ -983,7 +966,6 @@ class MainActivity : AppCompatActivity() {
             substitutionCount = matchEvents.count { it.event == "换人" },
             injuryCount = matchEvents.count { it.event == "伤停" },
 
-            // 🔥【核心修改】：直接把原始的对象列表存进去！
             events = matchEvents.toList(), // 使用 .toList() 复制一份，防止后续改动影响历史记录
 
             homeGoals = homeGoals,
@@ -1060,7 +1042,6 @@ class MainActivity : AppCompatActivity() {
                     statsLayout.addView(itemContainer)
                 }
 
-                // 添加各项数据 (确保你的 R.drawable 里有这些图标)
                 addStat(R.drawable.sports_soccer, record.goalCount, android.graphics.Color.WHITE)
                 addStat(R.drawable.ic_card, record.yellowCount, android.graphics.Color.YELLOW)
                 addStat(R.drawable.ic_card, record.redCount, android.graphics.Color.RED)
@@ -1112,7 +1093,7 @@ class MainActivity : AppCompatActivity() {
         val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
 
-        // 🔥🔥🔥 核心修改：用矢量图替换标题 Emoji 🔥🔥🔥
+
         val (iconRes, iconColor) = when (eventType) {
             "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
             "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
@@ -1182,7 +1163,7 @@ class MainActivity : AppCompatActivity() {
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelNumber)
         val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmNumber)
 
-        // 🔥🔥🔥 核心修改：用矢量图替换标题 Emoji 🔥🔥🔥
+
         val (iconRes, iconColor) = when (eventType) {
             "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
             "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
@@ -1259,10 +1240,10 @@ class MainActivity : AppCompatActivity() {
             minute = minute
         ))
 
-        // ✂️ --- 我把那段自动加秒的代码删掉了 ---
+
 
         updateStoppageTimeDisplay()
-        // 删掉日志里的 (+60秒) 字样
+
         addLog("$emoji [$timeStr] $eventType - $teamEmoji $detailText")
     }
 
@@ -1280,13 +1261,12 @@ class MainActivity : AppCompatActivity() {
         val type: String,
         val color: String
     )
-    // 🎬 这是一个专门控制历史记录按钮“变魔术”的函数
     private fun animateHistoryButton(show: Boolean) {
-        // 1. 通过 ID 找到你的按钮
+
         val historyBtn = findViewById<View>(R.id.btnHistory) ?: return
 
         if (show) {
-            // 让按钮【现身】✨
+
             if (historyBtn.visibility == View.VISIBLE && historyBtn.alpha == 1f) return
 
             historyBtn.visibility = View.VISIBLE
@@ -1302,7 +1282,7 @@ class MainActivity : AppCompatActivity() {
                 .setInterpolator(android.view.animation.OvershootInterpolator()) // 弹一下，显高级
                 .start()
         } else {
-            // 让按钮【隐身】👻
+
             if (historyBtn.visibility == View.GONE) return
 
             historyBtn.animate()
@@ -1342,34 +1322,33 @@ class MainActivity : AppCompatActivity() {
             val adapter = ColorWheelAdapter(colors) { }
             rv.adapter = adapter
 
-            // 📐 核心修正 1：Padding 精确计算
-            // 容器高度 150dp，Item高度 60dp -> 空余 90dp -> 上下各 45dp
+
             val density = resources.displayMetrics.density
             val padding = (45 * density).toInt()
             rv.setPadding(0, padding, 0, padding)
             rv.clipToPadding = false
 
-            // 🔥 终极版：带惯性 + 带回弹阻尼的吸附器
+
             val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
 
-                // 1. 保持之前的惯性增强（让它滚得远）
+
                 override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
                     return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
                 }
 
-                // 2. 核心魔法：重写滚动控制器，制造“回弹”效果
+
                 override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
                     if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
 
                     return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
 
-                        // A. 让“停车”的过程变慢，显得更有质感
+
                         override fun calculateTimeForDeceleration(dx: Int): Int {
-                            // 原来的速度太快，我们让它慢一倍，营造“沉重感”
+
                             return super.calculateTimeForDeceleration(dx) * 5
                         }
 
-                        // B. 加入“回弹插值器” (OvershootInterpolator)
+
                         override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
                             val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
                             val dx = snapDistances!![0]
@@ -1379,8 +1358,7 @@ class MainActivity : AppCompatActivity() {
                             val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
 
                             if (time > 0) {
-                                // 🔥 重点在这里：OvershootInterpolator(1.2f)
-                                // 1.2f 是回弹力度，数字越大回弹越猛。建议 1.0f - 1.5f 之间
+
                                 action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
                             }
                         }
@@ -1402,12 +1380,11 @@ class MainActivity : AppCompatActivity() {
                 }
             })
 
-            // 🎯 核心修正 2：初始定位逻辑
-            // 算出中间位置，并加上 initialIndex 偏移
+
             val centerStart = Int.MAX_VALUE / 2
             val startPos = centerStart - (centerStart % colors.size) + initialIndex
 
-            // 使用 scrollToPositionWithOffset(pos, 0) 让它停在 Padding 的边缘（也就是正中间）
+
             (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
 
             onSelect(colors[initialIndex])

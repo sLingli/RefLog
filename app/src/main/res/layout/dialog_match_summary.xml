@@ -11,7 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp"
-        android:gravity="center_horizontal"> <!-- 🔥 全局水平居中 -->
+        android:gravity="center_horizontal">
 
         <!-- 标题 -->
         <TextView
@@ -41,7 +41,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp"
-                android:gravity="center"> <!-- 🔥 卡片内容居中 -->
+                android:gravity="center">
 
                 <!-- 时长 -->
                 <TextView
@@ -150,7 +150,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"/> <!-- 🔥 列表内容居中 -->
+            android:gravity="center"/>
 
         <Button
             android:id="@+id/btnSummaryClose"

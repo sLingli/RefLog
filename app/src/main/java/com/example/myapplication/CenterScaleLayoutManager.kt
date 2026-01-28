@@ -1,4 +1,4 @@
-package com.example.myapplication // ⚠️ 保留你的包名！
+package com.example.myapplication
 
 import android.content.Context
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,16 +28,12 @@ class CenterScaleLayoutManager(context: Context) : LinearLayoutManager(context) 
             // 计算距离中心的距离
             val d = kotlin.math.min(mid, kotlin.math.abs(mid - childMid))
 
-            // 🔥 激进缩放算法：
-            // 离中间越近，系数越接近 1.0 (保持 1.5倍)
-            // 离中间越远，系数越小 (最小 0.5倍)
 
-            // 1.5f 是最大倍数，0.9f 是缩放幅度
             val scale = 1.5f - 0.9f * (d / mid)
 
             child.scaleX = scale
             child.scaleY = scale
-            child.alpha = if (scale > 1.0f) 1.0f else 0.4f // 远的变得更透明
+            child.alpha = if (scale > 1.0f) 1.0f else 0.4f
         }
     }
 }

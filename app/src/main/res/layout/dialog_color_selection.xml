@@ -8,7 +8,7 @@
     android:padding="8dp"
     android:gravity="center_horizontal">
 
-    <!-- 标题：去掉了指令文字，换成了专业的矢量图标 apparel -->
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -22,12 +22,12 @@
         android:drawablePadding="8dp"
         android:drawableTint="#FFFFFF" />
 
-    <!-- 选中区域的高亮框（可选，增加仪式感） -->
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="150dp">
 
-        <!-- 背景高亮条，指示选中位置 -->
+
         <View
             android:layout_width="match_parent"
             android:layout_height="64dp"

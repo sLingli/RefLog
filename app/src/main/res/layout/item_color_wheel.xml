@@ -5,7 +5,7 @@
     android:layout_height="60dp"
     android:gravity="center">
 
-    <!-- 这里的圆圈大小设为 40dp，选中时我们会把它放大 -->
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/colorCircle"
         android:layout_width="40dp"

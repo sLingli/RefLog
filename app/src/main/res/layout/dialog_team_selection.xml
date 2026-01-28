@@ -8,7 +8,7 @@
     android:background="#1E1E1E"
     android:gravity="center">
 
-    <!-- 标题（建议保留，告诉用户现在要干嘛） -->
+    <!-- 标题 -->
     <TextView
         android:id="@+id/tvTeamSelectionTitle"
         android:layout_width="wrap_content"

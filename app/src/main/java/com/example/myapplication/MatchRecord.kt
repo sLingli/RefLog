@@ -23,7 +23,7 @@ data class MatchRecord(
     val redCount: Int,
     val substitutionCount: Int,
     val injuryCount: Int,
-    val events: List<MatchEvent>, // 这里现在引用的是上面的 MatchEvent
+    val events: List<MatchEvent>,
     val homeGoals: Int = 0,
     val awayGoals: Int = 0
 )

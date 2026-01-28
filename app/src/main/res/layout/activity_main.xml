@@ -56,9 +56,7 @@
                     android:textStyle="bold"
                     android:layout_marginBottom="4dp"/>
 
-                <!-- 🔥 补时区域重构：直接把图标放进 TextView 里，完美居中 -->
-                <!-- 🔥 补时区域：加了 paddingEnd 来平衡左边的图标，让冒号对齐 -->
-                <!-- 补时胶囊：带背景，视觉更聚合 -->
+
                 <TextView
                     android:id="@+id/stoppageTimeLabel"
                     android:layout_width="wrap_content"
@@ -80,10 +78,7 @@
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="6dp" />
 
-                <!-- 注意：之前那个独立的 stoppageTitleLabel 已经被合并了，
-                     因为我们不需要一个空的 TextView 来占位了。
-                     现在的 stoppageTitleLabel 其实就是上面的 stoppageTimeLabel
-                     (或者你可以把变量名指过来) -->
+
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

@@ -1,5 +1,4 @@
-package com.example.myapplication // ⚠️ 这一行要保留你自己原来的包名！
-
+package com.example.myapplication
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +13,7 @@ class ColorWheelAdapter(
     override fun getItemCount(): Int = Int.MAX_VALUE
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ColorViewHolder {
-        // 确保你已经创建了 R.layout.item_color_wheel
+
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_color_wheel, parent, false)
         return ColorViewHolder(view)
     }
