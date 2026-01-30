@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RefLog</string>
+
+    <string name="status_ready">准备开始</string>
+    <string name="status_first_half">上半场</string>
+    <string name="status_halftime">中场休息</string>
+    <string name="status_second_half">下半场</string>
+    <string name="status_finished">比赛结束</string>
+
+    <string name="btn_start">开始</string>
+    <string name="btn_pause">暂停</string>
+    <string name="btn_resume">继续</string>
+    <string name="btn_stop">结束</string>
+    <string name="btn_reset">重置比赛</string>
+
+    <string name="title_set_color">设定主客队颜色</string>
+    <string name="title_summary">比赛总结</string>
+    <string name="title_select_team_generic">选择队伍</string>
+
+    <string name="event_yellow">黄牌</string>
+    <string name="event_red">红牌</string>
+    <string name="event_goal">进球</string>
+    <string name="team_home">主队</string>
+    <string name="team_away">客队</string>
+
+    <string name="label_duration_fmt">%d 分钟/半场</string>
+    <string name="label_duration">时长</string>
+    <string name="label_score">比分</string>
+    <string name="label_stoppage">补时</string>
+    <string name="label_event_details">事件明细</string>
+    <string name="title_select_number">选择号码</string>
+    <!-- 带参数的标签 -->
+    <string name="summary_duration">时长: 每半场 %1$d分</string>
+    <string name="summary_score">比分: %1$d : %2$d</string>
+    <string name="summary_yellow">黄牌: %1$d</string>
+    <string name="summary_red">红牌: %1$d</string>
+    <string name="summary_stoppage">补时: 上 %1$s | 下 %2$s</string>
+    <string name="btn_ok">确定</string>
+    <string name="dialog_no_records">暂无比赛记录</string>
+    <string name="unit_min_half">分钟/半场</string>
+    <!-- 历史记录相关 -->
+    <string name="msg_history_cleared">历史记录已清空</string>
+    <string name="msg_no_history_to_clear">暂无历史记录可清空</string>
+    <string name="msg_no_events">暂无事件记录</string>
+
+    <!-- 时间格式 (带参数) -->
+    <string name="fmt_duration_simple">%1$d分钟/半场</string>
+    <!-- 补时状态 -->
+    <string name="status_first_half_stoppage">上半场补时</string>
+    <string name="status_second_half_stoppage">下半场补时</string>
+    <!-- 事件 -->
+    <string name="event_injury">受伤</string>
+    <string name="event_substitute">换人</string>
+</resources>

@@ -39,11 +39,10 @@ class MainActivity : AppCompatActivity() {
         const val STATE_HALFTIME = "halftime"
         const val STATE_FINISHED = "finished"
 
-        const val HALF_FIRST = "上半场"
-        const val HALF_BREAK = "中场休息"
-        const val HALF_SECOND = "下半场"
-
-        const val DEFAULT_HALF_TIME = 45  // 默认半场时间(分钟)
+        const val HALF_FIRST = "code_first_half"
+        const val HALF_BREAK = "code_halftime"
+        const val HALF_SECOND = "code_second_half"
+        const val DEFAULT_HALF_TIME = 45
     }
 
     // ==================== UI 组件 ====================
@@ -288,7 +287,7 @@ class MainActivity : AppCompatActivity() {
         currentHalf = HALF_BREAK
         firstHalfStoppage = stoppageTime
 
-        statusLabel.text = "☕ 中场休息"
+        statusLabel.text = getString(R.string.status_halftime)
 
 
         mainTimeLabel.text = formatTime(mainTime)
@@ -479,7 +478,7 @@ class MainActivity : AppCompatActivity() {
                     halfTimeAlertShown = true
                     triggerAlert("${halfTimeMin}分钟", "准备中场休息")
                     mainTimeLabel.setTextColor(getColor(R.color.timer_warning))
-                    statusLabel.text = "上半场补时"
+                    statusLabel.text = getString(R.string.status_first_half_stoppage)
                 }
             }
             HALF_SECOND -> {
@@ -490,7 +489,7 @@ class MainActivity : AppCompatActivity() {
                     fullTimeAlertShown = true
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
                     mainTimeLabel.setTextColor(getColor(R.color.timer_danger))
-                    statusLabel.text = "下半场补时"
+                    statusLabel.text = getString(R.string.status_second_half_stoppage)
 
                     Log.d("时间提醒",
                         "下半场提醒触发：" +
@@ -536,31 +535,31 @@ class MainActivity : AppCompatActivity() {
         // 黄牌 - 需要选择队伍和号码
         dialogView.findViewById<View>(R.id.btnYellow).setOnClickListener {
             dialog.dismiss()
-            showTeamSelectionDialog("黄牌")
+            showTeamSelectionDialog(getString(R.string.event_yellow))
         }
 
         // 红牌 - 需要选择队伍和号码
         dialogView.findViewById<View>(R.id.btnRed).setOnClickListener {
             dialog.dismiss()
-            showTeamSelectionDialog("红牌")
+            showTeamSelectionDialog(getString(R.string.event_red))
         }
 
         // 进球 - 需要选择队伍和号码
         dialogView.findViewById<View>(R.id.btnGoal).setOnClickListener {
             dialog.dismiss()
-            showTeamSelectionDialog("进球")
+            showTeamSelectionDialog(getString(R.string.event_goal))
         }
 
         // 伤停 - 直接记录（不需要选择队伍和号码）
         dialogView.findViewById<View>(R.id.btnInjury).setOnClickListener {
             dialog.dismiss()
-            recordSimpleEvent("伤停", "🏥", 30)
+            recordSimpleEvent(getString(R.string.event_injury), " ", 30)
         }
 
         // 换人 - 直接记录（不需要选择队伍和号码）
         dialogView.findViewById<View>(R.id.btnSubstitution).setOnClickListener {
             dialog.dismiss()
-            recordSimpleEvent("换人", "🔄", 30)
+            recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
         }
 
         // 取消
@@ -574,7 +573,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
         val timeStr = formatTime(mainTime)
-        val halfName = if (currentHalf == HALF_FIRST) "上半场" else "下半场"
+        val halfName = if (currentHalf == HALF_FIRST) getString(R.string.status_first_half) else getString(R.string.status_second_half)
         val minute = (mainTime / 60).toInt()
 
         matchEvents.add(MatchEvent(
@@ -695,28 +694,33 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 1. 设置标题
-        tvTitle.text = if (isHistory) "历史详情" else "比赛总结"
+        tvTitle.text = if (isHistory) "历史详情" else getString(R.string.title_summary)
 
+        val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
+        val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
 
-        // 2.1 算比分：主队进球 vs 客队进球
-        val homeGoals = eventsToShow.count { it.event == "进球" && it.detail.contains("主队") }
-        val awayGoals = eventsToShow.count { it.event == "进球" && it.detail.contains("客队") }
+        // 1. 时长：使用占位符填入分钟数
+        tvStatMatchTime.text = getString(R.string.summary_duration, hTime)
 
-        tvStatMatchTime.text = "时长: 每半场 ${hTime}分"
-        // 新格式： 比分: 3 : 2
-        tvStatGoals.text = "比分: $homeGoals : $awayGoals"
+// 2. 比分：填入主客队进球数
+        tvStatGoals.text = getString(R.string.summary_score, homeGoals, awayGoals)
 
-        tvStatYellow.text = "黄牌: ${eventsToShow.count { it.event == "黄牌" }}"
-        tvStatRed.text = "红牌: ${eventsToShow.count { it.event == "红牌" }}"
+// 3. 黄牌：先计算数量，再填入占位符
+        val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
+        tvStatYellow.text = getString(R.string.summary_yellow, yellowCount)
 
+// 4. 红牌：先计算数量，再填入占位符
+        val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
+        tvStatRed.text = getString(R.string.summary_red, redCount)
 
-        tvStatStoppage.text = "补时: 上 ${formatTime(st1)} | 下 ${formatTime(st2)}"
+// 5. 补时：填入格式化后的时间字符串
+        tvStatStoppage.text = getString(R.string.summary_stoppage, formatTime(st1), formatTime(st2))
 
         // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
         listEvents.removeAllViews()
         if (eventsToShow.isEmpty()) {
             val tv = TextView(this)
-            tv.text = "暂无事件记录"
+            tv.text = getString(R.string.msg_no_events)
             tv.setTextColor(android.graphics.Color.GRAY)
             tv.gravity = android.view.Gravity.CENTER
             listEvents.addView(tv)
@@ -731,10 +735,10 @@ class MainActivity : AppCompatActivity() {
                 // 2. 创建图标 ImageView
                 val iconView = android.widget.ImageView(this)
                 val iconRes = when(event.event) {
-                    "进球" -> R.drawable.sports_soccer
-                    "黄牌", "红牌" -> R.drawable.ic_card
-                    "换人" -> R.drawable.ic_substitute
-                    "伤停" -> R.drawable.ic_medical
+                    getString(R.string.event_goal) -> R.drawable.sports_soccer
+                    getString(R.string.event_yellow), getString(R.string.event_red) -> R.drawable.ic_card
+                    getString(R.string.event_substitute) -> R.drawable.ic_substitute
+                    getString(R.string.event_injury) -> R.drawable.ic_medical
                     else -> R.drawable.ic_history
                 }
                 iconView.setImageResource(iconRes)
@@ -749,10 +753,10 @@ class MainActivity : AppCompatActivity() {
                 // 设置图标颜色
                 try {
                     val iconColor = when(event.event){
-                        "进球" -> android.graphics.Color.WHITE
-                        "黄牌" -> android.graphics.Color.YELLOW
-                        "红牌" -> android.graphics.Color.RED
-                        "伤停" -> android.graphics.Color.parseColor("#2196F3")
+                        getString(R.string.event_goal) -> android.graphics.Color.WHITE
+                        getString(R.string.event_yellow) -> android.graphics.Color.YELLOW
+                        getString(R.string.event_red) -> android.graphics.Color.RED
+                        getString(R.string.event_injury) -> android.graphics.Color.parseColor("#2196F3")
                         else -> android.graphics.Color.GREEN
                     }
                     iconView.setColorFilter(iconColor)
@@ -817,7 +821,7 @@ class MainActivity : AppCompatActivity() {
         when (mode) {
             "start" -> {
                 // 🟩 初始状态：单按钮 (开始半场)
-                mainButton.text = "开始"
+                mainButton.text = getString(R.string.btn_start)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
@@ -827,12 +831,12 @@ class MainActivity : AppCompatActivity() {
 
             "pause" -> {
                 // 🟥 比赛进行中状态：双按钮 (显示暂停 + 结束)
-                mainButton.text = "暂停"
+                mainButton.text = getString(R.string.btn_pause)
                 mainButton.setIconResource(R.drawable.pause_circle)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt()) // 红
 
                 // 确保结束按钮正确显示
-                endHalfButton.text = "结束"
+                endHalfButton.text = getString(R.string.btn_stop)
                 endHalfButton.setIconResource(R.drawable.stop_circle)
 
                 mainButton.visibility = View.VISIBLE
@@ -841,12 +845,12 @@ class MainActivity : AppCompatActivity() {
 
             "resume" -> {
                 // 🟩 比赛暂停中状态：双按钮 (显示继续 + 结束)
-                mainButton.text = "继续"
+                mainButton.text = getString(R.string.btn_resume)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
                 // 确保结束按钮保持显示
-                endHalfButton.text = "结束"
+                endHalfButton.text = getString(R.string.btn_stop)
                 endHalfButton.setIconResource(R.drawable.stop_circle)
 
                 mainButton.visibility = View.VISIBLE
@@ -855,7 +859,7 @@ class MainActivity : AppCompatActivity() {
 
             "halftime" -> {
                 // 🟩 中场休息状态：单按钮 (下半场)
-                mainButton.text = "下半场"
+                mainButton.text = getString(R.string.status_second_half)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
@@ -865,7 +869,7 @@ class MainActivity : AppCompatActivity() {
 
             "finished" -> {
                 // 🟥 状态：重置比赛
-                mainButton.text = "重置比赛"
+                mainButton.text = getString(R.string.btn_reset)
 
                 // 换成你准备好的矢量图 ic_substitute (或者 ic_refresh 也可以)
                 mainButton.setIconResource(R.drawable.ic_substitute)
@@ -887,18 +891,17 @@ class MainActivity : AppCompatActivity() {
         var iconRes = 0
 
         if (state == STATE_READY) {
-            textStr = "准备开始"
+            textStr = getString(R.string.status_ready)
             iconRes = R.drawable.sports_soccer
         } else if (state == STATE_RUNNING || state == STATE_PAUSED) {
-            // 🔥 修复点：直接使用 currentHalf 的值（它本身就是 "上半场" 或 "下半场"）
-            // 不需要再判断 if (currentHalf == 1) 了
-            textStr = currentHalf
+            // 🔥🔥🔥 核心修改：这里不能直接用 currentHalf，要翻译！
+            textStr = getHalfText(currentHalf)
             iconRes = R.drawable.sports_soccer
         } else if (state == STATE_HALFTIME) {
-            textStr = "中场休息"
+            textStr = getString(R.string.status_halftime)
             iconRes = R.drawable.ic_coffee
         } else if (state == STATE_FINISHED) {
-            textStr = "比赛结束"
+            textStr = getString(R.string.status_finished)
             iconRes = R.drawable.ic_trophy
         }
 
@@ -907,7 +910,17 @@ class MainActivity : AppCompatActivity() {
 
         // 只有当有图标资源时才设置
         if (iconRes != 0) {
-            statusLabel.setCompoundDrawablesWithIntrinsicBounds(iconRes, 0, 0, 0)
+            // 这里记得用 ContextCompat 拿 drawable 比较稳，或者直接 setCompoundDrawablesWithIntrinsicBounds
+            // 如果你的代码之前能跑，就保持下面这样：
+            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)
+            if (drawable != null) {
+                // 设置图标大小 (20dp) 防止图标太大
+                val size = (20 * resources.displayMetrics.density).toInt()
+                drawable.setBounds(0, 0, size, size)
+                statusLabel.setCompoundDrawables(drawable, null, null, null)
+                // 设置图标和文字的间距
+                statusLabel.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
+            }
         }
 
         // 染色
@@ -971,8 +984,8 @@ class MainActivity : AppCompatActivity() {
 
 
         // 统计主客队进球
-        val homeGoals = matchEvents.count { it.event == "进球" && it.detail.contains("主队") }
-        val awayGoals = matchEvents.count { it.event == "进球" && it.detail.contains("客队") }
+        val homeGoals = matchEvents.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
+        val awayGoals = matchEvents.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
 
         val record = MatchRecord(
             date = currentDate,
@@ -980,11 +993,11 @@ class MainActivity : AppCompatActivity() {
             firstHalfStoppage = formatTime(firstHalfStoppage.toLong()),
             secondHalfStoppage = formatTime(stoppageTime.toLong()),
             totalStoppage = formatTime((firstHalfStoppage + stoppageTime).toLong()),
-            goalCount = matchEvents.count { it.event == "进球" },
-            yellowCount = matchEvents.count { it.event == "黄牌" },
-            redCount = matchEvents.count { it.event == "红牌" },
-            substitutionCount = matchEvents.count { it.event == "换人" },
-            injuryCount = matchEvents.count { it.event == "伤停" },
+            goalCount = matchEvents.count { it.event == getString(R.string.event_goal) },
+            yellowCount = matchEvents.count { it.event == getString(R.string.event_yellow) },
+            redCount = matchEvents.count { it.event == getString(R.string.event_red) },
+            substitutionCount = matchEvents.count { it.event == getString(R.string.event_substitute) },
+            injuryCount = matchEvents.count { it.event == getString(R.string.event_injury) },
 
             events = matchEvents.toList(), // 使用 .toList() 复制一份，防止后续改动影响历史记录
 
@@ -1050,14 +1063,14 @@ class MainActivity : AppCompatActivity() {
 
 
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text = "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple)
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text = getString(R.string.summary_stoppage)
                 itemView.findViewById<android.view.View>(R.id.tvRecordEvents).visibility = android.view.View.GONE
 
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = "${record.halfTimeMinutes}分钟/半场"
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple,record.halfTimeMinutes)
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text =
-                    "补时: 上 ${record.firstHalfStoppage} | 下 ${record.secondHalfStoppage}"
+                    getString(R.string.summary_stoppage,record.firstHalfStoppage, record.secondHalfStoppage)
 
                 val oldTv = itemView.findViewById<android.widget.TextView>(R.id.tvRecordEvents)
                 oldTv.visibility = android.view.View.GONE
@@ -1199,7 +1212,7 @@ class MainActivity : AppCompatActivity() {
 
             if (records.isEmpty()) {
 
-                android.widget.Toast.makeText(this, "暂无历史记录可清空", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this, getString(R.string.msg_no_history_to_clear), android.widget.Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -1214,7 +1227,7 @@ class MainActivity : AppCompatActivity() {
                 recordManager.clearAllRecords()
                 confirmDialog.dismiss()
                 dialog.dismiss()
-                android.widget.Toast.makeText(this, "历史记录已清空", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(this, getString(R.string.msg_history_cleared), android.widget.Toast.LENGTH_SHORT).show()
             }
 
             confirmDialog.show()
@@ -1237,13 +1250,13 @@ class MainActivity : AppCompatActivity() {
 
 
         val (iconRes, iconColor) = when (eventType) {
-            "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
-            "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
-            "进球" -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
+            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
             else -> 0 to 0
         }
-
-        tvTitle.text = "$eventType - 选择队伍"
+        val actionText = getString(R.string.title_select_team_generic)
+        tvTitle.text = "$eventType - $actionText"
         if (iconRes != 0) {
             val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
             drawable?.setTint(iconColor)
@@ -1278,13 +1291,13 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
         btnHomeTeam.setOnClickListener {
-            selectedTeam = "主队"
+            selectedTeam = getString(R.string.team_home)
             dialog.dismiss()
             showNumberSelectionDialog(eventType, selectedTeam)
         }
 
         btnAwayTeam.setOnClickListener {
-            selectedTeam = "客队"
+            selectedTeam = getString(R.string.team_away)
             dialog.dismiss()
             showNumberSelectionDialog(eventType, selectedTeam)
         }
@@ -1308,9 +1321,9 @@ class MainActivity : AppCompatActivity() {
 
 
         val (iconRes, iconColor) = when (eventType) {
-            "黄牌" -> R.drawable.ic_card to android.graphics.Color.YELLOW
-            "红牌" -> R.drawable.ic_card to android.graphics.Color.RED
-            "进球" -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
+            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
             else -> 0 to 0
         }
 
@@ -1326,7 +1339,7 @@ class MainActivity : AppCompatActivity() {
 
         // 设置队伍信息颜色
         tvTeamInfo.text = team
-        tvTeamInfo.setTextColor(if (team == "主队") 0xFF1565C0.toInt() else 0xFFC62828.toInt())
+        tvTeamInfo.setTextColor(if (team == getString(R.string.team_home)) 0xFF1565C0.toInt() else 0xFFC62828.toInt())
 
         // 设置滚轮逻辑 (保持不变)
         pickerTens.minValue = 0
@@ -1363,16 +1376,16 @@ class MainActivity : AppCompatActivity() {
     // 记录带详细信息的事件
     private fun recordEventWithDetails(eventType: String, team: String, number: String) {
         val emoji = when (eventType) {
-            "黄牌" -> "🟨"
-            "红牌" -> "🟥"
-            "进球" -> "⚽"
+            getString(R.string.event_yellow) -> "🟨"
+            getString(R.string.event_red) -> "🟥"
+            getString(R.string.event_goal) -> "⚽"
             else -> "📝"
         }
 
-        val teamEmoji = if (team == "主队") "🏠" else "✈️"
+        val teamEmoji = if (team == getString(R.string.team_home)) "🏠" else "✈️"
         val detailText = "$team #$number"
         val timeStr = formatTime(mainTime)
-        val halfName = if (currentHalf == HALF_FIRST) "上半场" else "下半场"
+        val halfName = if (currentHalf == HALF_FIRST) getString(R.string.status_first_half) else getString(R.string.status_second_half)
         val minute = (mainTime / 60).toInt()
 
         matchEvents.add(MatchEvent(
@@ -1553,5 +1566,13 @@ class MainActivity : AppCompatActivity() {
 
         dialog.show()
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+    }
+    private fun getHalfText(code: String): String {
+        return when (code) {
+            HALF_FIRST -> getString(R.string.status_first_half) // 对应 strings.xml 里的“上半场”
+            HALF_BREAK -> getString(R.string.status_halftime)   // 对应“中场休息”
+            HALF_SECOND -> getString(R.string.status_second_half) // 对应“下半场”
+            else -> "" // 或者是 getString(R.string.status_ready)
+        }
     }
 }

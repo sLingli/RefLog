@@ -1,3 +1,59 @@
 <resources>
     <string name="app_name">RefLog</string>
+
+    <!-- Game Status -->
+    <string name="status_ready">Ready</string>
+    <string name="status_first_half">1st Half</string>
+    <string name="status_halftime">Half Time</string>
+    <string name="status_second_half">2nd Half</string>
+    <string name="status_finished">Full Time</string>
+
+    <!-- Buttons & Actions -->
+    <string name="btn_start">Start</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_reset">Reset Match</string>
+
+    <!-- Dialog Titles -->
+    <string name="title_set_color">Set Team Colors</string>
+    <string name="title_summary">Match Summary</string>
+    <string name="title_select_team_generic">Select Team</string>
+
+    <!-- Events & Teams -->
+    <string name="event_yellow">Yellow Card</string>
+    <string name="event_red">Red Card</string>
+    <string name="event_goal">Goal</string>
+    <string name="team_home">Home</string>
+    <string name="team_away">Away</string>
+
+    <!-- Labels -->
+    <string name="label_duration_fmt">%d min/half</string> <!-- 分钟/半场 -->
+    <string name="label_duration">Duration</string> <!-- 时长 -->
+    <string name="label_score">Score</string>
+    <string name="label_stoppage">Stoppage</string>
+    <string name="label_event_details">Event Details</string>
+    <string name="title_select_number">Select Number</string>
+    <!-- 带参数的标签 -->
+    <string name="summary_duration">Duration: %1$d min/half</string>
+    <string name="summary_score">Score: %1$d : %2$d</string>
+    <string name="summary_yellow">Yellow Cards: %1$d</string>
+    <string name="summary_red">Red Cards: %1$d</string>
+    <string name="summary_stoppage">Stoppage: 1st %1$s | 2nd %2$s</string>
+    <string name="btn_ok">OK</string>
+    <string name="dialog_no_records">No Match Records</string>
+    <string name="unit_min_half">min/half</string>
+    <!-- History & Records -->
+    <string name="msg_history_cleared">History Cleared</string>
+    <string name="msg_no_history_to_clear">No history to clear</string>
+    <string name="msg_no_events">No events recorded</string>
+
+    <!-- Time Format (带参数) -->
+    <string name="fmt_duration_simple">%1$d min/half</string>
+    <!-- Stoppage Status -->
+    <string name="status_first_half_stoppage">1st Half Stoppage</string>
+    <string name="status_second_half_stoppage">2nd Half Stoppage</string>
+    <!-- Events -->
+    <string name="event_injury">Injury</string>
+    <string name="event_substitute">Sub</string>
 </resources>

@@ -14,7 +14,7 @@
         android:id="@+id/tvTeamSelectionTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="选择队伍"
+        android:text="@string/title_select_team_generic"
         android:textSize="18sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold"

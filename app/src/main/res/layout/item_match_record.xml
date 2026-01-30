@@ -39,7 +39,7 @@
         android:id="@+id/tvRecordStoppage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="补时: 上半场 00:00 | 下半场 00:00"
+        android:text="@string/summary_stoppage"
         android:textSize="12sp"
         android:textColor="#FF9800"
         android:layout_marginTop="4dp" />
@@ -49,7 +49,7 @@
         android:id="@+id/tvRecordEvents"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="⚽0 🟨0 🟥0 🔄0 🏥0"
+        android:text=""
         android:textSize="14sp"
         android:textColor="#CCCCCC"
         android:layout_marginTop="4dp" />

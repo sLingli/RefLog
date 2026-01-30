@@ -14,7 +14,7 @@
         android:id="@+id/tvNumberTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="选择号码"
+        android:text="@string/title_select_number"
         android:textSize="18sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold"
@@ -25,7 +25,7 @@
         android:id="@+id/tvTeamInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="主队"
+        android:text="@string/team_home"
         android:textSize="14sp"
         android:textColor="#4CAF50"
         android:layout_marginBottom="16dp" />
