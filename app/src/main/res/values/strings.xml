@@ -56,4 +56,7 @@
     <!-- Events -->
     <string name="event_injury">Injury</string>
     <string name="event_substitute">Sub</string>
+    <!-- Clear History Dialog -->
+    <string name="title_confirm">Confirm</string>
+    <string name="msg_confirm_clear_all">Clear All History?</string>
 </resources>

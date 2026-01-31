@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainTimeLabel: TextView
 
     private lateinit var stoppageTimeLabel: TextView
-    // ✅ 修改成这样
     private lateinit var mainButton: com.google.android.material.button.MaterialButton
     private lateinit var endHalfButton: com.google.android.material.button.MaterialButton
 
@@ -64,10 +63,10 @@ class MainActivity : AppCompatActivity() {
 
 
     // 计时器变量
-    private var mainTime: Long = 0  // 主计时器（秒）
-    private var stoppageTime: Long = 0  // 当前半场补时（秒）
-    private var firstHalfStoppage: Long = 0  // 上半场补时总计
-    private var lastUpdateTime: Long = 0  // 上次更新的时间戳
+    private var mainTime: Long = 0
+    private var stoppageTime: Long = 0
+    private var firstHalfStoppage: Long = 0
+    private var lastUpdateTime: Long = 0
 
     // 自定义比赛时间（秒）
     private var halfTimeSeconds: Long = DEFAULT_HALF_TIME * 60L
@@ -85,8 +84,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var updateRunnable: Runnable
 
     // 事件选择相关
-    private var pendingEventType: String = ""  // 待处理的事件类型
-    private var selectedTeam: String = ""       // 选择的队伍
+    private var pendingEventType: String = ""
+    private var selectedTeam: String = ""
 
     // 默认主队蓝色，客队红色
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
@@ -99,14 +98,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // 1. 第一步：必须先找到所有按钮和文字控件
         initializeUI()
-
-        // 2. 第二步：然后再去设置它们的状态（这时候控件肯定都在了）
         resetMatch()
-
-        // 3. 第三步：最后启动计时器逻辑
         initializeTimer()
     }
     private fun initializeTimer() {
@@ -114,7 +107,7 @@ class MainActivity : AppCompatActivity() {
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
-                handler.postDelayed(this, 100)  // 每100ms更新一次
+                handler.postDelayed(this, 100)
             }
         }
 
@@ -124,22 +117,92 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
 
+
+    @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
 
-        // 绑定按钮
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
 
-        // 设置点击事件
+        endHalfButton.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_end_button_progress)
+        endHalfButton.backgroundTintList = null
+
         mainButton.setOnClickListener { toggleTimer() }
-        endHalfButton.setOnClickListener { endHalf() }
         btnHistory.setOnClickListener { showHistoryDialog() }
 
-        // 初始化其他逻辑
+        val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
+            duration = 1500 // 1.5秒填满
+            addUpdateListener { animation ->
+                val level = animation.animatedValue as Int
+                endHalfButton.background.level = level
+                val scale = 1.0f - (level / 10000f) * 0.1f
+                endHalfButton.scaleX = scale
+                endHalfButton.scaleY = scale
+            }
+        }
+
+        endHalfButton.setOnTouchListener { v, event ->
+            if (state == STATE_READY) return@setOnTouchListener false
+
+            val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    holdAnimator.start()
+                    // 初始微震
+                    if (android.os.Build.VERSION.SDK_INT >= 29) {
+                        vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
+                    }
+
+                    v.postDelayed({
+                        if (holdAnimator.isRunning) {
+                            holdAnimator.end()
+                            v.background.level = 0
+                            v.scaleX = 1.0f
+                            v.scaleY = 1.0f
+
+                            // 成功大震动
+                            if (android.os.Build.VERSION.SDK_INT >= 29) {
+                                vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK))
+                            } else {
+                                vibrator.vibrate(100)
+                            }
+
+                            // 执行逻辑
+                            when (currentHalf) {
+                                HALF_FIRST -> { endFirstHalf(); updateStatusLabel() }
+                                HALF_SECOND -> { endSecondHalf(); updateStatusLabel() }
+                            }
+                        }
+                    }, 1500)
+                    true
+                }
+
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    if (holdAnimator.isRunning) {
+                        val currentLevel = endHalfButton.background.level
+                        android.animation.ValueAnimator.ofInt(currentLevel, 0).apply {
+                            duration = 200
+                            addUpdateListener { anim ->
+                                endHalfButton.background.level = anim.animatedValue as Int
+                                val s = 0.9f + (anim.animatedValue as Int / 10000f) * 0.1f
+                                endHalfButton.scaleX = s
+                                endHalfButton.scaleY = s
+                            }
+                        }.start()
+                        holdAnimator.cancel()
+                    }
+                    v.removeCallbacks(null)
+                    true
+                }
+                else -> false
+            }
+        }
+
         recordManager = MatchRecordManager(this)
     }
 
@@ -156,27 +219,20 @@ class MainActivity : AppCompatActivity() {
         when (state) {
             STATE_READY -> {
                 Log.d("状态机", "从READY开始 -> 触发分裂动画")
-                // 这里会调用 startTimer() -> updateButtonStyle("pause")
-                // 界面从【单按钮】分裂为【双按钮】
                 startTimer()
             }
             STATE_RUNNING -> {
                 Log.d("状态机", "从RUNNING暂停 -> 保持双按钮")
-                // 暂停计时
                 pauseTimer()
-                // 界面从【红暂停】切为【绿继续】，右边结束按钮保持不动
                 updateButtonStyle("resume")
             }
             STATE_PAUSED -> {
                 Log.d("状态机", "从PAUSED继续 -> 保持双按钮")
-                // 恢复计时
                 resumeTimer()
-                // 界面从【绿继续】切为【红暂停】，右边结束按钮保持不动
                 updateButtonStyle("pause")
             }
             STATE_HALFTIME -> {
                 Log.d("状态机", "从中场休息开始下半场 -> 触发分裂动画")
-                // 这里也需要类似的逻辑：开始下半场 -> 分裂为双按钮
                 startSecondHalf()
             }
             STATE_FINISHED -> {
@@ -247,38 +303,7 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    private fun endHalf() {
-        if (state == STATE_READY) return
 
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
-        val btnNo = dialogView.findViewById<Button>(R.id.btnNo)
-        val btnYes = dialogView.findViewById<Button>(R.id.btnYes)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        btnNo.setOnClickListener { dialog.dismiss() }
-
-        btnYes.setOnClickListener {
-            dialog.dismiss()
-            when (currentHalf) {
-                HALF_FIRST -> {
-                    endFirstHalf()
-
-                    updateStatusLabel()
-                }
-                HALF_SECOND -> {
-                    endSecondHalf()
-                    updateStatusLabel()
-                }
-            }
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-    }
 
 
 
@@ -317,9 +342,9 @@ class MainActivity : AppCompatActivity() {
     private fun updateMainTimeDisplay() {
         // 根据当前半场，显示正确的时间
         val displayTime = when (currentHalf) {
-            HALF_FIRST -> mainTime  // 上半场：从0开始
-            HALF_SECOND -> mainTime  // 下半场：从45开始（实际显示45:00, 45:01...）
-            HALF_BREAK -> mainTime + firstHalfStoppage  // 中场：显示上半场总时间
+            HALF_FIRST -> mainTime
+            HALF_SECOND -> mainTime
+            HALF_BREAK -> mainTime + firstHalfStoppage
             else -> mainTime
         }
 
@@ -580,13 +605,12 @@ class MainActivity : AppCompatActivity() {
             timeStr = timeStr,
             event = eventType,
             emoji = emoji,
-            detail = "", // 简单事件没有详情
+            detail = "",
             half = halfName,
             minute = minute
         ))
 
 
-        // 修改日志，删掉 (+秒)
         addLog("$emoji [$timeStr] $eventType")
     }
 
@@ -820,7 +844,6 @@ class MainActivity : AppCompatActivity() {
 
         when (mode) {
             "start" -> {
-                // 🟩 初始状态：单按钮 (开始半场)
                 mainButton.text = getString(R.string.btn_start)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
@@ -830,12 +853,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             "pause" -> {
-                // 🟥 比赛进行中状态：双按钮 (显示暂停 + 结束)
                 mainButton.text = getString(R.string.btn_pause)
                 mainButton.setIconResource(R.drawable.pause_circle)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt()) // 红
 
-                // 确保结束按钮正确显示
                 endHalfButton.text = getString(R.string.btn_stop)
                 endHalfButton.setIconResource(R.drawable.stop_circle)
 
@@ -844,12 +865,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             "resume" -> {
-                // 🟩 比赛暂停中状态：双按钮 (显示继续 + 结束)
                 mainButton.text = getString(R.string.btn_resume)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
-                // 确保结束按钮保持显示
                 endHalfButton.text = getString(R.string.btn_stop)
                 endHalfButton.setIconResource(R.drawable.stop_circle)
 
@@ -858,7 +877,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             "halftime" -> {
-                // 🟩 中场休息状态：单按钮 (下半场)
                 mainButton.text = getString(R.string.status_second_half)
                 mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
@@ -868,18 +886,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             "finished" -> {
-                // 🟥 状态：重置比赛
                 mainButton.text = getString(R.string.btn_reset)
-
-                // 换成你准备好的矢量图 ic_substitute (或者 ic_refresh 也可以)
                 mainButton.setIconResource(R.drawable.ic_substitute)
-
-                // 颜色可以是红色，或者换个颜色提示用户这是“重置”
-                // 这里暂时保持深红色，或者换成深灰色避免误触
                 mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
-
                 mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE // 既然已经结束了，就不需要再显示“结束”按钮了
+                endHalfButton.visibility = View.GONE
             }
         }
     }
@@ -894,7 +905,6 @@ class MainActivity : AppCompatActivity() {
             textStr = getString(R.string.status_ready)
             iconRes = R.drawable.sports_soccer
         } else if (state == STATE_RUNNING || state == STATE_PAUSED) {
-            // 🔥🔥🔥 核心修改：这里不能直接用 currentHalf，要翻译！
             textStr = getHalfText(currentHalf)
             iconRes = R.drawable.sports_soccer
         } else if (state == STATE_HALFTIME) {
@@ -910,20 +920,15 @@ class MainActivity : AppCompatActivity() {
 
         // 只有当有图标资源时才设置
         if (iconRes != 0) {
-            // 这里记得用 ContextCompat 拿 drawable 比较稳，或者直接 setCompoundDrawablesWithIntrinsicBounds
-            // 如果你的代码之前能跑，就保持下面这样：
             val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)
             if (drawable != null) {
-                // 设置图标大小 (20dp) 防止图标太大
                 val size = (20 * resources.displayMetrics.density).toInt()
                 drawable.setBounds(0, 0, size, size)
                 statusLabel.setCompoundDrawables(drawable, null, null, null)
-                // 设置图标和文字的间距
                 statusLabel.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
             }
         }
 
-        // 染色
         statusLabel.compoundDrawableTintList = statusLabel.textColors
     }
 
@@ -932,15 +937,9 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun updateStoppageDisplay(active: Boolean) {
-        // 1. 确定颜色：激活是亮橙色(0xFFFF6600)，停止是暗灰色(0xFF666666)
         val color = if (active) 0xFFFF6600.toInt() else 0xFF666666.toInt()
-
-        // 2. 同时改变文字颜色和图标颜色
-        // 因为现在图标是 stoppageTimeLabel 的 drawableStart，所以直接操作这就行
         stoppageTimeLabel.setTextColor(color)
         stoppageTimeLabel.compoundDrawableTintList = android.content.res.ColorStateList.valueOf(color)
-
-        // 3. 刷新一下时间数字
         updateStoppageTimeDisplay()
     }
 
@@ -999,7 +998,7 @@ class MainActivity : AppCompatActivity() {
             substitutionCount = matchEvents.count { it.event == getString(R.string.event_substitute) },
             injuryCount = matchEvents.count { it.event == getString(R.string.event_injury) },
 
-            events = matchEvents.toList(), // 使用 .toList() 复制一份，防止后续改动影响历史记录
+            events = matchEvents.toList(),
 
             homeGoals = homeGoals,
             awayGoals = awayGoals
@@ -1209,20 +1208,28 @@ class MainActivity : AppCompatActivity() {
 
         // 清空按钮点击事件
         btnClearHistory.setOnClickListener {
-
+            // 1. 如果没记录，直接提示并返回
             if (records.isEmpty()) {
-
                 android.widget.Toast.makeText(this, getString(R.string.msg_no_history_to_clear), android.widget.Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-
+            // 2. 加载确认弹窗布局
             val confirmView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
+
+            val tvMessage = confirmView.findViewById<android.widget.TextView>(R.id.tvConfirmMessage)
+            tvMessage.text = getString(R.string.msg_confirm_clear_all)
+            tvMessage.visibility = android.view.View.VISIBLE
+
             val confirmDialog = androidx.appcompat.app.AlertDialog.Builder(this)
                 .setView(confirmView)
                 .create()
 
-            confirmView.findViewById<android.view.View>(R.id.btnNo).setOnClickListener { confirmDialog.dismiss() }
+            // 3. 绑定按钮事件
+            confirmView.findViewById<android.view.View>(R.id.btnNo).setOnClickListener {
+                confirmDialog.dismiss()
+            }
+
             confirmView.findViewById<android.view.View>(R.id.btnYes).setOnClickListener {
                 recordManager.clearAllRecords()
                 confirmDialog.dismiss()
@@ -1230,6 +1237,7 @@ class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this, getString(R.string.msg_history_cleared), android.widget.Toast.LENGTH_SHORT).show()
             }
 
+            // 4. 显示弹窗并去白角
             confirmDialog.show()
             confirmDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
         }
@@ -1408,7 +1416,7 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    // ==================== 数据类 ====================
+    // 数据类
 
 
 
@@ -1427,8 +1435,8 @@ class MainActivity : AppCompatActivity() {
             if (historyBtn.visibility == View.VISIBLE && historyBtn.alpha == 1f) return
 
             historyBtn.visibility = View.VISIBLE
-            historyBtn.alpha = 0f          // 先透明
-            historyBtn.scaleX = 0.8f       // 先缩小
+            historyBtn.alpha = 0f
+            historyBtn.scaleX = 0.8f
             historyBtn.scaleY = 0.8f
 
             historyBtn.animate()
@@ -1436,7 +1444,7 @@ class MainActivity : AppCompatActivity() {
                 .scaleX(1f)
                 .scaleY(1f)
                 .setDuration(400)
-                .setInterpolator(android.view.animation.OvershootInterpolator()) // 弹一下，显高级
+                .setInterpolator(android.view.animation.OvershootInterpolator())
                 .start()
         } else {
 
@@ -1447,7 +1455,7 @@ class MainActivity : AppCompatActivity() {
                 .scaleX(0.8f)
                 .scaleY(0.8f)
                 .setDuration(300)
-                .withEndAction { historyBtn.visibility = View.GONE } // 动画播完彻底消失
+                .withEndAction { historyBtn.visibility = View.GONE }
                 .start()
         }
     }
@@ -1471,8 +1479,8 @@ class MainActivity : AppCompatActivity() {
             0xFFFF9800.toInt()  // 橙
         )
 
-        var tempHomeColor = colors[1] // 默认蓝
-        var tempAwayColor = colors[0] // 默认红
+        var tempHomeColor = colors[1]
+        var tempAwayColor = colors[0]
 
         fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
             rv.layoutManager = CenterScaleLayoutManager(this)
@@ -1569,10 +1577,10 @@ class MainActivity : AppCompatActivity() {
     }
     private fun getHalfText(code: String): String {
         return when (code) {
-            HALF_FIRST -> getString(R.string.status_first_half) // 对应 strings.xml 里的“上半场”
-            HALF_BREAK -> getString(R.string.status_halftime)   // 对应“中场休息”
-            HALF_SECOND -> getString(R.string.status_second_half) // 对应“下半场”
-            else -> "" // 或者是 getString(R.string.status_ready)
+            HALF_FIRST -> getString(R.string.status_first_half)
+            HALF_BREAK -> getString(R.string.status_halftime)
+            HALF_SECOND -> getString(R.string.status_second_half)
+            else -> ""
         }
     }
 }

@@ -9,6 +9,18 @@
     android:clipToOutline="true"
     android:gravity="center">
 
+    <!-- 提示文字 -->
+    <TextView
+        android:id="@+id/tvConfirmMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="30dp"
+        android:gravity="center"
+        android:text="@string/msg_confirm_clear_all"
+        android:textColor="#FFFFFF"
+        android:textSize="30sp"
+        android:layout_gravity="center_horizontal"/>
+
     <!-- 按钮区域 -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,35 +29,37 @@
         android:gravity="center">
 
         <!-- 取消按钮：红色圆形 -->
+
+        <!-- 确认按钮：绿色圆形 -->
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNo"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="66dp"
+            android:layout_height="66dp"
             android:layout_marginEnd="16dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             app:backgroundTint="#F44336"
             app:cornerRadius="40dp"
             app:icon="@drawable/outline_close_24"
-            app:iconSize="36dp"
             app:iconGravity="textStart"
             app:iconPadding="0dp"
+            app:iconSize="36dp"
             app:iconTint="#FFFFFF" />
 
-        <!-- 确认按钮：绿色圆形 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnYes"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="66dp"
+            android:layout_height="66dp"
             android:layout_marginStart="16dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             app:backgroundTint="#4CAF50"
             app:cornerRadius="40dp"
             app:icon="@drawable/outline_check_24"
-            app:iconSize="36dp"
             app:iconGravity="textStart"
             app:iconPadding="0dp"
+            app:iconSize="36dp"
             app:iconTint="#FFFFFF" />
 
     </LinearLayout>

@@ -52,4 +52,7 @@
     <!-- 事件 -->
     <string name="event_injury">受伤</string>
     <string name="event_substitute">换人</string>
+    <!-- 清空历史弹窗 -->
+    <string name="title_confirm">确认操作</string>
+    <string name="msg_confirm_clear_all">确定要清空所有历史记录吗？</string>
 </resources>
