@@ -25,13 +25,9 @@ import android.util.DisplayMetrics
 import android.transition.TransitionManager
 import android.transition.AutoTransition
 
-
-
-
-
 class MainActivity : AppCompatActivity() {
 
-    // ==================== 状态常量 ====================
+    //  状态常量
     private companion object {
         const val STATE_READY = "ready"
         const val STATE_RUNNING = "running"
@@ -45,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         const val DEFAULT_HALF_TIME = 45
     }
 
-    // ==================== UI 组件 ====================
+    // UI 组件
     private lateinit var statusLabel: TextView
 
     private lateinit var mainTimeLabel: TextView
@@ -54,8 +50,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainButton: com.google.android.material.button.MaterialButton
     private lateinit var endHalfButton: com.google.android.material.button.MaterialButton
 
-
-    // ==================== 状态变量 ====================
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
     private lateinit var btnHistory: Button
@@ -92,8 +86,6 @@ class MainActivity : AppCompatActivity() {
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
 
-    // ==================== 生命周期方法 ====================
-
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,7 +108,6 @@ class MainActivity : AppCompatActivity() {
 
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
-
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
@@ -212,8 +203,6 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(updateRunnable)
     }
 
-    // ==================== 状态机控制 ====================
-
     private fun toggleTimer() {
         Log.d("状态机", "toggleTimer - 当前状态: $state, 当前半场: $currentHalf")
         when (state) {
@@ -242,7 +231,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     private fun startTimer() {
         if (!matchTimeSet) {
             showColorSelectionDialog()
@@ -267,15 +255,12 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
     }
 
-
-
     private fun resumeTimer() {
         state = STATE_RUNNING
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
     }
-
 
     private fun startSecondHalf() {
         currentHalf = HALF_SECOND
@@ -300,12 +285,6 @@ class MainActivity : AppCompatActivity() {
         addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
         Log.i("FootballTimer", "📢 下半场开始！从 ${formatTime(mainTime)} 计时")
     }
-
-
-
-
-
-
 
     private fun endFirstHalf() {
         state = STATE_HALFTIME
@@ -361,8 +340,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
     private fun endSecondHalf() {
         state = STATE_FINISHED
 
@@ -396,7 +373,6 @@ class MainActivity : AppCompatActivity() {
         animateHistoryButton(true)
     }
 
-
     private fun resetMatch() {
         state = STATE_READY
         currentHalf = HALF_FIRST
@@ -428,9 +404,7 @@ class MainActivity : AppCompatActivity() {
         animateHistoryButton(true)
     }
 
-
-    // ==================== 计时器核心逻辑 ====================
-
+    // 计时器核心逻辑
     private fun startUpdateLoop() {
         // 先移除之前的计时器（避免重复）
         handler.removeCallbacks(updateRunnable)
@@ -443,7 +417,6 @@ class MainActivity : AppCompatActivity() {
         }
         handler.post(updateRunnable)
     }
-
 
     private fun updateTimer() {
         val currentTime = System.currentTimeMillis()
@@ -490,9 +463,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
-
     private fun checkTimeAlerts() {
         val halfTimeMin = halfTimeSeconds / 60
 
@@ -526,7 +496,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     private fun triggerAlert(timeStr: String, message: String) {
         Log.i("FootballTimer", "\n🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔")
         Log.i("FootballTimer", "⏰ ${timeStr}到！$message")
@@ -537,7 +506,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    // ==================== 事件弹窗 ====================
+    // 事件弹窗
 
     private fun pauseTimer() {
         state = STATE_PAUSED
@@ -614,11 +583,6 @@ class MainActivity : AppCompatActivity() {
         addLog("$emoji [$timeStr] $eventType")
     }
 
-
-
-
-
-
     private fun showTimeSettingDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_time_setting, null)
 
@@ -678,7 +642,6 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
-
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_match_summary, null)
@@ -830,9 +793,7 @@ class MainActivity : AppCompatActivity() {
     // 辅助函数：dp转px
     fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
 
-
-
-    // ==================== UI 更新方法 ====================
+    // UI 更新方法
 
     private fun updateButtonStyle(mode: String) {
 
@@ -895,8 +856,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
     private fun updateStatusLabel() {
         var textStr = ""
         var iconRes = 0
@@ -932,10 +891,6 @@ class MainActivity : AppCompatActivity() {
         statusLabel.compoundDrawableTintList = statusLabel.textColors
     }
 
-
-
-
-
     private fun updateStoppageDisplay(active: Boolean) {
         val color = if (active) 0xFFFF6600.toInt() else 0xFF666666.toInt()
         stoppageTimeLabel.setTextColor(color)
@@ -943,14 +898,10 @@ class MainActivity : AppCompatActivity() {
         updateStoppageTimeDisplay()
     }
 
-
-
     private fun updateStoppageTimeDisplay() {
 
         stoppageTimeLabel.text = formatTime(stoppageTime)
     }
-
-
 
     private fun updateEndHalfButton() {
 
@@ -968,10 +919,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("FootballTimer", "[$halfIndicator $currentTime] $message")
     }
 
-
-
-    // ==================== 工具方法 ====================
-
+    // 工具方法
     private fun formatTime(seconds: Long): String {
         val minutes = seconds / 60
         val secs = seconds % 60
@@ -1007,7 +955,6 @@ class MainActivity : AppCompatActivity() {
         recordManager.saveRecord(record)
         Log.i("FootballTimer", "📁 比赛记录已保存: 主队 $homeGoals - $awayGoals 客队")
     }
-
 
     private fun showHistoryDialog() {
         val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
@@ -1412,15 +1359,7 @@ class MainActivity : AppCompatActivity() {
         addLog("$emoji [$timeStr] $eventType - $teamEmoji $detailText")
     }
 
-
-
-
-
     // 数据类
-
-
-
-
     data class EventItem(
         val displayText: String,
         val type: String,
@@ -1459,7 +1398,6 @@ class MainActivity : AppCompatActivity() {
                 .start()
         }
     }
-
 
     private fun showColorSelectionDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
