@@ -128,20 +128,17 @@ class MainActivity : AppCompatActivity() {
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
 
-        endHalfButton.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_end_button_progress)
-        endHalfButton.backgroundTintList = null
-
+        // 绑定点击事件
         mainButton.setOnClickListener { toggleTimer() }
         btnHistory.setOnClickListener { showHistoryDialog() }
 
+        // 定义倒计时任务变量
+        var triggerAction: Runnable? = null
+
         val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
-            duration = 1500 // 1.5秒填满
+            duration = 1500
             addUpdateListener { animation ->
-                val level = animation.animatedValue as Int
-                endHalfButton.background.level = level
-                val scale = 1.0f - (level / 10000f) * 0.1f
-                endHalfButton.scaleX = scale
-                endHalfButton.scaleY = scale
+                endHalfButton.background.level = animation.animatedValue as Int
             }
         }
 
@@ -152,18 +149,21 @@ class MainActivity : AppCompatActivity() {
 
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
+                    // 清理旧任务
+                    triggerAction?.let { v.removeCallbacks(it) }
+
                     holdAnimator.start()
+
                     // 初始微震
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
                     }
 
-                    v.postDelayed({
+                    // 创建新任务
+                    triggerAction = Runnable {
                         if (holdAnimator.isRunning) {
                             holdAnimator.end()
                             v.background.level = 0
-                            v.scaleX = 1.0f
-                            v.scaleY = 1.0f
 
                             // 成功大震动
                             if (android.os.Build.VERSION.SDK_INT >= 29) {
@@ -172,31 +172,31 @@ class MainActivity : AppCompatActivity() {
                                 vibrator.vibrate(100)
                             }
 
-                            // 执行逻辑
+                            // 触发结束逻辑
                             when (currentHalf) {
                                 HALF_FIRST -> { endFirstHalf(); updateStatusLabel() }
                                 HALF_SECOND -> { endSecondHalf(); updateStatusLabel() }
                             }
                         }
-                    }, 1500)
+                    }
+
+                    v.postDelayed(triggerAction, 1500)
                     true
                 }
 
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    triggerAction?.let { v.removeCallbacks(it) }
+
                     if (holdAnimator.isRunning) {
                         val currentLevel = endHalfButton.background.level
                         android.animation.ValueAnimator.ofInt(currentLevel, 0).apply {
                             duration = 200
                             addUpdateListener { anim ->
                                 endHalfButton.background.level = anim.animatedValue as Int
-                                val s = 0.9f + (anim.animatedValue as Int / 10000f) * 0.1f
-                                endHalfButton.scaleX = s
-                                endHalfButton.scaleY = s
                             }
                         }.start()
                         holdAnimator.cancel()
                     }
-                    v.removeCallbacks(null)
                     true
                 }
                 else -> false
