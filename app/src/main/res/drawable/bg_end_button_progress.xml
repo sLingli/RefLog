@@ -1,26 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 🔥 用 inset 标签包在最外面，模拟按钮的内边距 -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:insetTop="4dp"
     android:insetBottom="4dp">
 
     <layer-list>
-        <!-- 1. 底层：默认的灰色背景 -->
         <item>
             <shape android:shape="rectangle">
                 <corners android:radius="12dp" />
-                <solid android:color="#333333" /> <!-- 默认深灰色 -->
+                <solid android:color="#333333" />
             </shape>
         </item>
-
-        <!-- 2. 顶层：红色的进度填充层 -->
         <item>
             <clip
                 android:clipOrientation="horizontal"
                 android:gravity="left">
                 <shape android:shape="rectangle">
                     <corners android:radius="12dp" />
-                    <solid android:color="#D32F2F" /> <!-- 填充的红色 -->
+                    <solid android:color="#D32F2F" />
                 </shape>
             </clip>
         </item>

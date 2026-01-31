@@ -28,10 +28,6 @@
         android:orientation="horizontal"
         android:gravity="center">
 
-        <!-- 取消按钮：红色圆形 -->
-
-        <!-- 确认按钮：绿色圆形 -->
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNo"
             android:layout_width="66dp"

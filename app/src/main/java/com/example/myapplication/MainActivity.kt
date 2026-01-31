@@ -438,7 +438,7 @@ class MainActivity : AppCompatActivity() {
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
-                handler.postDelayed(this, 100)  // 每100ms更新一次
+                handler.postDelayed(this, 100)
             }
         }
         handler.post(updateRunnable)
@@ -509,7 +509,7 @@ class MainActivity : AppCompatActivity() {
             HALF_SECOND -> {
 
 
-                val targetTime = halfTimeSeconds * 2  // 比如45*2=90分钟
+                val targetTime = halfTimeSeconds * 2
                 if (mainTime >= targetTime && !fullTimeAlertShown) {
                     fullTimeAlertShown = true
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
