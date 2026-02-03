@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity() {
     private var currentHalf: String = HALF_FIRST
     private lateinit var btnHistory: Button
     private lateinit var recordManager: MatchRecordManager
+    private var hideRunnable: Runnable? = null
+    private val hideHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
 
     // 计时器变量
@@ -115,76 +117,95 @@ class MainActivity : AppCompatActivity() {
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
 
+        // 绑定基础按钮 (方屏/通用)
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
 
-        // 绑定点击事件
+        // --- 🟢 手表版专属组件绑定 (如果是方屏，这些会是 null) ---
+        val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
+        val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
+        val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
+        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
+        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
+        val btnPauseRound = findViewById<android.view.View>(R.id.btnPauseRound)
+        val btnEndRound = findViewById<android.view.View>(R.id.btnEndRound)
+
+        // 绑定点击事件 (通用逻辑)
         mainButton.setOnClickListener { toggleTimer() }
+        btnBigStart?.setOnClickListener { toggleTimer() } // 手表大按钮
         btnHistory.setOnClickListener { showHistoryDialog() }
+        btnHistorySmall?.setOnClickListener { showHistoryDialog() } // 手表小历史
+        btnPauseRound?.setOnClickListener { toggleTimer() } // 手表面板里的暂停
 
-        // 定义倒计时任务变量
+        // --- 🔵 手表版：全屏点击唤起面板逻辑 ---
+        hideRunnable = Runnable {
+            controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
+            timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
+        }
+
+        touchOverlay?.setOnClickListener {
+            // 显示面板
+            controlPanel?.animate()?.translationY(0f)?.setDuration(300)?.start()
+            // 计时器缩小上移
+            timerContainer?.animate()?.scaleX(0.85f)?.scaleY(0.85f)?.translationY(-60f)?.setDuration(300)?.start()
+
+            // 3秒后自动隐藏
+            hideHandler.removeCallbacks(hideRunnable!!)
+            hideHandler.postDelayed(hideRunnable!!, 3000)
+        }
+
+        // --- 🔴 手表版：长按结束逻辑 (复用你之前的 endHalfButton 逻辑) ---
+        // 为了简单，我们定义一个函数来复用长按逻辑，或者直接给 btnEndRound 也绑上
+        btnEndRound?.let { setupLongPressEnd(it) }
+        endHalfButton?.let { setupLongPressEnd(it) }
+
+        recordManager = MatchRecordManager(this)
+    }
+
+    // 提取出来的长按逻辑函数，方便复用
+    private fun setupLongPressEnd(button: android.view.View) {
         var triggerAction: Runnable? = null
-
         val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
             duration = 1500
             addUpdateListener { animation ->
-                endHalfButton.background.level = animation.animatedValue as Int
+                button.background?.level = animation.animatedValue as Int
             }
         }
 
-        endHalfButton.setOnTouchListener { v, event ->
+        button.setOnTouchListener { v, event ->
             if (state == STATE_READY) return@setOnTouchListener false
-
             val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
-
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // 清理旧任务
                     triggerAction?.let { v.removeCallbacks(it) }
-
                     holdAnimator.start()
-
-                    // 初始微震
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
                     }
-
-                    // 创建新任务
                     triggerAction = Runnable {
                         if (holdAnimator.isRunning) {
                             holdAnimator.end()
-                            v.background.level = 0
-
-                            // 成功大震动
+                            v.background?.level = 0
                             if (android.os.Build.VERSION.SDK_INT >= 29) {
                                 vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK))
-                            } else {
-                                vibrator.vibrate(100)
-                            }
-
-                            // 触发结束逻辑
+                            } else { vibrator.vibrate(100) }
                             when (currentHalf) {
                                 HALF_FIRST -> { endFirstHalf(); updateStatusLabel() }
                                 HALF_SECOND -> { endSecondHalf(); updateStatusLabel() }
                             }
                         }
                     }
-
                     v.postDelayed(triggerAction, 1500)
                     true
                 }
-
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
                     triggerAction?.let { v.removeCallbacks(it) }
-
                     if (holdAnimator.isRunning) {
-                        val currentLevel = endHalfButton.background.level
+                        val currentLevel = button.background?.level ?: 0
                         android.animation.ValueAnimator.ofInt(currentLevel, 0).apply {
                             duration = 200
-                            addUpdateListener { anim ->
-                                endHalfButton.background.level = anim.animatedValue as Int
-                            }
+                            addUpdateListener { anim -> button.background?.level = anim.animatedValue as Int }
                         }.start()
                         holdAnimator.cancel()
                     }
@@ -193,8 +214,6 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
-
-        recordManager = MatchRecordManager(this)
     }
 
     override fun onDestroy() {
@@ -237,22 +256,31 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
+        // 1. 获取布局引用
+        val layoutReady = findViewById<android.view.View>(R.id.layoutReady)
+        val layoutRunning = findViewById<android.view.View>(R.id.layoutRunning)
 
+        // 2. 动画转场 (手表专用)
+        if (layoutReady != null && layoutRunning != null) {
+            layoutReady.animate().alpha(0f).setDuration(400).withEndAction {
+                layoutReady.visibility = android.view.View.GONE
+                layoutRunning.visibility = android.view.View.VISIBLE
+                layoutRunning.alpha = 0f
+                layoutRunning.animate().alpha(1f).setDuration(400).start()
+            }.start()
+        }
+
+        // 原有的逻辑保持不变...
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
-
         updateStatusLabel()
-
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
 
-        val btnHistory = findViewById<View>(R.id.btnHistory)
-        btnHistory.visibility = View.GONE
+        // 隐藏普通历史按钮
+        btnHistory.visibility = android.view.View.GONE
 
         addLog("🏁 比赛开始")
-        val halfTimeMin = halfTimeSeconds / 60
-        Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
     }
 
     private fun resumeTimer() {
@@ -385,20 +413,29 @@ class MainActivity : AppCompatActivity() {
         fullTimeAlertShown = false
         matchEvents.clear()
 
-
         updateStatusLabel()
-
 
         mainTimeLabel.text = "00:00"
         mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
         stoppageTimeLabel.text = "00:00"
 
+        // 🔴 手表版特有：切回“准备层”
+        val layoutReady = findViewById<View>(R.id.layoutReady)
+        val layoutRunning = findViewById<View>(R.id.layoutRunning)
+        val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
+
+        if (layoutReady != null && layoutRunning != null) {
+            layoutRunning.visibility = View.GONE
+            layoutReady.visibility = View.VISIBLE
+            layoutReady.alpha = 1f
+            btnHistorySmall?.visibility = View.VISIBLE
+        }
+
         updateButtonStyle("start")
         updateStoppageDisplay(active = false)
 
-        // 显式确保结束按钮隐藏
-        val endBtn = findViewById<View>(R.id.endHalfButton)
-        endBtn.visibility = View.GONE
+        // 手机版结束按钮隐藏
+        findViewById<View>(R.id.endHalfButton).visibility = View.GONE
 
         Log.i("FootballTimer", "📢 比赛已重置")
         animateHistoryButton(true)
@@ -796,62 +833,98 @@ class MainActivity : AppCompatActivity() {
     // UI 更新方法
 
     private fun updateButtonStyle(mode: String) {
-
+        // 1. 获取所有按钮引用（包括手表版的）
         val btnMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.mainButton)
         val btnEnd = findViewById<com.google.android.material.button.MaterialButton>(R.id.endHalfButton)
 
+        // 手表版特有组件
+        val btnPauseRound = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPauseRound)
+        val btnEndRound = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnEndRound)
+        val controlPanel = findViewById<View>(R.id.controlPanel)
+        val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
 
+        // 开启过渡动画
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
         when (mode) {
             "start" -> {
-                mainButton.text = getString(R.string.btn_start)
-                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
-                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
+                // 手机版
+                btnMain.text = getString(R.string.btn_start)
+                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
+                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt())
+                btnMain.visibility = View.VISIBLE
+                btnEnd.visibility = View.GONE
 
-                mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE
+                // 手表版：恢复初始状态
+                btnPauseRound?.visibility = View.VISIBLE
+                btnEndRound?.visibility = View.VISIBLE
             }
 
             "pause" -> {
-                mainButton.text = getString(R.string.btn_pause)
-                mainButton.setIconResource(R.drawable.pause_circle)
-                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt()) // 红
+                // 手机版
+                btnMain.text = getString(R.string.btn_pause)
+                btnMain.setIconResource(R.drawable.pause_circle)
+                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
+                btnEnd.visibility = View.VISIBLE
 
-                endHalfButton.text = getString(R.string.btn_stop)
-                endHalfButton.setIconResource(R.drawable.stop_circle)
-
-                mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.VISIBLE
+                // 手表版：暂停图标
+                btnPauseRound?.setIconResource(R.drawable.pause_circle)
+                btnPauseRound?.visibility = View.VISIBLE
+                btnEndRound?.visibility = View.VISIBLE
             }
 
             "resume" -> {
-                mainButton.text = getString(R.string.btn_resume)
-                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
-                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
+                // 手机版
+                btnMain.text = getString(R.string.btn_resume)
+                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
+                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt())
+                btnEnd.visibility = View.VISIBLE
 
-                endHalfButton.text = getString(R.string.btn_stop)
-                endHalfButton.setIconResource(R.drawable.stop_circle)
-
-                mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.VISIBLE
+                // 手表版：继续图标
+                btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
+                btnPauseRound?.visibility = View.VISIBLE
+                btnEndRound?.visibility = View.VISIBLE
             }
 
             "halftime" -> {
-                mainButton.text = getString(R.string.status_second_half)
-                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
-                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
+                // 手机版
+                btnMain.text = getString(R.string.status_second_half)
+                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
+                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
+                btnMain.visibility = View.VISIBLE
+                btnEnd.visibility = View.GONE
 
-                mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE
+                // 手表版逻辑：
+                controlPanel?.translationY = 0f // 强制弹出
+                btnEndRound?.visibility = View.GONE
+
+                // 🔥【修复重点】把图标改回 Play，颜色改回绿色！
+                btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
+                btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 🟢 变绿！
+                btnPauseRound?.visibility = View.VISIBLE
+
+                // 取消自动隐藏
+                hideHandler.removeCallbacks(hideRunnable!!)
             }
 
             "finished" -> {
-                mainButton.text = getString(R.string.btn_reset)
-                mainButton.setIconResource(R.drawable.ic_substitute)
-                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
-                mainButton.visibility = View.VISIBLE
-                endHalfButton.visibility = View.GONE
+                // 手机版
+                btnMain.text = getString(R.string.btn_reset)
+                btnMain.setIconResource(R.drawable.ic_substitute)
+                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
+                btnMain.visibility = View.VISIBLE
+                btnEnd.visibility = View.GONE
+
+                // 手表版：隐藏结束键，显示重置键
+                controlPanel?.translationY = 0f // 强制弹出
+                btnEndRound?.visibility = View.GONE
+                btnPauseRound?.setIconResource(R.drawable.ic_substitute)
+                btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
+                btnPauseRound?.visibility = View.VISIBLE
+
+                // 显示历史记录按钮
+                btnHistorySmall?.visibility = View.VISIBLE
+                hideHandler.removeCallbacks(hideRunnable!!)
             }
         }
     }
