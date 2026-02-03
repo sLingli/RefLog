@@ -13,6 +13,7 @@
     <string name="btn_resume">继续</string>
     <string name="btn_stop">结束</string>
     <string name="btn_reset">重置比赛</string>
+    <string name="btn_cancel">取消</string>
 
     <string name="title_set_color">设定主客队颜色</string>
     <string name="title_summary">比赛总结</string>
