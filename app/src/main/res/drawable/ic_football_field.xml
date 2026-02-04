@@ -1,6 +1,6 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="240dp"
-    android:height="240dp"
+    android:width="480dp"
+    android:height="480dp"
     android:viewportWidth="240"
     android:viewportHeight="240">
 
@@ -17,8 +17,10 @@
           Z
           M120,55 L120,185
           M120,120 m-35,0 a35,35 0 1,0 70,0 a35,35 0 1,0 -70,0
-          M10,95 L45,95 L45,145 L10,145
-          M230,95 L195,95 L195,145 L230,145
+          M10,77 L45,77 L45,163 L10,163
+          M45,104 A20,20 0 0 1 45,136
+          M230,77 L195,77 L195,163 L230,163
+          M195,104 A20,20 0 0 0 195,136
         "
         android:strokeColor="#FFFFFF"
         android:strokeWidth="3"
