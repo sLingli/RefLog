@@ -3,65 +3,75 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    android:padding="20dp"> <!-- 🔥 全局内缩20dp，防切角 -->
+    android:background="#000000">
 
-    <!-- ========================= -->
     <!-- 🟢 图层 A：准备阶段 (Ready Mode) -->
-    <!-- ========================= -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/layoutReady"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="visible"> <!-- 初始可见 -->
+        android:visibility="visible">
 
-        <!-- 巨大的圆形开始按钮 -->
-        <!-- 注意：这里其实就是原来的 mainButton，只是我们把它变圆了 -->
-
-        <TextView
+        <!-- 1. 顶部：实时系统时间 -->
+        <TextClock
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="RefLog"
-            android:textColor="#666666"
-            android:textSize="14sp" />
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="6dp"
+            android:format12Hour="HH:mm"
+            android:format24Hour="HH:mm"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
-        <!-- 巨大的圆形开始按钮（纯文字版） -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBigStart"
-            android:layout_width="140dp"
-            android:layout_height="140dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:insetLeft="0dp"
-            android:insetRight="0dp"
-            app:cornerRadius="70dp"
-            app:backgroundTint="#00E676"
-            android:text="@string/btn_start"
-            android:textColor="#000000"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:padding="0dp"
-            android:layout_marginBottom="16dp"/>
+        <!-- 2. 中间：球场与 START 按钮 -->
+        <FrameLayout
+            android:id="@+id/fieldContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true">
 
-        <ImageButton
+            <!-- 足球场图 -->
+            <ImageView
+                android:layout_width="226dp"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_football_field" />
+
+            <!-- 缩小后的中圈 START 按钮 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBigStart"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_gravity="center"
+                android:text="@string/btn_start"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                app:cornerRadius="38dp"
+                app:backgroundTint="#00E676" />
+        </FrameLayout>
+
+        <!-- 3. 底部：历史记录小横条 -->
+        <View
             android:id="@+id/btnHistorySmall"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/card_background"
-            android:src="@drawable/ic_history"
-            app:tint="#888888"
-            android:contentDescription="History" />
+            android:layout_width="60dp"
+            android:layout_height="4dp"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="12dp"
+            android:background="#666666" />
+    </RelativeLayout>
 
-    </LinearLayout>
 
-
-    <!-- ========================= -->
-    <!-- 🔴 图层 B：比赛阶段 (Running Mode) -->
-    <!-- ========================= -->
+    <!-- 🔴 图层 B：比赛阶段 (Running Mode) - 维持你之前的完美逻辑 -->
     <RelativeLayout
         android:id="@+id/layoutRunning"
         android:layout_width="match_parent"
@@ -87,7 +97,6 @@
                 android:id="@+id/statusLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/status_first_half"
                 android:textColor="#4CAF50"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -97,7 +106,6 @@
                 android:id="@+id/mainTimeLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="00:00"
                 android:textColor="#4CAF50"
                 android:textSize="64sp"
                 android:fontFamily="monospace"
@@ -109,15 +117,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="00:00"
                 android:textSize="20sp"
                 android:textColor="#888888"
+                app:drawableStartCompat="@drawable/more_time"
+                android:drawablePadding="6dp"
+                android:drawableTint="#888888"
                 android:background="@drawable/bg_stoppage_capsule"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="4dp" />
         </LinearLayout>
 
-        <!-- 2. 控制面板 (初始藏在底部) -->
+        <!-- 2. 控制面板 -->
         <LinearLayout
             android:id="@+id/controlPanel"
             android:layout_width="wrap_content"
@@ -130,8 +140,6 @@
             android:background="#CC000000"
             android:translationY="200dp">
 
-            <!-- 原来的 mainButton (但在比赛中变成了暂停键) -->
-            <!-- 这里我们需要用一个新的 ID 或者是复用逻辑，但为了简单，我们放两个新按钮在这里，代码里绑定事件 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPauseRound"
                 android:layout_width="60dp"
@@ -143,7 +151,6 @@
                 app:iconPadding="0dp"
                 android:layout_marginEnd="16dp" />
 
-            <!-- 结束按钮 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEndRound"
                 android:layout_width="60dp"
@@ -153,14 +160,11 @@
                 app:icon="@drawable/stop_circle"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp" />
-
         </LinearLayout>
-
     </RelativeLayout>
 
-    <!-- ⚠️ 兼容性保留：为了防止 MainActivity 报错找不到 ID -->
-    <!-- 我们在这里把原来代码里用到的一些 ID 藏起来，避免报错，虽然它们在圆屏模式下可能没用 -->
-    <!-- ⚠️ 修正后的占位符：类型必须是 MaterialButton，防止 ClassCastException -->
+
+    <!-- ⚠️ 兼容性占位符：关键！类型必须正确 -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/mainButton"
         android:layout_width="0dp"
