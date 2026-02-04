@@ -4,21 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:padding="20dp"> <!-- 🔥 全局内缩20dp，防切角 -->
+    android:padding="20dp">
 
-    <!-- ========================= -->
-    <!-- 🟢 图层 A：准备阶段 (Ready Mode) -->
-    <!-- ========================= -->
     <LinearLayout
         android:id="@+id/layoutReady"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:visibility="visible"> <!-- 初始可见 -->
-
-        <!-- 巨大的圆形开始按钮 -->
-        <!-- 注意：这里其实就是原来的 mainButton，只是我们把它变圆了 -->
+        android:visibility="visible">
 
         <TextView
             android:layout_width="wrap_content"
@@ -52,16 +46,12 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="@drawable/card_background"
+            android:contentDescription="History"
             android:src="@drawable/ic_history"
-            app:tint="#888888"
-            android:contentDescription="History" />
+            app:tint="#888888" />
 
     </LinearLayout>
 
-
-    <!-- ========================= -->
-    <!-- 🔴 图层 B：比赛阶段 (Running Mode) -->
-    <!-- ========================= -->
     <RelativeLayout
         android:id="@+id/layoutRunning"
         android:layout_width="match_parent"
@@ -112,6 +102,9 @@
                 android:text="00:00"
                 android:textSize="20sp"
                 android:textColor="#888888"
+                app:drawableStartCompat="@drawable/more_time"
+                android:drawablePadding="6dp"
+                android:drawableTint="#888888"
                 android:background="@drawable/bg_stoppage_capsule"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="4dp" />
@@ -130,8 +123,6 @@
             android:background="#CC000000"
             android:translationY="200dp">
 
-            <!-- 原来的 mainButton (但在比赛中变成了暂停键) -->
-            <!-- 这里我们需要用一个新的 ID 或者是复用逻辑，但为了简单，我们放两个新按钮在这里，代码里绑定事件 -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPauseRound"
                 android:layout_width="60dp"
@@ -158,9 +149,6 @@
 
     </RelativeLayout>
 
-    <!-- ⚠️ 兼容性保留：为了防止 MainActivity 报错找不到 ID -->
-    <!-- 我们在这里把原来代码里用到的一些 ID 藏起来，避免报错，虽然它们在圆屏模式下可能没用 -->
-    <!-- ⚠️ 修正后的占位符：类型必须是 MaterialButton，防止 ClassCastException -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/mainButton"
         android:layout_width="0dp"
