@@ -5,14 +5,12 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- 🟢 图层 A：准备阶段 (Ready Mode) -->
     <RelativeLayout
         android:id="@+id/layoutReady"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible">
 
-        <!-- 1. 顶部：实时系统时间 -->
         <TextClock
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -25,22 +23,67 @@
             android:textSize="26sp"
             android:textStyle="bold" />
 
-        <!-- 2. 中间：球场与 START 按钮 -->
         <FrameLayout
             android:id="@+id/fieldContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true">
 
-            <!-- 足球场图 -->
+
             <ImageView
+                android:id="@+id/imgField"
                 android:layout_width="226dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_football_field" />
 
-            <!-- 缩小后的中圈 START 按钮 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <View
+                        android:id="@+id/overlayHome"
+                        android:layout_width="103dp"
+                        android:layout_height="121dp"
+                        android:layout_gravity="center_vertical|end"
+                        android:background="@android:color/transparent" />
+
+                    <View
+                        android:id="@+id/clickHomeColor"
+                        android:layout_width="113dp"
+                        android:layout_height="127dp"
+                        android:layout_gravity="center_vertical|end"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent">
+
+                    <View
+                        android:id="@+id/overlayAway"
+                        android:layout_width="103dp"
+                        android:layout_height="121dp"
+                        android:layout_gravity="center_vertical|start"
+                        android:background="@android:color/transparent" />
+
+                    <View
+                        android:id="@+id/clickAwayColor"
+                        android:layout_width="113dp"
+                        android:layout_height="127dp"
+                        android:layout_gravity="center_vertical|start"
+                        android:background="?attr/selectableItemBackgroundBorderless" />
+                </FrameLayout>
+            </LinearLayout>
+
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBigStart"
                 android:layout_width="76dp"
@@ -59,7 +102,25 @@
                 app:backgroundTint="#00E676" />
         </FrameLayout>
 
-        <!-- 3. 底部：历史记录小横条 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSetMatchTime"
+            android:layout_width="wrap_content"
+            android:layout_height="26dp"
+            android:layout_above="@id/btnHistorySmall"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="8dp"
+            android:text="45 min/half"
+            xmlns:tools="http://schemas.android.com/tools"
+            tools:text="45 min/half"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:backgroundTint="#2A2A2A"
+            app:cornerRadius="18dp"
+            app:strokeColor="#444444"
+            app:strokeWidth="1dp" />
+
         <View
             android:id="@+id/btnHistorySmall"
             android:layout_width="60dp"
@@ -70,8 +131,6 @@
             android:background="#666666" />
     </RelativeLayout>
 
-
-    <!-- 🔴 图层 B：比赛阶段 (Running Mode) - 维持你之前的完美逻辑 -->
     <RelativeLayout
         android:id="@+id/layoutRunning"
         android:layout_width="match_parent"
@@ -84,7 +143,6 @@
             android:layout_height="match_parent"
             android:background="@android:color/transparent" />
 
-        <!-- 1. 核心计时区 (绝对居中) -->
         <LinearLayout
             android:id="@+id/timerContainer"
             android:layout_width="wrap_content"
@@ -127,7 +185,6 @@
                 android:paddingVertical="4dp" />
         </LinearLayout>
 
-        <!-- 2. 控制面板 -->
         <LinearLayout
             android:id="@+id/controlPanel"
             android:layout_width="wrap_content"
@@ -164,7 +221,6 @@
     </RelativeLayout>
 
 
-    <!-- ⚠️ 兼容性占位符：关键！类型必须正确 -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/mainButton"
         android:layout_width="0dp"

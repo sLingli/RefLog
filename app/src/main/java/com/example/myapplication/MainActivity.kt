@@ -10,18 +10,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.widget.NumberPicker
-import android.content.res.ColorStateList
-import android.util.DisplayMetrics
 import android.transition.TransitionManager
 import android.transition.AutoTransition
 
@@ -97,7 +92,6 @@ class MainActivity : AppCompatActivity() {
         initializeTimer()
     }
     private fun initializeTimer() {
-        // 初始化updateRunnable
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
@@ -105,7 +99,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 立即启动计时器循环（这样计时器就会每秒更新）
         handler.post(updateRunnable)
 
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
@@ -113,32 +106,50 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
+        // 1. 基础组件绑定 (通用/方屏)
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
-
-        // 绑定基础按钮 (方屏/通用)
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
 
-        // --- 🟢 手表版专属组件绑定 (如果是方屏，这些会是 null) ---
+        // --- 🟢 手表版：准备界面组件 ---
         val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
         val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
+        val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
+        val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
+        val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
+
+        clickHomeColor?.setOnClickListener {
+            showColorSelectionDialog(isHome = true)
+        }
+
+        clickAwayColor?.setOnClickListener {
+            showColorSelectionDialog(isHome = false)
+        }
+
+        // --- 🔵 手表版：比赛中沉浸式组件 ---
         val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
         val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
         val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
         val btnPauseRound = findViewById<android.view.View>(R.id.btnPauseRound)
         val btnEndRound = findViewById<android.view.View>(R.id.btnEndRound)
-
-        // 绑定点击事件 (通用逻辑)
+        // 【开始/暂停逻辑】
         mainButton.setOnClickListener { toggleTimer() }
-        btnBigStart?.setOnClickListener { toggleTimer() } // 手表大按钮
-        btnHistory.setOnClickListener { showHistoryDialog() }
-        btnHistorySmall?.setOnClickListener { showHistoryDialog() } // 手表小历史
-        btnPauseRound?.setOnClickListener { toggleTimer() } // 手表面板里的暂停
+        btnBigStart?.setOnClickListener { toggleTimer() }    // 中圈大按钮
+        btnPauseRound?.setOnClickListener { toggleTimer() } // 手面控制板暂停
 
-        // --- 🔵 手表版：全屏点击唤起面板逻辑 ---
+        // 【历史记录逻辑】
+        btnHistory.setOnClickListener { showHistoryDialog() }
+        btnHistorySmall?.setOnClickListener { showHistoryDialog() }
+
+
+        btnSetMatchTime?.setOnClickListener {
+            showTimeSettingDialog()
+        }
+
+        // --- 沉浸式自动隐藏逻辑 ---
         hideRunnable = Runnable {
             controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
             timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
@@ -150,20 +161,17 @@ class MainActivity : AppCompatActivity() {
             // 计时器缩小上移
             timerContainer?.animate()?.scaleX(0.85f)?.scaleY(0.85f)?.translationY(-60f)?.setDuration(300)?.start()
 
-            // 3秒后自动隐藏
             hideHandler.removeCallbacks(hideRunnable!!)
             hideHandler.postDelayed(hideRunnable!!, 3000)
         }
 
-        // --- 🔴 手表版：长按结束逻辑 (复用你之前的 endHalfButton 逻辑) ---
-        // 为了简单，我们定义一个函数来复用长按逻辑，或者直接给 btnEndRound 也绑上
+        // --- 长按结束逻辑 ---
         btnEndRound?.let { setupLongPressEnd(it) }
         endHalfButton?.let { setupLongPressEnd(it) }
 
         recordManager = MatchRecordManager(this)
     }
 
-    // 提取出来的长按逻辑函数，方便复用
     private fun setupLongPressEnd(button: android.view.View) {
         var triggerAction: Runnable? = null
         val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
@@ -251,10 +259,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTimer() {
-        if (!matchTimeSet) {
-            showColorSelectionDialog()
-            return
-        }
 
         // 1. 获取布局引用
         val layoutReady = findViewById<android.view.View>(R.id.layoutReady)
@@ -270,15 +274,16 @@ class MainActivity : AppCompatActivity() {
             }.start()
         }
 
-        // 原有的逻辑保持不变...
+        // 3. 启动计时核心逻辑
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
         updateStatusLabel()
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
 
-        // 隐藏普通历史按钮
+        // 4. 隐藏主页的交互组件
         btnHistory.visibility = android.view.View.GONE
+        findViewById<android.view.View>(R.id.btnHistorySmall)?.visibility = android.view.View.GONE
 
         addLog("🏁 比赛开始")
     }
@@ -419,7 +424,6 @@ class MainActivity : AppCompatActivity() {
         mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
         stoppageTimeLabel.text = "00:00"
 
-        // 🔴 手表版特有：切回“准备层”
         val layoutReady = findViewById<View>(R.id.layoutReady)
         val layoutRunning = findViewById<View>(R.id.layoutRunning)
         val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
@@ -443,7 +447,6 @@ class MainActivity : AppCompatActivity() {
 
     // 计时器核心逻辑
     private fun startUpdateLoop() {
-        // 先移除之前的计时器（避免重复）
         handler.removeCallbacks(updateRunnable)
 
         updateRunnable = object : Runnable {
@@ -464,27 +467,21 @@ class MainActivity : AppCompatActivity() {
 
             if (state == STATE_RUNNING || state == STATE_PAUSED) {
 
-                // 1. 主计时器：只要没吹终场哨，它就一直加
                 mainTime++
 
-                // 2. 补时计时器：只有在“暂停”状态下，才记录浪费的时间
                 if (state == STATE_PAUSED) {
                     stoppageTime++
                 }
 
-                // 3. 实时更新 UI 显示
                 runOnUiThread {
 
                     mainTimeLabel.text = formatTime(mainTime)
 
-                    // 补时显示 (胶囊区域)
                     updateStoppageTimeDisplay()
 
-                    // 确保结束按钮状态正确
                     updateEndHalfButton()
                 }
 
-                // 4. 检查关键时间点（比如 45 分钟到了震动提醒）
                 checkTimeAlerts()
 
                 // 调试日志
@@ -495,7 +492,6 @@ class MainActivity : AppCompatActivity() {
             lastUpdateTime = currentTime
 
         } else if (lastUpdateTime == 0L) {
-            // 如果是第一次，初始化时间基准
             lastUpdateTime = currentTime
         }
     }
@@ -665,15 +661,17 @@ class MainActivity : AppCompatActivity() {
 
         // 确认按钮
         btnConfirm.setOnClickListener {
-            // 设置比赛时间
             halfTimeSeconds = selectedTime * 60L
             matchTimeSet = true
+
+            val btnSetMatchTime = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetMatchTime)
+            btnSetMatchTime?.text = getString(R.string.fmt_duration_simple, selectedTime)
+
+
 
 
             dialog.dismiss()
 
-            // 开始比赛
-            startTimer()
         }
 
         dialog.show()
@@ -723,21 +721,21 @@ class MainActivity : AppCompatActivity() {
         val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
         val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
 
-        // 1. 时长：使用占位符填入分钟数
+        // 1. 时长
         tvStatMatchTime.text = getString(R.string.summary_duration, hTime)
 
-// 2. 比分：填入主客队进球数
+// 2. 比分
         tvStatGoals.text = getString(R.string.summary_score, homeGoals, awayGoals)
 
-// 3. 黄牌：先计算数量，再填入占位符
+// 3. 黄牌
         val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
         tvStatYellow.text = getString(R.string.summary_yellow, yellowCount)
 
-// 4. 红牌：先计算数量，再填入占位符
+// 4. 红牌
         val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
         tvStatRed.text = getString(R.string.summary_red, redCount)
 
-// 5. 补时：填入格式化后的时间字符串
+// 5. 补时
         tvStatStoppage.text = getString(R.string.summary_stoppage, formatTime(st1), formatTime(st2))
 
         // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
@@ -898,7 +896,6 @@ class MainActivity : AppCompatActivity() {
                 controlPanel?.translationY = 0f // 强制弹出
                 btnEndRound?.visibility = View.GONE
 
-                // 🔥【修复重点】把图标改回 Play，颜色改回绿色！
                 btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
                 btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 🟢 变绿！
                 btnPauseRound?.visibility = View.VISIBLE
@@ -915,8 +912,8 @@ class MainActivity : AppCompatActivity() {
                 btnMain.visibility = View.VISIBLE
                 btnEnd.visibility = View.GONE
 
-                // 手表版：隐藏结束键，显示重置键
-                controlPanel?.translationY = 0f // 强制弹出
+                // 手表版
+                controlPanel?.translationY = 0f
                 btnEndRound?.visibility = View.GONE
                 btnPauseRound?.setIconResource(R.drawable.ic_substitute)
                 btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
@@ -1472,16 +1469,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showColorSelectionDialog() {
+    private fun showColorSelectionDialog(isHome: Boolean) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
 
         val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
         val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
         val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
-
         val colors = listOf(
-            0xFFF44336.toInt(), // 红 (Index 0)
-            0xFF2196F3.toInt(), // 蓝 (Index 1)
+            0xFFF44336.toInt(), // 红
+            0xFF2196F3.toInt(), // 蓝
             0xFF4CAF50.toInt(), // 绿
             0xFFFFEB3B.toInt(), // 黄
             0xFFFFFFFF.toInt(), // 白
@@ -1490,53 +1486,28 @@ class MainActivity : AppCompatActivity() {
             0xFFFF9800.toInt()  // 橙
         )
 
-        var tempHomeColor = colors[1]
-        var tempAwayColor = colors[0]
+        var selectedTempColor = if (isHome) colors[1] else colors[0]
 
         fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
             rv.layoutManager = CenterScaleLayoutManager(this)
             val adapter = ColorWheelAdapter(colors) { }
             rv.adapter = adapter
-
-
             val density = resources.displayMetrics.density
             val padding = (45 * density).toInt()
             rv.setPadding(0, padding, 0, padding)
             rv.clipToPadding = false
 
-
             val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
-
-
                 override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
                     return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
                 }
-
-
                 override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
                     if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
-
                     return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
-
-
-                        override fun calculateTimeForDeceleration(dx: Int): Int {
-
-                            return super.calculateTimeForDeceleration(dx) * 5
-                        }
-
-
+                        override fun calculateTimeForDeceleration(dx: Int): Int = super.calculateTimeForDeceleration(dx) * 5
                         override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
-                            val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
-                            val dx = snapDistances!![0]
-                            val dy = snapDistances[1]
-
-                            // 计算需要的时间
-                            val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
-
-                            if (time > 0) {
-
-                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
-                            }
+                            val snapDistances = calculateDistanceToFinalSnap(layoutManager!!, targetView)
+                            action.update(snapDistances!![0], snapDistances[1], calculateTimeForDeceleration(Math.max(Math.abs(snapDistances[0]), Math.abs(snapDistances[1]))), android.view.animation.OvershootInterpolator(2.0f))
                         }
                     }
                 }
@@ -1549,38 +1520,55 @@ class MainActivity : AppCompatActivity() {
                         val centerView = snapHelper.findSnapView(rv.layoutManager)
                         centerView?.let {
                             val pos = rv.layoutManager?.getPosition(it) ?: 0
-                            val color = colors[pos % colors.size]
-                            onSelect(color)
+                            onSelect(colors[pos % colors.size])
                         }
                     }
                 }
             })
-
-
             val centerStart = Int.MAX_VALUE / 2
-            val startPos = centerStart - (centerStart % colors.size) + initialIndex
-
-
-            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
-
+            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(centerStart - (centerStart % colors.size) + initialIndex, 0)
             onSelect(colors[initialIndex])
         }
 
-        // 主队：默认蓝 (Index 1)
-        setupWheel(rvHome, 1) { tempHomeColor = it }
-        // 客队：默认红 (Index 0)
-        setupWheel(rvAway, 0) { tempAwayColor = it }
+        if (isHome) {
+            rvAway.visibility = android.view.View.GONE
+            setupWheel(rvHome, 1) { selectedTempColor = it }
+        } else {
+            rvHome.visibility = android.view.View.GONE
+            setupWheel(rvAway, 0) { selectedTempColor = it }
+        }
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
         btnConfirm.setOnClickListener {
-            homeTeamColor = tempHomeColor
-            awayTeamColor = tempAwayColor
+            val r = 15f * resources.displayMetrics.density
+
+            val finalColor = (0x66 shl 24) or (selectedTempColor and 0x00FFFFFF)
+
+            if (isHome) {
+                homeTeamColor = selectedTempColor
+                val overlay = findViewById<View>(R.id.overlayHome)
+
+                val shape = android.graphics.drawable.GradientDrawable()
+                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape.setColor(finalColor)
+
+                shape.cornerRadii = floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
+
+                overlay?.background = shape
+            } else {
+                awayTeamColor = selectedTempColor
+                val overlay = findViewById<View>(R.id.overlayAway)
+
+                val shape = android.graphics.drawable.GradientDrawable()
+                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape.setColor(finalColor)
+
+                shape.cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
+
+                overlay?.background = shape
+            }
             dialog.dismiss()
-            showTimeSettingDialog()
         }
 
         dialog.show()
