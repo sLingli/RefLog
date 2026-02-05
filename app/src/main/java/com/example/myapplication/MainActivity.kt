@@ -681,7 +681,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 1. 设置标题
-        tvTitle.text = if (isHistory) "历史详情" else getString(R.string.title_summary)
+        tvTitle.text = if (isHistory) getString(R.string.title_history_details) else getString(R.string.title_summary)
 
         val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
         val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
