@@ -1541,7 +1541,7 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
         btnConfirm.setOnClickListener {
-            val r = 15f * resources.displayMetrics.density
+            val r = 16f * resources.displayMetrics.density
 
             val finalColor = (0x66 shl 24) or (selectedTempColor and 0x00FFFFFF)
 
