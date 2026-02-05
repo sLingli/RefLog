@@ -10,18 +10,13 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
-import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.widget.NumberPicker
-import android.content.res.ColorStateList
-import android.util.DisplayMetrics
 import android.transition.TransitionManager
 import android.transition.AutoTransition
 
@@ -123,6 +118,16 @@ class MainActivity : AppCompatActivity() {
         val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
         val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
         val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
+        val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
+        val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
+
+        clickHomeColor?.setOnClickListener {
+            showColorSelectionDialog(isHome = true)
+        }
+
+        clickAwayColor?.setOnClickListener {
+            showColorSelectionDialog(isHome = false)
+        }
 
         // --- 🔵 手表版：比赛中沉浸式组件 ---
         val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
@@ -1464,16 +1469,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showColorSelectionDialog() {
+    private fun showColorSelectionDialog(isHome: Boolean) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
 
         val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
         val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
         val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
-
         val colors = listOf(
-            0xFFF44336.toInt(), // 红 (Index 0)
-            0xFF2196F3.toInt(), // 蓝 (Index 1)
+            0xFFF44336.toInt(), // 红
+            0xFF2196F3.toInt(), // 蓝
             0xFF4CAF50.toInt(), // 绿
             0xFFFFEB3B.toInt(), // 黄
             0xFFFFFFFF.toInt(), // 白
@@ -1482,53 +1486,28 @@ class MainActivity : AppCompatActivity() {
             0xFFFF9800.toInt()  // 橙
         )
 
-        var tempHomeColor = colors[1]
-        var tempAwayColor = colors[0]
+        var selectedTempColor = if (isHome) colors[1] else colors[0]
 
         fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
             rv.layoutManager = CenterScaleLayoutManager(this)
             val adapter = ColorWheelAdapter(colors) { }
             rv.adapter = adapter
-
-
             val density = resources.displayMetrics.density
             val padding = (45 * density).toInt()
             rv.setPadding(0, padding, 0, padding)
             rv.clipToPadding = false
 
-
             val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
-
-
                 override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
                     return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
                 }
-
-
                 override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
                     if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
-
                     return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
-
-
-                        override fun calculateTimeForDeceleration(dx: Int): Int {
-
-                            return super.calculateTimeForDeceleration(dx) * 5
-                        }
-
-
+                        override fun calculateTimeForDeceleration(dx: Int): Int = super.calculateTimeForDeceleration(dx) * 5
                         override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
-                            val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
-                            val dx = snapDistances!![0]
-                            val dy = snapDistances[1]
-
-                            // 计算需要的时间
-                            val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
-
-                            if (time > 0) {
-
-                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
-                            }
+                            val snapDistances = calculateDistanceToFinalSnap(layoutManager!!, targetView)
+                            action.update(snapDistances!![0], snapDistances[1], calculateTimeForDeceleration(Math.max(Math.abs(snapDistances[0]), Math.abs(snapDistances[1]))), android.view.animation.OvershootInterpolator(2.0f))
                         }
                     }
                 }
@@ -1541,38 +1520,55 @@ class MainActivity : AppCompatActivity() {
                         val centerView = snapHelper.findSnapView(rv.layoutManager)
                         centerView?.let {
                             val pos = rv.layoutManager?.getPosition(it) ?: 0
-                            val color = colors[pos % colors.size]
-                            onSelect(color)
+                            onSelect(colors[pos % colors.size])
                         }
                     }
                 }
             })
-
-
             val centerStart = Int.MAX_VALUE / 2
-            val startPos = centerStart - (centerStart % colors.size) + initialIndex
-
-
-            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
-
+            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(centerStart - (centerStart % colors.size) + initialIndex, 0)
             onSelect(colors[initialIndex])
         }
 
-        // 主队：默认蓝 (Index 1)
-        setupWheel(rvHome, 1) { tempHomeColor = it }
-        // 客队：默认红 (Index 0)
-        setupWheel(rvAway, 0) { tempAwayColor = it }
+        if (isHome) {
+            rvAway.visibility = android.view.View.GONE
+            setupWheel(rvHome, 1) { selectedTempColor = it }
+        } else {
+            rvHome.visibility = android.view.View.GONE
+            setupWheel(rvAway, 0) { selectedTempColor = it }
+        }
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
 
         btnConfirm.setOnClickListener {
-            homeTeamColor = tempHomeColor
-            awayTeamColor = tempAwayColor
+            val r = 15f * resources.displayMetrics.density
+
+            val finalColor = (0x66 shl 24) or (selectedTempColor and 0x00FFFFFF)
+
+            if (isHome) {
+                homeTeamColor = selectedTempColor
+                val overlay = findViewById<View>(R.id.overlayHome)
+
+                val shape = android.graphics.drawable.GradientDrawable()
+                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape.setColor(finalColor)
+
+                shape.cornerRadii = floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
+
+                overlay?.background = shape
+            } else {
+                awayTeamColor = selectedTempColor
+                val overlay = findViewById<View>(R.id.overlayAway)
+
+                val shape = android.graphics.drawable.GradientDrawable()
+                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                shape.setColor(finalColor)
+
+                shape.cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
+
+                overlay?.background = shape
+            }
             dialog.dismiss()
-            showTimeSettingDialog()
         }
 
         dialog.show()
