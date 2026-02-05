@@ -29,13 +29,12 @@
     <string name="team_away">Away</string>
 
     <!-- Labels -->
-    <string name="label_duration_fmt">%d min/half</string> <!-- 分钟/半场 -->
-    <string name="label_duration">Duration</string> <!-- 时长 -->
+    <string name="label_duration_fmt">%d min/half</string>
+    <string name="label_duration">Duration</string>
     <string name="label_score">Score</string>
     <string name="label_stoppage">Stoppage</string>
     <string name="label_event_details">Event Details</string>
     <string name="title_select_number">Select Number</string>
-    <!-- 带参数的标签 -->
     <string name="summary_duration">Duration: %1$d min/half</string>
     <string name="summary_score">Score: %1$d : %2$d</string>
     <string name="summary_yellow">Yellow Cards: %1$d</string>
@@ -59,4 +58,5 @@
     <string name="event_substitute">Sub</string>
     <!-- Clear History Dialog -->
     <string name="msg_confirm_clear_all">Clear All History?</string>
+    <string name="title_history_details">Match Details</string>
 </resources>
