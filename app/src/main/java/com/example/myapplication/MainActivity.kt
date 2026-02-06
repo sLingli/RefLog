@@ -654,12 +654,21 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
+        dialog.show()
+
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            window.setLayout(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            window.decorView.setPadding(0, 0, 0, 0)
+        }
+
         // 取消按钮
         btnCancel.setOnClickListener {
             dialog.dismiss()
         }
-
-        // 确认按钮
         btnConfirm.setOnClickListener {
             halfTimeSeconds = selectedTime * 60L
             matchTimeSet = true
@@ -667,15 +676,8 @@ class MainActivity : AppCompatActivity() {
             val btnSetMatchTime = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetMatchTime)
             btnSetMatchTime?.text = getString(R.string.fmt_duration_simple, selectedTime)
 
-
-
-
             dialog.dismiss()
-
         }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
