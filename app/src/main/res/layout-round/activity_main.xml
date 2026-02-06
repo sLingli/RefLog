@@ -17,8 +17,8 @@
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="6dp"
-            android:format12Hour="HH:mm"
-            android:format24Hour="HH:mm"
+            android:format12Hour="HH:mm:ss"
+            android:format24Hour="HH:mm:ss"
             android:textColor="#FFFFFF"
             android:textSize="26sp"
             android:textStyle="bold" />
