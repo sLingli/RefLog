@@ -2,10 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- 声明这是一个手表应用 -->
     <uses-feature android:name="android.hardware.type.watch" />
 
     <application
@@ -17,7 +15,6 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
 
-        <!-- 手表独立运行声明，必须在 application 标签内部 -->
         <meta-data
             android:name="com.google.android.wearable.standalone"
             android:value="true" />
@@ -31,6 +28,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".TimeSelectionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
 
     </application>
 
