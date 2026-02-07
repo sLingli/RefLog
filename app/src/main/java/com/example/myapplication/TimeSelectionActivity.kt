@@ -128,13 +128,11 @@ fun TimeSelectionScreen(onCancel: () -> Unit, onConfirm: (Int) -> Unit) {
         }
     }
 }
-// 1. 专门写一个给预览用的函数，不带参数
 @Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
 @Composable
 fun TimeSelectionPreview() {
-    // 2. 在这里调用你的主函数，随便给它传点“假动作”
     TimeSelectionScreen(
-        onCancel = { /* 预览里点取消没反应 */ },
-        onConfirm = { minutes -> /* 预览里点确认没反应 */ }
+        onCancel = {  },
+        onConfirm = { minutes ->  }
     )
 }

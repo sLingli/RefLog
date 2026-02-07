@@ -22,6 +22,21 @@ import android.transition.AutoTransition
 
 class MainActivity : AppCompatActivity() {
 
+    private val timeSettingLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val selectedMinutes = result.data?.getIntExtra("SELECTED_TIME", 45) ?: 45
+
+            halfTimeSeconds = selectedMinutes * 60L
+            matchTimeSet = true
+
+            val btnSetMatchTime = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetMatchTime)
+            btnSetMatchTime?.text = getString(R.string.fmt_duration_simple, selectedMinutes)
+
+            addLog("⚙️ 比赛时间调整为: $selectedMinutes 分钟")
+        }
+    }
     //  状态常量
     private companion object {
         const val STATE_READY = "ready"
@@ -121,10 +136,10 @@ class MainActivity : AppCompatActivity() {
         val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
         val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
 
+        // 颜色选择逻辑 (保持不变)
         clickHomeColor?.setOnClickListener {
             showColorSelectionDialog(isHome = true)
         }
-
         clickAwayColor?.setOnClickListener {
             showColorSelectionDialog(isHome = false)
         }
@@ -135,37 +150,34 @@ class MainActivity : AppCompatActivity() {
         val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
         val btnPauseRound = findViewById<android.view.View>(R.id.btnPauseRound)
         val btnEndRound = findViewById<android.view.View>(R.id.btnEndRound)
-        // 【开始/暂停逻辑】
-        mainButton.setOnClickListener { toggleTimer() }
-        btnBigStart?.setOnClickListener { toggleTimer() }    // 中圈大按钮
-        btnPauseRound?.setOnClickListener { toggleTimer() } // 手面控制板暂停
 
-        // 【历史记录逻辑】
+        // 【开始/暂停逻辑】 (保持不变)
+        mainButton.setOnClickListener { toggleTimer() }
+        btnBigStart?.setOnClickListener { toggleTimer() }
+        btnPauseRound?.setOnClickListener { toggleTimer() }
+
+        // 【历史记录逻辑】 (保持不变)
         btnHistory.setOnClickListener { showHistoryDialog() }
         btnHistorySmall?.setOnClickListener { showHistoryDialog() }
 
-
         btnSetMatchTime?.setOnClickListener {
-            showTimeSettingDialog()
+            val intent = android.content.Intent(this, TimeSelectionActivity::class.java)
+            timeSettingLauncher.launch(intent)
         }
 
-        // --- 沉浸式自动隐藏逻辑 ---
         hideRunnable = Runnable {
             controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
             timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
         }
 
         touchOverlay?.setOnClickListener {
-            // 显示面板
             controlPanel?.animate()?.translationY(0f)?.setDuration(300)?.start()
-            // 计时器缩小上移
             timerContainer?.animate()?.scaleX(0.85f)?.scaleY(0.85f)?.translationY(-60f)?.setDuration(300)?.start()
 
             hideHandler.removeCallbacks(hideRunnable!!)
             hideHandler.postDelayed(hideRunnable!!, 3000)
         }
 
-        // --- 长按结束逻辑 ---
         btnEndRound?.let { setupLongPressEnd(it) }
         endHalfButton?.let { setupLongPressEnd(it) }
 
