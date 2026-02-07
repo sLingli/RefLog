@@ -9,7 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.launch
@@ -37,7 +37,6 @@ class TimeSelectionActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 TimeSelectionScreen(
-                    onCancel = { finish() },
                     onConfirm = { minutes ->
                         val res = Intent().apply { putExtra("SELECTED_TIME", minutes) }
                         setResult(Activity.RESULT_OK, res)
@@ -50,19 +49,21 @@ class TimeSelectionActivity : ComponentActivity() {
 }
 
 @Composable
-fun TimeSelectionScreen(onCancel: () -> Unit, onConfirm: (Int) -> Unit) {
+fun TimeSelectionScreen(onConfirm: (Int) -> Unit) {
     val timeOptions = (1..45).toList()
-    val pickerState = rememberPickerState(initialNumberOfOptions = timeOptions.size, initiallySelectedOption = 44)
+    val pickerState = rememberPickerState(
+        initialNumberOfOptions = timeOptions.size,
+        initiallySelectedOption = 44
+    )
+
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
     val view = LocalView.current
 
-    // 震动反馈
     LaunchedEffect(pickerState.selectedOption) {
         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
     }
 
-    // 自动获取焦点
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     Box(
@@ -86,6 +87,17 @@ fun TimeSelectionScreen(onCancel: () -> Unit, onConfirm: (Int) -> Unit) {
             .focusable(),
         contentAlignment = Alignment.Center
     ) {
+        Text(
+            text = stringResource(R.string.label_min),
+            color = Color(0xFFAAAAAA),
+            style = MaterialTheme.typography.title3,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 20.dp)
+        )
+
+        // 2. 中间的滚轮 (Picker)
         Picker(
             state = pickerState,
             contentDescription = "Select Time",
@@ -95,36 +107,30 @@ fun TimeSelectionScreen(onCancel: () -> Unit, onConfirm: (Int) -> Unit) {
             Text(
                 text = "${timeOptions[index]}",
                 style = TextStyle(
-                    fontSize = if (isSelected) 54.sp else 30.sp,
-                    color = if (isSelected) Color(0xFF00FF85) else Color.Gray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = if (isSelected) 60.sp else 32.sp,
+                    color = if (isSelected) Color.White else Color.DarkGray,
+                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                     textAlign = TextAlign.Center
                 )
             )
         }
 
-        Text(
-            text = "min",
-            color = Color(0xFF00FF85),
-            fontSize = 14.sp,
-            modifier = Modifier.align(Alignment.Center).padding(top = 50.dp)
-        )
-
-        Row(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp),
-            horizontalArrangement = Arrangement.Center
+        Button(
+            onClick = { onConfirm(timeOptions[pickerState.selectedOption]) },
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00E676)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 15.dp)
+                .width(100.dp)
+                .height(42.dp)
         ) {
-            Button(
-                onClick = onCancel,
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFFF3B30)),
-                modifier = Modifier.padding(end = 12.dp).size(52.dp)
-            ) { Icon(Icons.Default.Close, null) }
-
-            Button(
-                onClick = { onConfirm(timeOptions[pickerState.selectedOption]) },
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00FF85)),
-                modifier = Modifier.padding(start = 12.dp).size(52.dp)
-            ) { Icon(Icons.Default.Check, null, tint = Color.Black) }
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Confirm",
+                tint = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -132,7 +138,6 @@ fun TimeSelectionScreen(onCancel: () -> Unit, onConfirm: (Int) -> Unit) {
 @Composable
 fun TimeSelectionPreview() {
     TimeSelectionScreen(
-        onCancel = {  },
         onConfirm = { minutes ->  }
     )
 }
