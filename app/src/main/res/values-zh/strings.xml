@@ -31,6 +31,7 @@
     <string name="label_stoppage">补时</string>
     <string name="label_event_details">事件明细</string>
     <string name="title_select_number">选择号码</string>
+    <string name="label_min">分钟</string>
     <!-- 带参数的标签 -->
     <string name="summary_duration">时长: 每半场 %1$d分</string>
     <string name="summary_score">比分: %1$d : %2$d</string>

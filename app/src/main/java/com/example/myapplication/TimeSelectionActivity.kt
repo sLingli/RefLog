@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.launch
@@ -87,7 +88,7 @@ fun TimeSelectionScreen(onConfirm: (Int) -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "min",
+            text = stringResource(R.string.label_min),
             color = Color(0xFFAAAAAA),
             style = MaterialTheme.typography.title3,
             fontWeight = FontWeight.Medium,
