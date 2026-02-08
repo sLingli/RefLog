@@ -29,7 +29,7 @@
     <string name="team_away">Away</string>
 
     <!-- Labels -->
-    <string name="label_duration_fmt">%d min/half</string>
+    <string name="label_duration_fmt">%d min/Half</string>
     <string name="label_duration">Duration</string>
     <string name="label_score">Score</string>
     <string name="label_stoppage">Stoppage</string>
@@ -42,7 +42,7 @@
     <string name="summary_stoppage">Stoppage: 1st %1$s | 2nd %2$s</string>
     <string name="btn_ok">OK</string>
     <string name="dialog_no_records">No Match Records</string>
-    <string name="unit_min_half">min/half</string>
+    <string name="unit_min_half">min/Half</string>
     <string name="label_min">min</string>
 
     <!-- History & Records -->
@@ -51,7 +51,7 @@
     <string name="msg_no_events">No events recorded</string>
 
     <!-- Time Format (带参数) -->
-    <string name="fmt_duration_simple">%1$d min/half</string>
+    <string name="fmt_duration_simple">%1$d min/Half</string>
     <!-- Stoppage Status -->
     <string name="status_first_half_stoppage">1st Half Stoppage</string>
     <string name="status_second_half_stoppage">2nd Half Stoppage</string>

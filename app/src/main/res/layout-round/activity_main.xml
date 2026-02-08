@@ -109,7 +109,6 @@
             android:layout_above="@id/btnHistorySmall"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="8dp"
-            android:text="45 min/half"
             xmlns:tools="http://schemas.android.com/tools"
             tools:text="45 min/half"
             android:textColor="#FFFFFF"

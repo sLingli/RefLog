@@ -133,6 +133,9 @@ class MainActivity : AppCompatActivity() {
         val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
         val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
         val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
+        val initialMinutes = (halfTimeSeconds / 60).toInt()
+        val btn = btnSetMatchTime as? com.google.android.material.button.MaterialButton
+        btn?.text = getString(R.string.fmt_duration_simple, initialMinutes)
         val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
         val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
 
@@ -160,7 +163,7 @@ class MainActivity : AppCompatActivity() {
         btnHistory.setOnClickListener { showHistoryDialog() }
         btnHistorySmall?.setOnClickListener { showHistoryDialog() }
 
-        btnSetMatchTime?.setOnClickListener {
+        btnSetMatchTime.setOnClickListener {
             val intent = android.content.Intent(this, TimeSelectionActivity::class.java)
             timeSettingLauncher.launch(intent)
         }
