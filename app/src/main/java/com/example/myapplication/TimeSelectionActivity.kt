@@ -102,13 +102,15 @@ fun TimeSelectionScreen(
                 Picker(
                     state = pickerState,
                     contentDescription = "时间选择",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(x = -5.dp),
                     separation = 4.dp
                 ) { optionIndex ->
                     val isSelected = pickerState.selectedOption == optionIndex
 
                     Box(
-                        modifier = Modifier.height(90.dp),
+                        modifier = Modifier.height(100.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -125,13 +127,13 @@ fun TimeSelectionScreen(
                 Text(
                     text = stringResource(R.string.label_min),
                     style = TextStyle(
-                        fontSize = 20.sp,
+                        fontSize = 22.sp,
                         color = Color(0xFF00FF85),
                         fontWeight = FontWeight.Bold
                     ),
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .offset(x = 68.dp, y = 15.dp)
+                        .offset(x = 68.dp, y = 36.dp)
                 )
             }
 
@@ -155,7 +157,7 @@ fun TimeSelectionScreen(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Confirm",
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(60.dp)
                     )
                 }
             }

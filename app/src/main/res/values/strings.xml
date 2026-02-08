@@ -43,7 +43,7 @@
     <string name="btn_ok">OK</string>
     <string name="dialog_no_records">No Match Records</string>
     <string name="unit_min_half">min/half</string>
-    <string name="label_min">MIN</string>
+    <string name="label_min">min</string>
 
     <!-- History & Records -->
     <string name="msg_history_cleared">History Cleared</string>
