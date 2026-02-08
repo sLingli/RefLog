@@ -784,7 +784,6 @@ class MainActivity : AppCompatActivity() {
 // 5. 补时
         tvStatStoppage.text = getString(R.string.summary_stoppage, formatTime(st1), formatTime(st2))
 
-        // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
         listEvents.removeAllViews()
         if (eventsToShow.isEmpty()) {
             val tv = TextView(this)
