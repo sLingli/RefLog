@@ -11,16 +11,18 @@
         android:layout_height="match_parent"
         android:visibility="visible">
 
-        <TextClock
+        <com.example.myapplication.FluidClockView
+            android:id="@+id/fluid_clock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="6dp"
-            android:format12Hour="HH:mm:ss"
-            android:format24Hour="HH:mm:ss"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:fontFamily="monospace"
+            android:fontFeatureSettings="tnum"
+            android:text="00:00"
             android:textColor="#FFFFFF"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textStyle="bold" />
 
         <FrameLayout
@@ -36,7 +38,8 @@
                 android:layout_height="match_parent"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
-                android:src="@drawable/ic_football_field" />
+                android:src="@drawable/ic_football_field"
+                app:tint="#888888"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -83,23 +86,32 @@
                 </FrameLayout>
             </LinearLayout>
 
+            <View
+                android:id="@+id/rippleRing"
+                android:layout_width="68dp"
+                android:layout_height="68dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_ripple_ring" />
+
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBigStart"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
+                android:layout_width="68dp"
+                android:layout_height="68dp"
                 android:layout_gravity="center"
                 android:text="@string/btn_start"
                 android:textColor="#000000"
-                android:textSize="14sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:padding="0dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
-                app:cornerRadius="38dp"
-                app:backgroundTint="#00E676" />
+                app:cornerRadius="34dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_btn_start_3d" />
         </FrameLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -109,7 +121,6 @@
             android:layout_above="@id/btnHistorySmall"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="8dp"
-            android:text="45 min/half"
             xmlns:tools="http://schemas.android.com/tools"
             tools:text="45 min/half"
             android:textColor="#FFFFFF"

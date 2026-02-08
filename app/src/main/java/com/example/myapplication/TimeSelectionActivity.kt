@@ -49,36 +49,40 @@ class TimeSelectionActivity : ComponentActivity() {
 }
 
 @Composable
-fun TimeSelectionScreen(onConfirm: (Int) -> Unit) {
-    val timeOptions = (1..45).toList()
+fun TimeSelectionScreen(
+    onConfirm: (Int) -> Unit
+) {
+    val items = remember { (1..45).toList() }
     val pickerState = rememberPickerState(
-        initialNumberOfOptions = timeOptions.size,
+        initialNumberOfOptions = items.size,
         initiallySelectedOption = 44
     )
 
-    val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
     val view = LocalView.current
 
     LaunchedEffect(pickerState.selectedOption) {
         view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
     }
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
             .onRotaryScrollEvent { event ->
-                coroutineScope.launch {
-                    val newTarget = if (event.verticalScrollPixels > 0) {
-                        pickerState.selectedOption + 1
-                    } else {
-                        pickerState.selectedOption - 1
-                    }
-                    if (newTarget in 0 until timeOptions.size) {
-                        pickerState.scrollToOption(newTarget)
+                if (Math.abs(event.verticalScrollPixels) > 16f) {
+                    coroutineScope.launch {
+                        val targetIndex = if (event.verticalScrollPixels > 0) {
+                            (pickerState.selectedOption + 1).coerceAtMost(items.size - 1)
+                        } else {
+                            (pickerState.selectedOption - 1).coerceAtLeast(0)
+                        }
+                        pickerState.animateScrollToOption(targetIndex)
                     }
                 }
                 true
@@ -87,50 +91,76 @@ fun TimeSelectionScreen(onConfirm: (Int) -> Unit) {
             .focusable(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(R.string.label_min),
-            color = Color(0xFFAAAAAA),
-            style = MaterialTheme.typography.title3,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 20.dp)
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
 
-        // 2. 中间的滚轮 (Picker)
-        Picker(
-            state = pickerState,
-            contentDescription = "Select Time",
-            modifier = Modifier.fillMaxHeight(0.6f)
-        ) { index ->
-            val isSelected = (pickerState.selectedOption == index)
-            Text(
-                text = "${timeOptions[index]}",
-                style = TextStyle(
-                    fontSize = if (isSelected) 60.sp else 32.sp,
-                    color = if (isSelected) Color.White else Color.DarkGray,
-                    fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
-                    textAlign = TextAlign.Center
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Picker(
+                    state = pickerState,
+                    contentDescription = "时间选择",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(x = -5.dp),
+                    separation = 4.dp
+                ) { optionIndex ->
+                    val isSelected = pickerState.selectedOption == optionIndex
+
+                    Box(
+                        modifier = Modifier.height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${items[optionIndex]}",
+                            style = TextStyle(
+                                fontSize = if (isSelected) 100.sp else 38.sp,
+                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                                color = if (isSelected) Color.White else Color.Gray.copy(alpha = 0.3f)
+                            )
+                        )
+                    }
+                }
+
+                Text(
+                    text = stringResource(R.string.label_min),
+                    style = TextStyle(
+                        fontSize = 22.sp,
+                        color = Color(0xFF00FF85),
+                        fontWeight = FontWeight.Bold
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(x = 68.dp, y = 36.dp)
                 )
-            )
-        }
+            }
 
-        Button(
-            onClick = { onConfirm(timeOptions[pickerState.selectedOption]) },
-            shape = RoundedCornerShape(50),
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00E676)),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 15.dp)
-                .width(100.dp)
-                .height(42.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Confirm",
-                tint = Color.Black,
-                modifier = Modifier.size(24.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Button(
+                    onClick = { onConfirm(items[pickerState.selectedOption]) },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFF00FF85),
+                        contentColor = Color.Black
+                    ),
+                    modifier = Modifier
+                        .width(110.dp)
+                        .height(46.dp),
+                    shape = RoundedCornerShape(23.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Confirm",
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
         }
     }
 }
