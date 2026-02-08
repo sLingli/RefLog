@@ -11,16 +11,18 @@
         android:layout_height="match_parent"
         android:visibility="visible">
 
-        <TextClock
+        <com.example.myapplication.FluidClockView
+            android:id="@+id/fluid_clock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="6dp"
-            android:format12Hour="HH:mm:ss"
-            android:format24Hour="HH:mm:ss"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:fontFamily="monospace"
+            android:fontFeatureSettings="tnum"
+            android:text="00:00"
             android:textColor="#FFFFFF"
-            android:textSize="26sp"
+            android:textSize="30sp"
             android:textStyle="bold" />
 
         <FrameLayout
