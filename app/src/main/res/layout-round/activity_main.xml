@@ -84,11 +84,19 @@
                 </FrameLayout>
             </LinearLayout>
 
+            <View
+                android:id="@+id/rippleRing"
+                android:layout_width="68dp"
+                android:layout_height="68dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_ripple_ring" />
+
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBigStart"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
+                android:layout_width="68dp"
+                android:layout_height="68dp"
                 android:layout_gravity="center"
                 android:text="@string/btn_start"
                 android:textColor="#000000"
@@ -99,8 +107,9 @@
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
-                app:cornerRadius="38dp"
-                app:backgroundTint="#00E676" />
+                app:cornerRadius="34dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_btn_start_3d" />
         </FrameLayout>
 
         <com.google.android.material.button.MaterialButton

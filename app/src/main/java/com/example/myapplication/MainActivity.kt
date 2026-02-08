@@ -97,6 +97,9 @@ class MainActivity : AppCompatActivity() {
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
+    private val rippleHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var rippleRunnable: Runnable? = null
+
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,15 +124,12 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
-        // 1. 基础组件绑定 (通用/方屏)
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
-
-        // --- 🟢 手表版：准备界面组件 ---
         val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
         val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
         val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
@@ -139,7 +139,6 @@ class MainActivity : AppCompatActivity() {
         val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
         val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
 
-        // 颜色选择逻辑 (保持不变)
         clickHomeColor?.setOnClickListener {
             showColorSelectionDialog(isHome = true)
         }
@@ -147,19 +146,16 @@ class MainActivity : AppCompatActivity() {
             showColorSelectionDialog(isHome = false)
         }
 
-        // --- 🔵 手表版：比赛中沉浸式组件 ---
         val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
         val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
         val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
         val btnPauseRound = findViewById<android.view.View>(R.id.btnPauseRound)
         val btnEndRound = findViewById<android.view.View>(R.id.btnEndRound)
 
-        // 【开始/暂停逻辑】 (保持不变)
         mainButton.setOnClickListener { toggleTimer() }
         btnBigStart?.setOnClickListener { toggleTimer() }
         btnPauseRound?.setOnClickListener { toggleTimer() }
 
-        // 【历史记录逻辑】 (保持不变)
         btnHistory.setOnClickListener { showHistoryDialog() }
         btnHistorySmall?.setOnClickListener { showHistoryDialog() }
 
@@ -185,6 +181,32 @@ class MainActivity : AppCompatActivity() {
         endHalfButton?.let { setupLongPressEnd(it) }
 
         recordManager = MatchRecordManager(this)
+
+        val rippleRing = findViewById<View>(R.id.rippleRing)
+
+        rippleRunnable = object : Runnable {
+            override fun run() {
+
+                rippleRing.scaleX = 1f
+                rippleRing.scaleY = 1f
+                rippleRing.alpha = 1f
+                rippleRing.visibility = View.VISIBLE
+
+                rippleRing.animate()
+                    .scaleX(1.5f)
+                    .scaleY(1.5f)
+                    .alpha(0f)
+                    .setDuration(1000)
+                    .withEndAction {
+                        rippleRing.visibility = View.GONE
+                    }
+                    .start()
+
+                rippleHandler.postDelayed(this, 3000)
+            }
+        }
+        rippleHandler.post(rippleRunnable!!)
+
     }
 
     private fun setupLongPressEnd(button: android.view.View) {
@@ -274,6 +296,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTimer() {
+        rippleRunnable?.let { rippleHandler.removeCallbacks(it) }
+        findViewById<View>(R.id.rippleRing)?.visibility = View.GONE
 
         // 1. 获取布局引用
         val layoutReady = findViewById<android.view.View>(R.id.layoutReady)
@@ -456,8 +480,13 @@ class MainActivity : AppCompatActivity() {
         // 手机版结束按钮隐藏
         findViewById<View>(R.id.endHalfButton).visibility = View.GONE
 
-        Log.i("FootballTimer", "📢 比赛已重置")
+        Log.i("FootballTimer", "")
         animateHistoryButton(true)
+        val rippleRing = findViewById<View>(R.id.rippleRing)
+        if (rippleRing != null && rippleRunnable != null) {
+            rippleHandler.removeCallbacks(rippleRunnable!!)
+            rippleHandler.post(rippleRunnable!!)
+        }
     }
 
     // 计时器核心逻辑
