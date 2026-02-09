@@ -44,7 +44,7 @@
     <!-- 历史记录相关 -->
     <string name="msg_history_cleared">历史记录已清空</string>
     <string name="msg_no_history_to_clear">暂无历史记录可清空</string>
-    <string name="msg_no_events">暂无事件记录</string>
+    <string name="msg_no_events">暂无比赛记录</string>
 
     <!-- 时间格式 (带参数) -->
     <string name="fmt_duration_simple">%1$d分钟/半场</string>
