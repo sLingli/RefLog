@@ -1,4 +1,4 @@
-package com.example.myapplication // 🔥 改成你的包名
+package com.example.myapplication 
 
 import android.os.Bundle
 import android.widget.Toast
@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,7 +28,6 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
 import androidx.wear.compose.material.dialog.Alert
 
-// 🔥 UI 专用的数据模型 (为了不跟你的 MatchRecord 混淆)
 data class MatchHistoryUiModel(
     val id: Long,
     val date: String,
@@ -42,18 +42,15 @@ class HistoryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. 初始化数据管理器
         recordManager = MatchRecordManager(this)
 
-        // 2. 获取所有原始记录
         val rawRecords = recordManager.getAllRecords()
 
-        // 3. 🔥 翻译数据：把 MatchRecord 转成 MatchHistoryUiModel
         val uiRecords = rawRecords.map { record ->
             MatchHistoryUiModel(
                 id = record.id,
-                date = record.date, // 直接用
-                duration = "${record.halfTimeMinutes}分钟/半场", // 拼接字符串
+                date = record.date,
+                duration = "${record.halfTimeMinutes}分钟/半场",
                 stoppage = "补时: 上+${record.firstHalfStoppage} / 下+${record.secondHalfStoppage}",
                 events = "进球:${record.goalCount}  红牌:${record.redCount}  换人:${record.substitutionCount}"
             )
@@ -80,21 +77,18 @@ class HistoryActivity : ComponentActivity() {
     }
 }
 
-// ... (下面的 Compose 代码完全不用动，保持原样即可) ...
-// ... (包括 HistoryScreen 和 HistoryItemCard) ...
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
-    initialRecords: List<MatchHistoryUiModel>, // 🔥 这里也改了类型
+    initialRecords: List<MatchHistoryUiModel>, 
     onClose: () -> Unit,
     onClearAll: () -> Unit,
-    onDeleteOne: (MatchHistoryUiModel) -> Unit // 🔥 这里也改了类型
+    onDeleteOne: (MatchHistoryUiModel) -> Unit
 ) {
     val records = remember { mutableStateListOf<MatchHistoryUiModel>().apply { addAll(initialRecords) } }
     val listState = rememberScalingLazyListState()
 
-    // 控制删除确认弹窗
     var recordToDelete by remember { mutableStateOf<MatchHistoryUiModel?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
 
@@ -120,7 +114,7 @@ fun HistoryScreen(
             if (records.isEmpty()) {
                 item {
                     Text(
-                        text = "暂无比赛记录",
+                        text = stringResource(R.string.msg_no_events),
                         color = Color(0xFF666666),
                         modifier = Modifier.padding(20.dp)
                     )
@@ -190,7 +184,7 @@ fun HistoryScreen(
     // 清空全部弹窗
     if (showClearAllDialog) {
         Alert(
-            title = { Text("清空所有历史?", textAlign = TextAlign.Center) },
+            title = { Text(stringResource(R.string.msg_confirm_clear_all), textAlign = TextAlign.Center) },
             positiveButton = {
                 Button(
                     onClick = {
@@ -210,11 +204,10 @@ fun HistoryScreen(
     }
 }
 
-// 🔥 单个历史记录卡片
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryItemCard(
-    record: MatchHistoryUiModel, // 🔥 类型已修改
+    record: MatchHistoryUiModel,
     onLongClick: () -> Unit
 ) {
     Card(
@@ -228,13 +221,11 @@ fun HistoryItemCard(
         contentColor = Color.White
     ) {
         Column(modifier = Modifier.padding(4.dp)) {
-            // 第一行：日期 + 时长
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 🔥 这里 Text 就不会报错了，因为 record 是我们新定义的类，它一定有 date 字段
                 Text(
                     text = record.date,
                     color = Color(0xFF4CAF50),
@@ -250,21 +241,7 @@ fun HistoryItemCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 第二行：补时
-            Text(
-                text = record.stoppage,
-                color = Color(0xFFFF9800),
-                fontSize = 12.sp
-            )
 
-            // 第三行：事件
-            Text(
-                text = record.events,
-                color = Color(0xFFCCCCCC),
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }
@@ -276,7 +253,6 @@ fun HistoryItemCard(
 )
 @Composable
 fun HistoryScreenPreview() {
-    // 1. 搞几条假数据，方便看效果
     val mockRecords = listOf(
         MatchHistoryUiModel(1, "2024-02-08", "45分钟/半场", "补时: 上+2 / 下+3", "进球: 2  红牌: 0"),
         MatchHistoryUiModel(2, "2024-02-07", "45分钟/半场", "补时: 上+1 / 下+4", "进球: 1  红牌: 1"),
@@ -287,9 +263,9 @@ fun HistoryScreenPreview() {
     MaterialTheme {
         HistoryScreen(
             initialRecords = mockRecords,
-            onClose = {},     // 预览里不需要真的关闭
-            onClearAll = {},  // 预览里不需要真的清空
-            onDeleteOne = {}  // 预览里不需要真的删除
+            onClose = {},
+            onClearAll = {},
+            onDeleteOne = {}
         )
     }
 }
