@@ -1,4 +1,4 @@
-package com.example.myapplication 
+package com.example.myapplication
 
 import android.os.Bundle
 import android.widget.Toast
@@ -18,15 +18,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.items
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
 import androidx.wear.compose.material.dialog.Alert
+import androidx.wear.compose.material.*
 
 data class MatchHistoryUiModel(
     val id: Long,
@@ -87,7 +85,7 @@ fun HistoryScreen(
     onDeleteOne: (MatchHistoryUiModel) -> Unit
 ) {
     val records = remember { mutableStateListOf<MatchHistoryUiModel>().apply { addAll(initialRecords) } }
-    val listState = rememberScalingLazyListState()
+    val listState: androidx.wear.compose.material.ScalingLazyListState = rememberScalingLazyListState()
 
     var recordToDelete by remember { mutableStateOf<MatchHistoryUiModel?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
@@ -98,9 +96,11 @@ fun HistoryScreen(
         ScalingLazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().background(Color.Black),
-            anchorType = androidx.wear.compose.foundation.lazy.ScalingLazyListAnchorType.ItemStart
+            autoCentering = AutoCenteringParams(itemIndex = 0),
+            scalingParams = ScalingLazyColumnDefaults.scalingParams()
         ) {
-            // 1. 顶部图标
+            // ...
+
             item {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_history),
@@ -144,15 +144,6 @@ fun HistoryScreen(
                         Icon(painterResource(id = R.drawable.outline_delete_24), null)
                     }
 
-                    // 关闭 (绿)
-                    Button(
-                        onClick = onClose,
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF00E676)),
-                        modifier = Modifier.size(50.dp).padding(start = 8.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(painterResource(id = R.drawable.outline_close_24), null, tint = Color.White)
-                    }
                 }
             }
         }
