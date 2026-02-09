@@ -124,6 +124,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
+        // 1. 绑定基础视图
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
@@ -133,9 +134,13 @@ class MainActivity : AppCompatActivity() {
         val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
         val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
         val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
+
+        // 2. 初始化时间设置按钮文字
         val initialMinutes = (halfTimeSeconds / 60).toInt()
         val btn = btnSetMatchTime as? com.google.android.material.button.MaterialButton
         btn?.text = getString(R.string.fmt_duration_simple, initialMinutes)
+
+        // 3. 颜色选择逻辑
         val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
         val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
 
@@ -146,6 +151,7 @@ class MainActivity : AppCompatActivity() {
             showColorSelectionDialog(isHome = false)
         }
 
+        // 4. 比赛控制面板逻辑
         val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
         val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
         val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
@@ -156,9 +162,14 @@ class MainActivity : AppCompatActivity() {
         btnBigStart?.setOnClickListener { toggleTimer() }
         btnPauseRound?.setOnClickListener { toggleTimer() }
 
-        btnHistory.setOnClickListener { showHistoryDialog() }
-        btnHistorySmall?.setOnClickListener { showHistoryDialog() }
+        val openHistoryAction = {
+            val intent = android.content.Intent(this, HistoryActivity::class.java)
+            startActivity(intent)
+        }
+        btnHistory.setOnClickListener { openHistoryAction() }
+        btnHistorySmall?.setOnClickListener { openHistoryAction() }
 
+        // 5. 时间选择跳转 (Compose)
         btnSetMatchTime.setOnClickListener {
             val intent = android.content.Intent(this, TimeSelectionActivity::class.java)
             timeSettingLauncher.launch(intent)
@@ -183,30 +194,29 @@ class MainActivity : AppCompatActivity() {
         recordManager = MatchRecordManager(this)
 
         val rippleRing = findViewById<View>(R.id.rippleRing)
+        if (rippleRing != null) {
+            rippleRunnable = object : Runnable {
+                override fun run() {
+                    rippleRing.scaleX = 1f
+                    rippleRing.scaleY = 1f
+                    rippleRing.alpha = 1f
+                    rippleRing.visibility = View.VISIBLE
 
-        rippleRunnable = object : Runnable {
-            override fun run() {
+                    rippleRing.animate()
+                        .scaleX(1.5f)
+                        .scaleY(1.5f)
+                        .alpha(0f)
+                        .setDuration(1000)
+                        .withEndAction {
+                            rippleRing.visibility = View.GONE
+                        }
+                        .start()
 
-                rippleRing.scaleX = 1f
-                rippleRing.scaleY = 1f
-                rippleRing.alpha = 1f
-                rippleRing.visibility = View.VISIBLE
-
-                rippleRing.animate()
-                    .scaleX(1.5f)
-                    .scaleY(1.5f)
-                    .alpha(0f)
-                    .setDuration(1000)
-                    .withEndAction {
-                        rippleRing.visibility = View.GONE
-                    }
-                    .start()
-
-                rippleHandler.postDelayed(this, 3000)
+                    rippleHandler.postDelayed(this, 3000)
+                }
             }
+            rippleHandler.post(rippleRunnable!!)
         }
-        rippleHandler.post(rippleRunnable!!)
-
     }
 
     private fun setupLongPressEnd(button: android.view.View) {
