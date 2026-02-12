@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.ui.platform.ComposeView
-import androidx.fragment.app.Fragment
 import androidx.wear.compose.material.MaterialTheme
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
@@ -22,6 +21,19 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         recordManager = MatchRecordManager(requireContext())
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): android.app.Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+        dialog.setOnShowListener { dialogInterface ->
+            val bottomSheetDialog = dialogInterface as com.google.android.material.bottomsheet.BottomSheetDialog
+            val bottomSheet = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            if (bottomSheet != null) {
+                // 将默认的白色背景设为透明，这样就只会显示 Compose 中的黑色圆角背景
+                bottomSheet.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            }
+        }
+        return dialog
     }
 
     override fun onCreateView(
