@@ -12,7 +12,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -131,7 +131,6 @@ fun HistoryScreen(
     }
     val listState: ScalingLazyListState = rememberScalingLazyListState()
 
-    var recordToDelete by remember { mutableStateOf<MatchHistoryUiModel?>(null) }
     var showClearAllDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape)) {
@@ -172,8 +171,11 @@ fun HistoryScreen(
                     items(records, key = { it.id }) { record ->
                         HistoryItemCard(
                             record = record,
-                            onLongClick = { recordToDelete = record },
-                            onDelete = { recordToDelete = record }
+                            onLongClick = { /* recordToDelete logic removed */ },
+                            onDelete = {
+                                onDeleteOne(record)
+                                records.remove(record)
+                            }
                         )
                     }
                 }
@@ -198,22 +200,6 @@ fun HistoryScreen(
                 }
             }
         }
-    }
-
-    // 删除单条弹窗（圆形）
-    if (recordToDelete != null) {
-        CircularAlert(
-            onDismissRequest = { recordToDelete = null },
-            title = { Text("删除这条记录?", textAlign = TextAlign.Center, color = Color.White) },
-            confirmText = { Icon(painterResource(R.drawable.outline_delete_24), contentDescription = null, tint = Color.White) },
-            onConfirm = {
-                onDeleteOne(recordToDelete!!)
-                records.remove(recordToDelete)
-                recordToDelete = null
-            },
-            dismissText = { Icon(painterResource(R.drawable.outline_close_24), contentDescription = null, tint = Color.White) },
-            onDismissAction = { recordToDelete = null }
-        )
     }
 
     // 清空全部弹窗（圆形）
@@ -243,6 +229,7 @@ fun SwipeReveal(
 ) {
     val density = LocalDensity.current
     val revealPx = with(density) { revealWidth.toPx() }
+    val screenWidthPx = with(density) { 300.dp.toPx() } // Sufficient to slide off screen
     val offset = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
 
@@ -273,7 +260,18 @@ fun SwipeReveal(
                 if (alpha > 0f) {
                     val translateRight = (1f - alpha) * revealPx
                     Button(
-                        onClick = onDelete,
+                        onClick = {
+                            scope.launch {
+                                // Slide out to the left (negative offset)
+                                offset.animateTo(-screenWidthPx, animationSpec = spring())
+                                onDelete()
+                                // Reset offset for reused view item if necessary,
+                                // but since it's deleted, it usually detaches.
+                                // If list state recycles this view, we want to be safe,
+                                // but setting it back immediately causes flicker if the removal isn't instant.
+                                // For now, we assume the item is removed from composition.
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFFF3B30)),
                         modifier = Modifier
                             .size(revealWidth)
@@ -294,7 +292,7 @@ fun SwipeReveal(
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
                 .fillMaxWidth()
                 .pointerInput(Unit) {
-                    detectDragGestures(
+                    detectHorizontalDragGestures(
                         onDragStart = { /* consume */ },
                         onDragEnd = {
                             scope.launch {
@@ -308,16 +306,11 @@ fun SwipeReveal(
                         onDragCancel = {
                             scope.launch { settleTo(0f) }
                         },
-                        onDrag = { change, dragAmount ->
-                            // Only treat the gesture as horizontal drag if horizontal movement dominates
-                            if (kotlin.math.abs(dragAmount.x) > kotlin.math.abs(dragAmount.y)) {
-                                scope.launch {
-                                    // only allow swiping left (negative offset)
-                                    val target = (offset.value + dragAmount.x).coerceIn(-revealPx, 0f)
-                                    offset.snapTo(target)
-                                }
-                            } else {
-                                // let vertical scroll pass through
+                        onHorizontalDrag = { _, dragAmount ->
+                            scope.launch {
+                                // only allow swiping left (negative offset)
+                                val target = (offset.value + dragAmount).coerceIn(-revealPx, 0f)
+                                offset.snapTo(target)
                             }
                         }
                     )
@@ -349,7 +342,7 @@ fun HistoryItemCard(
             backgroundPainter = CardDefaults.cardBackgroundPainter(Color(0xFF222222)),
             contentColor = Color.White
         ) {
-            Column(modifier = Modifier.padding(4.dp)) {
+            Column(modifier = Modifier.padding(8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -368,8 +361,23 @@ fun HistoryItemCard(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = record.stoppage,
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp
+                )
+
                 Spacer(modifier = Modifier.height(4.dp))
 
+                Text(
+                    text = record.events,
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp
+                )
             }
         }
     }
