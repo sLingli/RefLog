@@ -5,10 +5,14 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -17,11 +21,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -30,6 +38,8 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.foundation.lazy.ScalingLazyListState
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults
 import androidx.wear.compose.material.*
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 data class MatchHistoryUiModel(
     val id: Long,
@@ -162,7 +172,8 @@ fun HistoryScreen(
                     items(records, key = { it.id }) { record ->
                         HistoryItemCard(
                             record = record,
-                            onLongClick = { recordToDelete = record }
+                            onLongClick = { recordToDelete = record },
+                            onDelete = { recordToDelete = record }
                         )
                     }
                 }
@@ -224,42 +235,142 @@ fun HistoryScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+fun SwipeReveal(
+    modifier: Modifier = Modifier,
+    revealWidth: Dp = 68.dp,
+    onDelete: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val density = LocalDensity.current
+    val revealPx = with(density) { revealWidth.toPx() }
+    val offset = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    // helper to animate to target with spring (bouncy)
+    suspend fun settleTo(target: Float) {
+        offset.animateTo(target, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
+    }
+
+    Box(modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        // Background: right delete button only
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+        ) {
+            val cur = offset.value
+            val fractionRight = ((-cur) / revealPx).coerceIn(0f, 1f)
+
+            // Right red button container
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(revealWidth)
+                    .fillMaxHeight()
+                    .background(Color.Transparent),
+                contentAlignment = Alignment.Center
+            ) {
+                val alpha = fractionRight
+                if (alpha > 0f) {
+                    val translateRight = (1f - alpha) * revealPx
+                    Button(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFFF3B30)),
+                        modifier = Modifier
+                            .size(revealWidth)
+                            .graphicsLayer {
+                                translationX = translateRight
+                                this.alpha = alpha
+                            }
+                    ) {
+                        Icon(painterResource(id = R.drawable.outline_delete_24), contentDescription = null, tint = Color.White)
+                    }
+                }
+            }
+        }
+
+        // Foreground content that moves with drag
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offset.value.roundToInt(), 0) }
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { /* consume */ },
+                        onDragEnd = {
+                            scope.launch {
+                                val v = offset.value
+                                when {
+                                    v < -revealPx / 2f -> settleTo(-revealPx)
+                                    else -> settleTo(0f)
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            scope.launch { settleTo(0f) }
+                        },
+                        onDrag = { change, dragAmount ->
+                            // Only treat the gesture as horizontal drag if horizontal movement dominates
+                            if (kotlin.math.abs(dragAmount.x) > kotlin.math.abs(dragAmount.y)) {
+                                scope.launch {
+                                    // only allow swiping left (negative offset)
+                                    val target = (offset.value + dragAmount.x).coerceIn(-revealPx, 0f)
+                                    offset.snapTo(target)
+                                }
+                            } else {
+                                // let vertical scroll pass through
+                            }
+                        }
+                    )
+                }
+        ) {
+            content()
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 fun HistoryItemCard(
     record: MatchHistoryUiModel,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onDelete: ((MatchHistoryUiModel) -> Unit)? = null
 ) {
-    Card(
-        onClick = {},
-        enabled = true,
-        modifier = Modifier
-            .fillMaxWidth(0.95f)
-            .padding(vertical = 4.dp)
-            .combinedClickable(onClick = {}, onLongClick = onLongClick),
-        backgroundPainter = CardDefaults.cardBackgroundPainter(Color(0xFF222222)),
-        contentColor = Color.White
+    SwipeReveal(
+        revealWidth = 68.dp,
+        onDelete = { onDelete?.invoke(record) }
     ) {
-        Column(modifier = Modifier.padding(4.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = record.date,
-                    color = Color(0xFF4CAF50),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = record.duration,
-                    color = Color(0xFF888888),
-                    fontSize = 12.sp
-                )
+        Card(
+            onClick = {},
+            enabled = true,
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .padding(vertical = 4.dp)
+                .combinedClickable(onClick = {}, onLongClick = onLongClick),
+            backgroundPainter = CardDefaults.cardBackgroundPainter(Color(0xFF222222)),
+            contentColor = Color.White
+        ) {
+            Column(modifier = Modifier.padding(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = record.date,
+                        color = Color(0xFF4CAF50),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = record.duration,
+                        color = Color(0xFF888888),
+                        fontSize = 12.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-
         }
     }
 }
