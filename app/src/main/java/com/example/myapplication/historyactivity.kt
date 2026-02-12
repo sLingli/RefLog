@@ -360,24 +360,6 @@ fun HistoryItemCard(
                         fontSize = 12.sp
                     )
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = record.stoppage,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    lineHeight = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = record.events,
-                    color = Color(0xFFAAAAAA),
-                    fontSize = 12.sp,
-                    lineHeight = 15.sp
-                )
             }
         }
     }
