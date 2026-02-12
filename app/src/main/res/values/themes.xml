@@ -9,6 +9,14 @@
         <item name="android:statusBarColor">#121212</item>
         <item name="android:navigationBarColor">#121212</item>
     </style>
+
+    <!-- Dedicated theme to ensure a solid black window background on Wear OS activities when swipe-to-dismiss reveals the window behind -->
+    <style name="Theme.MyApplication.WearBlack" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+    </style>
+
     <style name="NumberPickerTheme">
         <item name="android:textColorPrimary">#FFFFFF</item>
         <item name="android:textSize">24sp</item>
