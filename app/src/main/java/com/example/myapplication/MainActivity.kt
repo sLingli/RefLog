@@ -772,7 +772,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
-        // Prepare data outside of setContent
+        // Prepare data
         val hTime: Int = if (isHistory) {
             historyRecord?.halfTimeMinutes ?: 0
         } else {
@@ -802,44 +802,21 @@ class MainActivity : AppCompatActivity() {
         val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
         val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
 
-        // Create ComposeView
-        val composeView = androidx.compose.ui.platform.ComposeView(this)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(composeView)
-            .create()
-
-        // Show dialog first so the window hierarchy is established
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-
-        // IMPORTANT: Set view tree owners AFTER dialog.show() so DecorView exists
-        dialog.window?.decorView?.let { decorView ->
-            decorView.setViewTreeLifecycleOwner(this@MainActivity)
-            decorView.setViewTreeViewModelStoreOwner(this@MainActivity)
-            decorView.setViewTreeSavedStateRegistryOwner(this@MainActivity)
+        // Launch MatchSummaryActivity instead of Dialog to avoid ScalingLazyColumn height issues
+        val intent = android.content.Intent(this, MatchSummaryActivity::class.java).apply {
+            putExtra(MatchSummaryActivity.EXTRA_IS_HISTORY, isHistory)
+            putExtra(MatchSummaryActivity.EXTRA_DURATION_MINUTES, hTime)
+            putExtra(MatchSummaryActivity.EXTRA_HOME_GOALS, homeGoals)
+            putExtra(MatchSummaryActivity.EXTRA_AWAY_GOALS, awayGoals)
+            putExtra(MatchSummaryActivity.EXTRA_YELLOW_COUNT, yellowCount)
+            putExtra(MatchSummaryActivity.EXTRA_RED_COUNT, redCount)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_1, st1Str)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_2, st2Str)
+            // Serialize events to JSON
+            val gson = com.google.gson.Gson()
+            putExtra(MatchSummaryActivity.EXTRA_EVENTS_JSON, gson.toJson(eventsToShow))
         }
-
-        // Also set on composeView directly for safety
-        composeView.setViewTreeLifecycleOwner(this@MainActivity)
-        composeView.setViewTreeViewModelStoreOwner(this@MainActivity)
-        composeView.setViewTreeSavedStateRegistryOwner(this@MainActivity)
-
-        // Now set the content, after owners are set and dialog is shown
-        composeView.setContent {
-            MatchSummaryScreen(
-                isHistory = isHistory,
-                durationMinutes = hTime,
-                homeGoals = homeGoals,
-                awayGoals = awayGoals,
-                yellowCount = yellowCount,
-                redCount = redCount,
-                stoppageTime1 = st1Str,
-                stoppageTime2 = st2Str,
-                events = eventsToShow,
-                onClose = { dialog.dismiss() }
-            )
-        }
+        startActivity(intent)
     }
 
 

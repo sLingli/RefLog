@@ -101,11 +101,47 @@ class HistoryActivity : ComponentActivity() {
                         onDeleteOne = { uiModel ->
                             // 真实删除单条
                             recordManager.deleteRecord(uiModel.id)
+                        },
+                        onRecordClick = { uiModel ->
+                            // Find the full record and launch summary activity
+                            val fullRecord = recordManager.getAllRecords().find { it.id == uiModel.id }
+                            if (fullRecord != null) {
+                                showRecordSummary(fullRecord)
+                            }
                         }
                     )
                 }
             }
         }
+    }
+
+    private fun showRecordSummary(record: MatchRecord) {
+        // Calculate goals from events for backwards compatibility
+        val calculatedHomeGoals = record.events.count {
+            it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home))
+        }
+        val calculatedAwayGoals = record.events.count {
+            it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away))
+        }
+
+        val homeGoals = if (record.homeGoals == 0 && record.awayGoals == 0) calculatedHomeGoals else record.homeGoals
+        val awayGoals = if (record.homeGoals == 0 && record.awayGoals == 0) calculatedAwayGoals else record.awayGoals
+
+        // Launch MatchSummaryActivity
+        val intent = android.content.Intent(this, MatchSummaryActivity::class.java).apply {
+            putExtra(MatchSummaryActivity.EXTRA_IS_HISTORY, true)
+            putExtra(MatchSummaryActivity.EXTRA_DURATION_MINUTES, record.halfTimeMinutes)
+            putExtra(MatchSummaryActivity.EXTRA_HOME_GOALS, homeGoals)
+            putExtra(MatchSummaryActivity.EXTRA_AWAY_GOALS, awayGoals)
+            putExtra(MatchSummaryActivity.EXTRA_YELLOW_COUNT, record.yellowCount)
+            putExtra(MatchSummaryActivity.EXTRA_RED_COUNT, record.redCount)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_1, record.firstHalfStoppage)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_2, record.secondHalfStoppage)
+            // Serialize events to JSON
+            val gson = com.google.gson.Gson()
+            putExtra(MatchSummaryActivity.EXTRA_EVENTS_JSON, gson.toJson(record.events))
+        }
+        startActivity(intent)
     }
 }
 
@@ -117,7 +153,8 @@ fun HistoryScreen(
     fetchRecords: (() -> List<MatchHistoryUiModel>)? = null,
     onClose: () -> Unit,
     onClearAll: () -> Unit,
-    onDeleteOne: (MatchHistoryUiModel) -> Unit
+    onDeleteOne: (MatchHistoryUiModel) -> Unit,
+    onRecordClick: (MatchHistoryUiModel) -> Unit = {}
 ) {
     val records = remember { mutableStateListOf<MatchHistoryUiModel>().apply { addAll(initialRecords) } }
     // If a fetchRecords lambda is provided, load latest records on composition start
@@ -166,6 +203,7 @@ fun HistoryScreen(
                     items(records, key = { it.id }) { record ->
                         HistoryItemCard(
                             record = record,
+                            onClick = { onRecordClick(record) },
                             onLongClick = { },
                             onDelete = {
                                 onDeleteOne(record)
@@ -315,6 +353,7 @@ fun SwipeReveal(
 @Composable
 fun HistoryItemCard(
     record: MatchHistoryUiModel,
+    onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDelete: ((MatchHistoryUiModel) -> Unit)? = null
 ) {
@@ -323,12 +362,12 @@ fun HistoryItemCard(
         onDelete = { onDelete?.invoke(record) }
     ) {
         Card(
-            onClick = {},
+            onClick = onClick,
             enabled = true,
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .padding(vertical = 4.dp)
-                .combinedClickable(onClick = {}, onLongClick = onLongClick),
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
             backgroundPainter = CardDefaults.cardBackgroundPainter(Color(0xFF222222)),
             contentColor = Color.White
         ) {

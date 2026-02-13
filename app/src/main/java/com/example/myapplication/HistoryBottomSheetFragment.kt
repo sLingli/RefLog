@@ -74,11 +74,45 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
                         },
                         onDeleteOne = { uiModel ->
                             recordManager.deleteRecord(uiModel.id)
+                        },
+                        onRecordClick = { uiModel ->
+                            val fullRecord = recordManager.getAllRecords().find { it.id == uiModel.id }
+                            if (fullRecord != null) {
+                                showRecordSummary(fullRecord)
+                            }
                         }
                     )
                 }
             }
         }
     }
-}
 
+    private fun showRecordSummary(record: MatchRecord) {
+        // Calculate goals from events for backwards compatibility
+        val calculatedHomeGoals = record.events.count {
+            it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home))
+        }
+        val calculatedAwayGoals = record.events.count {
+            it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away))
+        }
+
+        val homeGoals = if (record.homeGoals == 0 && record.awayGoals == 0) calculatedHomeGoals else record.homeGoals
+        val awayGoals = if (record.homeGoals == 0 && record.awayGoals == 0) calculatedAwayGoals else record.awayGoals
+
+        // Launch MatchSummaryActivity instead of Dialog
+        val intent = android.content.Intent(requireContext(), MatchSummaryActivity::class.java).apply {
+            putExtra(MatchSummaryActivity.EXTRA_IS_HISTORY, true)
+            putExtra(MatchSummaryActivity.EXTRA_DURATION_MINUTES, record.halfTimeMinutes)
+            putExtra(MatchSummaryActivity.EXTRA_HOME_GOALS, homeGoals)
+            putExtra(MatchSummaryActivity.EXTRA_AWAY_GOALS, awayGoals)
+            putExtra(MatchSummaryActivity.EXTRA_YELLOW_COUNT, record.yellowCount)
+            putExtra(MatchSummaryActivity.EXTRA_RED_COUNT, record.redCount)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_1, record.firstHalfStoppage)
+            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_2, record.secondHalfStoppage)
+            // Serialize events to JSON
+            val gson = com.google.gson.Gson()
+            putExtra(MatchSummaryActivity.EXTRA_EVENTS_JSON, gson.toJson(record.events))
+        }
+        startActivity(intent)
+    }
+}

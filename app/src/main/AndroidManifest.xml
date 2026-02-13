@@ -38,6 +38,11 @@
             android:exported="false"
             android:theme="@style/Theme.MyApplication.WearBlack" />
 
+        <activity
+            android:name=".MatchSummaryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyApplication.WearBlack" />
+
     </application>
 
 </manifest>
