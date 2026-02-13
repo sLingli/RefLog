@@ -20,6 +20,9 @@ import android.widget.NumberPicker
 import android.transition.TransitionManager
 import android.transition.AutoTransition
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
 class MainActivity : AppCompatActivity() {
 
@@ -769,153 +772,77 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_match_summary, null)
-
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvSummaryTitle)
-        val tvStatMatchTime = dialogView.findViewById<TextView>(R.id.tvStatMatchTime)
-        val tvStatGoals = dialogView.findViewById<TextView>(R.id.tvStatGoals)
-        val tvStatYellow = dialogView.findViewById<TextView>(R.id.tvStatYellow)
-        val tvStatRed = dialogView.findViewById<TextView>(R.id.tvStatRed)
-        val tvStatStoppage = dialogView.findViewById<TextView>(R.id.tvStatStoppage)
-        val listEvents = dialogView.findViewById<LinearLayout>(R.id.listSummaryEvents)
-        val btnClose = dialogView.findViewById<Button>(R.id.btnSummaryClose)
-
-        // 数据准备
+        // Prepare data outside of setContent
         val hTime: Int = if (isHistory) {
-            (historyRecord?.halfTimeMinutes ?: 0).toInt()
+            historyRecord?.halfTimeMinutes ?: 0
         } else {
-            (halfTimeSeconds.toLong() / 60L).toInt()
+            (halfTimeSeconds / 60L).toInt()
         }
 
-        val st1: Long = if (isHistory) {
-            historyRecord?.firstHalfStoppage?.toLongOrNull() ?: 0L
+        val st1Str = if (isHistory) {
+            historyRecord?.firstHalfStoppage ?: "00:00"
         } else {
-            try { firstHalfStoppage.toLong() } catch(e: Exception) { 0L }
+            formatTime(firstHalfStoppage)
         }
 
-        val st2: Long = if (isHistory) {
-            historyRecord?.secondHalfStoppage?.toLongOrNull() ?: 0L
+        val st2Str = if (isHistory) {
+            historyRecord?.secondHalfStoppage ?: "00:00"
         } else {
-            try { stoppageTime.toLong() } catch(e: Exception) { 0L }
+            formatTime(stoppageTime)
         }
 
         val eventsToShow: List<MatchEvent> = if (isHistory) {
             historyRecord?.events ?: listOf()
         } else {
-            matchEvents
+            matchEvents.toList()
         }
-
-        // 1. 设置标题
-        tvTitle.text = if (isHistory) getString(R.string.title_history_details) else getString(R.string.title_summary)
 
         val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
         val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
-
-        // 1. 时长
-        tvStatMatchTime.text = getString(R.string.summary_duration, hTime)
-
-// 2. 比分
-        tvStatGoals.text = getString(R.string.summary_score, homeGoals, awayGoals)
-
-// 3. 黄牌
         val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
-        tvStatYellow.text = getString(R.string.summary_yellow, yellowCount)
-
-// 4. 红牌
         val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
-        tvStatRed.text = getString(R.string.summary_red, redCount)
 
-// 5. 补时
-        tvStatStoppage.text = getString(R.string.summary_stoppage, formatTime(st1), formatTime(st2))
-
-        listEvents.removeAllViews()
-        if (eventsToShow.isEmpty()) {
-            val tv = TextView(this)
-            tv.text = getString(R.string.msg_no_events)
-            tv.setTextColor(android.graphics.Color.GRAY)
-            tv.gravity = android.view.Gravity.CENTER
-            listEvents.addView(tv)
-        } else {
-            eventsToShow.forEach { event ->
-                // 1. 创建一个水平容器
-                val rowContainer = LinearLayout(this)
-                rowContainer.orientation = LinearLayout.HORIZONTAL
-                rowContainer.gravity = android.view.Gravity.CENTER // 让里面的东西居中
-                rowContainer.setPadding(0, 8, 0, 8) // 上下间距
-
-                // 2. 创建图标 ImageView
-                val iconView = android.widget.ImageView(this)
-                val iconRes = when(event.event) {
-                    getString(R.string.event_goal) -> R.drawable.sports_soccer
-                    getString(R.string.event_yellow), getString(R.string.event_red) -> R.drawable.ic_card
-                    getString(R.string.event_substitute) -> R.drawable.ic_substitute
-                    getString(R.string.event_injury) -> R.drawable.ic_medical
-                    else -> R.drawable.ic_history
-                }
-                iconView.setImageResource(iconRes)
-
-                // 设置图标大小 (20dp)
-                val density = resources.displayMetrics.density
-                val iconSize = (20 * density).toInt()
-                val params = LinearLayout.LayoutParams(iconSize, iconSize)
-                params.marginEnd = (8 * density).toInt() // 图标和字的间距
-                iconView.layoutParams = params
-
-                // 设置图标颜色
-                try {
-                    val iconColor = when(event.event){
-                        getString(R.string.event_goal) -> android.graphics.Color.WHITE
-                        getString(R.string.event_yellow) -> android.graphics.Color.YELLOW
-                        getString(R.string.event_red) -> android.graphics.Color.RED
-                        getString(R.string.event_injury) -> android.graphics.Color.parseColor("#2196F3")
-                        else -> android.graphics.Color.GREEN
-                    }
-                    iconView.setColorFilter(iconColor)
-                } catch (e: Exception) {}
-
-                // 3. 创建文字 TextView
-                val textView = TextView(this)
-                val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
-                textView.text = "[${event.timeStr}] $contentText"
-                textView.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
-                textView.textSize = 13f
-
-                // 4. 装填进容器
-                rowContainer.addView(iconView)
-                rowContainer.addView(textView)
-
-                // 5. 添加到列表
-                listEvents.addView(rowContainer)
-            }
-        }
+        // Create ComposeView
+        val composeView = androidx.compose.ui.platform.ComposeView(this)
 
         val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
+            .setView(composeView)
             .create()
 
-        btnClose.setOnClickListener { dialog.dismiss() }
+        // Show dialog first so the window hierarchy is established
         dialog.show()
         dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-        val window = dialog.window
-        if (window != null) {
-            window.setLayout(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+
+        // IMPORTANT: Set view tree owners AFTER dialog.show() so DecorView exists
+        dialog.window?.decorView?.let { decorView ->
+            decorView.setViewTreeLifecycleOwner(this@MainActivity)
+            decorView.setViewTreeViewModelStoreOwner(this@MainActivity)
+            decorView.setViewTreeSavedStateRegistryOwner(this@MainActivity)
+        }
+
+        // Also set on composeView directly for safety
+        composeView.setViewTreeLifecycleOwner(this@MainActivity)
+        composeView.setViewTreeViewModelStoreOwner(this@MainActivity)
+        composeView.setViewTreeSavedStateRegistryOwner(this@MainActivity)
+
+        // Now set the content, after owners are set and dialog is shown
+        composeView.setContent {
+            MatchSummaryScreen(
+                isHistory = isHistory,
+                durationMinutes = hTime,
+                homeGoals = homeGoals,
+                awayGoals = awayGoals,
+                yellowCount = yellowCount,
+                redCount = redCount,
+                stoppageTime1 = st1Str,
+                stoppageTime2 = st2Str,
+                events = eventsToShow,
+                onClose = { dialog.dismiss() }
             )
-            val params = window.attributes
-
-            // 设置对齐方式为：底部对齐
-            window.setGravity(android.view.Gravity.TOP)
-
-            // 设置 Y 轴偏移量 (距离底部的距离)
-            params.y = (200 * resources.displayMetrics.density).toInt()
-
-            window.attributes = params
         }
     }
 
-    // 辅助函数：dp转px
-    fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
+
 
     // UI 更新方法
 
