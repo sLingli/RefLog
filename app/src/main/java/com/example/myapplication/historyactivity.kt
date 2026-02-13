@@ -63,7 +63,7 @@ class HistoryActivity : ComponentActivity() {
             MatchHistoryUiModel(
                 id = record.id,
                 date = record.date,
-                duration = "${record.halfTimeMinutes}分钟/半场",
+                duration = getString(R.string.label_duration_fmt),
                 stoppage = "补时: 上+${record.firstHalfStoppage} / 下+${record.secondHalfStoppage}",
                 events = "进球:${record.goalCount}  红牌:${record.redCount}  换人:${record.substitutionCount}"
             )
@@ -86,7 +86,7 @@ class HistoryActivity : ComponentActivity() {
                                 MatchHistoryUiModel(
                                     id = record.id,
                                     date = record.date,
-                                    duration = "${record.halfTimeMinutes}分钟/半场",
+                                    duration = "${record.halfTimeMinutes}${getString(R.string.unit_min_half)}",
                                     stoppage = "补时: 上+${record.firstHalfStoppage} / 下+${record.secondHalfStoppage}",
                                     events = "进球:${record.goalCount}  红牌:${record.redCount}  换人:${record.substitutionCount}"
                                 )
@@ -96,12 +96,11 @@ class HistoryActivity : ComponentActivity() {
                         onClearAll = {
                             // 真实清空数据库
                             recordManager.clearAllRecords()
-                            Toast.makeText(this@HistoryActivity, "历史记录已清空", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@HistoryActivity, getString(R.string.msg_history_cleared), Toast.LENGTH_SHORT).show()
                         },
                         onDeleteOne = { uiModel ->
                             // 真实删除单条
                             recordManager.deleteRecord(uiModel.id)
-                            Toast.makeText(this@HistoryActivity, "记录已删除", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
@@ -134,7 +133,6 @@ fun HistoryScreen(
     var showClearAllDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape)) {
-        // 主列表内容
         Scaffold(
             positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
         ) {
@@ -143,12 +141,10 @@ fun HistoryScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black),
-                // don't force an anchor/auto-centering here; let the list layout naturally
                 contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Top),
                 scalingParams = ScalingLazyColumnDefaults.scalingParams()
             ) {
-                // 仅保留顶部矢量图标（移除了 debug 的 records 文本）
                 item {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_history),
@@ -158,7 +154,6 @@ fun HistoryScreen(
                     )
                 }
 
-                // 2. 列表
                 if (records.isEmpty()) {
                     item {
                         Text(
@@ -171,7 +166,7 @@ fun HistoryScreen(
                     items(records, key = { it.id }) { record ->
                         HistoryItemCard(
                             record = record,
-                            onLongClick = { /* recordToDelete logic removed */ },
+                            onLongClick = { },
                             onDelete = {
                                 onDeleteOne(record)
                                 records.remove(record)
@@ -180,13 +175,11 @@ fun HistoryScreen(
                     }
                 }
 
-                // 3. 底部按钮
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // 清空 (红)
                         Button(
                             onClick = { if (records.isNotEmpty()) showClearAllDialog = true },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFFF3B30)),
@@ -202,7 +195,6 @@ fun HistoryScreen(
         }
     }
 
-    // 清空全部弹窗（圆形）
     if (showClearAllDialog) {
         CircularAlert(
             onDismissRequest = { showClearAllDialog = false },
@@ -286,14 +278,13 @@ fun SwipeReveal(
             }
         }
 
-        // Foreground content that moves with drag
         Box(
             modifier = Modifier
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
                 .fillMaxWidth()
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
-                        onDragStart = { /* consume */ },
+                        onDragStart = { },
                         onDragEnd = {
                             scope.launch {
                                 val v = offset.value
@@ -308,7 +299,6 @@ fun SwipeReveal(
                         },
                         onHorizontalDrag = { _, dragAmount ->
                             scope.launch {
-                                // only allow swiping left (negative offset)
                                 val target = (offset.value + dragAmount).coerceIn(-revealPx, 0f)
                                 offset.snapTo(target)
                             }
