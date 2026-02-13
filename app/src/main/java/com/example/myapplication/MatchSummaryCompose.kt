@@ -3,12 +3,12 @@ package com.example.myapplication
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
@@ -17,8 +17,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.items
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults
+import androidx.wear.compose.material.PositionIndicator
+import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -35,201 +39,231 @@ fun MatchSummaryScreen(
     events: List<MatchEvent>,
     onClose: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
+    val listState = rememberScalingLazyListState(initialCenterItemIndex = 0)
 
-    Column(
+    // Use Scaffold with ScalingLazyColumn for proper Wear OS circular screen support
+    Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Title
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 12.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_trophy),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(Color(0xFF4CAF50)),
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Text(
-                text = stringResource(id = if (isHistory) R.string.title_history_details else R.string.title_summary),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF4CAF50)
-            )
+            .background(Color.Black),
+        positionIndicator = {
+            PositionIndicator(scalingLazyListState = listState)
         }
-
-        // Stats Card (Mimic MaterialCardView with Column + Background + Shape)
-        Column(
+    ) {
+        ScalingLazyColumn(
+            state = listState,
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1E1E1E), RoundedCornerShape(16.dp))
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .background(Color.Black),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(
+                top = 24.dp,
+                bottom = 24.dp,
+                start = 8.dp,
+                end = 8.dp
+            ),
+            scalingParams = ScalingLazyColumnDefaults.scalingParams(
+                edgeScale = 0.7f,
+                edgeAlpha = 0.5f
+            )
         ) {
-            // Duration
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_history),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color(0xFFAAAAAA)),
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = stringResource(id = R.string.summary_duration, durationMinutes),
-                    color = Color(0xFFCCCCCC)
-                )
-            }
-
-            // Score
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.sports_soccer),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color.White),
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = stringResource(id = R.string.summary_score, homeGoals, awayGoals),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // Cards (Yellow & Red)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Yellow Cards
+            // Title
+            item {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 16.dp)
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_card),
+                        painter = painterResource(id = R.drawable.ic_trophy),
                         contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFFFEB3B)),
-                        modifier = Modifier.padding(end = 4.dp)
+                        colorFilter = ColorFilter.tint(Color(0xFF4CAF50)),
+                        modifier = Modifier
+                            .size(20.dp)
+                            .padding(end = 6.dp)
                     )
                     Text(
-                        text = stringResource(id = R.string.summary_yellow, yellowCount),
-                        color = Color(0xFFFFEB3B)
+                        text = stringResource(id = if (isHistory) R.string.title_history_details else R.string.title_summary),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4CAF50)
                     )
                 }
+            }
 
-                // Red Cards
+            // Stats Card
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .background(Color(0xFF1E1E1E), RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Duration
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_history),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(Color(0xFFAAAAAA)),
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(end = 4.dp)
+                        )
+                        Text(
+                            text = stringResource(id = R.string.summary_duration, durationMinutes),
+                            fontSize = 12.sp,
+                            color = Color(0xFFCCCCCC)
+                        )
+                    }
+
+                    // Score (only show numbers, no label)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.sports_soccer),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(Color.White),
+                            modifier = Modifier
+                                .size(16.dp)
+                                .padding(end = 4.dp)
+                        )
+                        Text(
+                            text = "$homeGoals : $awayGoals",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    // Cards (Yellow & Red)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 6.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Yellow Cards
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_card),
+                                contentDescription = null,
+                                colorFilter = ColorFilter.tint(Color(0xFFFFEB3B)),
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .padding(end = 2.dp)
+                            )
+                            Text(
+                                text = yellowCount.toString(),
+                                fontSize = 12.sp,
+                                color = Color(0xFFFFEB3B)
+                            )
+                        }
+
+                        // Red Cards
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_card),
+                                contentDescription = null,
+                                colorFilter = ColorFilter.tint(Color(0xFFF44336)),
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .padding(end = 2.dp)
+                            )
+                            Text(
+                                text = redCount.toString(),
+                                fontSize = 12.sp,
+                                color = Color(0xFFF44336)
+                            )
+                        }
+                    }
+
+                    // Divider
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFF333333))
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Stoppage Time
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.more_time),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(Color(0xFF00FF00)),
+                            modifier = Modifier
+                                .size(14.dp)
+                                .padding(end = 4.dp)
+                        )
+                        Text(
+                            text = stringResource(id = R.string.summary_stoppage, stoppageTime1, stoppageTime2),
+                            fontSize = 10.sp,
+                            color = Color(0xFF00FF00)
+                        )
+                    }
+                }
+            }
+
+            // Event Details Label
+            item {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_card),
+                        painter = painterResource(id = R.drawable.ic_event_note),
                         contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFF44336)),
-                        modifier = Modifier.padding(end = 4.dp)
+                        colorFilter = ColorFilter.tint(Color(0xFF4CAF50)),
+                        modifier = Modifier
+                            .size(16.dp)
+                            .padding(end = 4.dp)
                     )
                     Text(
-                        text = stringResource(id = R.string.summary_red, redCount),
-                        color = Color(0xFFF44336)
+                        text = stringResource(id = R.string.label_event_details),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4CAF50)
                     )
                 }
             }
 
-            // Divider
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(Color(0xFF333333))
-                    .padding(bottom = 8.dp) // The padding here applies to inside the box if any, or use Spacer
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Stoppage Time
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.more_time),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color(0xFF00FF00)),
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = stringResource(id = R.string.summary_stoppage, stoppageTime1, stoppageTime2),
-                    fontSize = 12.sp,
-                    color = Color(0xFF00FF00)
-                )
-            }
-        }
-
-        // Event Details Label
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 8.dp)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_event_note),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(Color(0xFF4CAF50)),
-                modifier = Modifier
-                    .padding(end = 8.dp, top = 12.dp, bottom = 8.dp)
-            )
-            Text(
-                text = stringResource(id = R.string.label_event_details),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF4CAF50),
-                modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
-            )
-        }
-
-        // Events List
-        if (events.isEmpty()) {
-            Text(
-                text = stringResource(id = R.string.msg_no_events),
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                events.forEach { event ->
+            // Events List
+            if (events.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(id = R.string.msg_no_events),
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    )
+                }
+            } else {
+                items(events) { event ->
                     EventRow(event)
                 }
             }
-        }
 
-        // Close Button
-        Button(
-            onClick = onClose,
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF4CAF50)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .padding(top = 16.dp)
-        ) {
-            Text(text = stringResource(id = R.string.btn_ok))
+            // Bottom spacer to ensure proper ending
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -241,7 +275,7 @@ fun EventRow(event: MatchEvent) {
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 4.dp)
     ) {
         val eventGoal = stringResource(id = R.string.event_goal)
         val eventYellow = stringResource(id = R.string.event_yellow)
@@ -264,14 +298,15 @@ fun EventRow(event: MatchEvent) {
             painter = painterResource(id = iconRes),
             contentDescription = null,
             colorFilter = ColorFilter.tint(iconTint),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(16.dp)
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
 
         Text(
             text = "${event.timeStr} ${event.event} ${event.detail}",
-            color = Color.White
+            color = Color.White,
+            fontSize = 11.sp
         )
     }
 }
