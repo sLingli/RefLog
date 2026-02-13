@@ -29,8 +29,13 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
             val bottomSheetDialog = dialogInterface as com.google.android.material.bottomsheet.BottomSheetDialog
             val bottomSheet = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             if (bottomSheet != null) {
-                // 将默认的白色背景设为透明，这样就只会显示 Compose 中的黑色圆角背景
                 bottomSheet.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                // 强制展开且不可拖拽，使得列表滚动时不会导致弹窗被拖动
+                val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(bottomSheet)
+                behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+                behavior.isDraggable = false
             }
         }
         return dialog
@@ -43,13 +48,12 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                // 1. 拉取最新历史数据并转换为 UI 模型
                 val rawRecords = recordManager.getAllRecords()
                 val uiRecords = rawRecords.map { record ->
                     MatchHistoryUiModel(
                         id = record.id,
                         date = record.date,
-                        duration = "${record.halfTimeMinutes}分钟/半场",
+                        duration = "${record.halfTimeMinutes}${getString(R.string.unit_min_half)}",
                         stoppage = "补时: 上+${record.firstHalfStoppage} / 下+${record.secondHalfStoppage}",
                         events = "进球:${record.goalCount}  红牌:${record.redCount}  换人:${record.substitutionCount}"
                     )
@@ -70,11 +74,6 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
                         },
                         onDeleteOne = { uiModel ->
                             recordManager.deleteRecord(uiModel.id)
-                            Toast.makeText(
-                                requireContext(),
-                                "记录已删除",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
                     )
                 }

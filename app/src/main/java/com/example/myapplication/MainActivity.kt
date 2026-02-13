@@ -175,10 +175,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 底部“历史”小横条：
-        // - 手机布局用的是 MaterialButton `btnHistory`
-        // - 手表圆形布局用的是最底下那根小横条 `btnHistorySmall`
-        // 这里统一做“按住后稍微上滑就弹出”手势（同时也可以改成简单点击）
         val historyDragTarget: View? = btnHistorySmall ?: btnHistory
         var startYOnBar = 0f
         var triggeredOnBar = false
@@ -192,7 +188,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 android.view.MotionEvent.ACTION_MOVE -> {
                     val dy = startYOnBar - event.y   // 向上为正
-                    if (!triggeredOnBar && dy > 0f) { // 只要有上滑趋势就触发一次
+                    if (!triggeredOnBar && dy > 0f) {
                         triggeredOnBar = true
                         openHistoryAction()
                     }
