@@ -30,6 +30,12 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
             val bottomSheet = bottomSheetDialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             if (bottomSheet != null) {
                 bottomSheet.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+
+                // 强制展开且不可拖拽，使得列表滚动时不会导致弹窗被拖动
+                val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(bottomSheet)
+                behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+                behavior.isDraggable = false
             }
         }
         return dialog
