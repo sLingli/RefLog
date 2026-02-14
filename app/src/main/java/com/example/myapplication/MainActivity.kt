@@ -270,6 +270,9 @@ class MainActivity : AppCompatActivity() {
             val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
+                    // 暂停自动隐藏倒计时
+                    hideRunnable?.let { hideHandler.removeCallbacks(it) }
+
                     triggerAction?.let { v.removeCallbacks(it) }
                     holdAnimator.start()
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
@@ -294,6 +297,9 @@ class MainActivity : AppCompatActivity() {
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
                     triggerAction?.let { v.removeCallbacks(it) }
                     if (holdAnimator.isRunning) {
+                        // 长按未完成，恢复自动隐藏倒计时
+                        hideRunnable?.let { hideHandler.postDelayed(it, 3000) }
+
                         val currentLevel = button.background?.level ?: 0
                         android.animation.ValueAnimator.ofInt(currentLevel, 0).apply {
                             duration = 200
@@ -834,6 +840,9 @@ class MainActivity : AppCompatActivity() {
         val controlPanel = findViewById<View>(R.id.controlPanel)
         val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
 
+        // 辅助函数：转换 dp 到 px
+        fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
+
         // 开启过渡动画
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
@@ -846,8 +855,16 @@ class MainActivity : AppCompatActivity() {
                 btnMain.visibility = View.VISIBLE
                 btnEnd.visibility = View.GONE
 
-                // 手表版：恢复初始状态
+                // 手表版：恢复初始状态 (圆形，60dp)
+                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
+                    width = 60.dp()
+                    marginEnd = 16.dp()
+                }
+                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
+                btnPauseRound?.backgroundTintList = null // 清除 tint 以显示 drawable 原色
+                btnPauseRound?.setIconResource(R.drawable.pause_circle)
                 btnPauseRound?.visibility = View.VISIBLE
+
                 btnEndRound?.visibility = View.VISIBLE
             }
 
@@ -858,9 +875,30 @@ class MainActivity : AppCompatActivity() {
                 btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
                 btnEnd.visibility = View.VISIBLE
 
-                // 手表版：暂停图标
-                btnPauseRound?.setIconResource(R.drawable.pause_circle)
-                btnPauseRound?.visibility = View.VISIBLE
+                // 手表版：暂停图标 (圆形，60dp)
+                // 动画：绿 -> 红
+                btnPauseRound?.let { btn ->
+                    val startColor = 0xFF2E7D32.toInt() // Green
+                    val endColor = 0xFFD32F2F.toInt()   // Red
+
+                    btn.layoutParams = (btn.layoutParams as? LinearLayout.LayoutParams)?.apply {
+                        width = 60.dp()
+                        marginEnd = 16.dp()
+                    }
+                    // 确保背景是圆形
+                    btn.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
+
+                    val animator = android.animation.ValueAnimator.ofArgb(startColor, endColor)
+                    animator.duration = 300
+                    animator.addUpdateListener { anim ->
+                        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(anim.animatedValue as Int)
+                    }
+                    animator.start()
+
+                    btn.setIconResource(R.drawable.pause_circle)
+                    btn.visibility = View.VISIBLE
+                }
+
                 btnEndRound?.visibility = View.VISIBLE
             }
 
@@ -871,9 +909,30 @@ class MainActivity : AppCompatActivity() {
                 btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt())
                 btnEnd.visibility = View.VISIBLE
 
-                // 手表版：继续图标
-                btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnPauseRound?.visibility = View.VISIBLE
+                // 手表版：继续图标 (圆形，60dp)
+                // 动画：红 -> 绿
+                btnPauseRound?.let { btn ->
+                    val startColor = 0xFFD32F2F.toInt() // Red
+                    val endColor = 0xFF2E7D32.toInt()   // Green
+
+                    btn.layoutParams = (btn.layoutParams as? LinearLayout.LayoutParams)?.apply {
+                        width = 60.dp()
+                        marginEnd = 16.dp()
+                    }
+                    // 确保背景是圆形
+                    btn.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
+
+                    val animator = android.animation.ValueAnimator.ofArgb(startColor, endColor)
+                    animator.duration = 300
+                    animator.addUpdateListener { anim ->
+                        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(anim.animatedValue as Int)
+                    }
+                    animator.start()
+
+                    btn.setIconResource(R.drawable.baseline_play_arrow_24)
+                    btn.visibility = View.VISIBLE
+                }
+
                 btnEndRound?.visibility = View.VISIBLE
             }
 
@@ -889,8 +948,14 @@ class MainActivity : AppCompatActivity() {
                 controlPanel?.translationY = 0f // 强制弹出
                 btnEndRound?.visibility = View.GONE
 
+                // 变长、变绿、居中
+                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
+                    width = 120.dp() // 变长
+                    marginEnd = 0    // 移除右边距以居中
+                }
+                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_pill_green) // 绿色胶囊
+                btnPauseRound?.backgroundTintList = null
                 btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 🟢 变绿！
                 btnPauseRound?.visibility = View.VISIBLE
 
                 // 取消自动隐藏
@@ -908,8 +973,15 @@ class MainActivity : AppCompatActivity() {
                 // 手表版
                 controlPanel?.translationY = 0f
                 btnEndRound?.visibility = View.GONE
+
+                // 变长、变红、居中
+                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
+                    width = 120.dp() // 变长
+                    marginEnd = 0    // 移除右边距以居中
+                }
+                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_pill_red) // 红色胶囊
+                btnPauseRound?.backgroundTintList = null
                 btnPauseRound?.setIconResource(R.drawable.ic_substitute)
-                btnPauseRound?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
                 btnPauseRound?.visibility = View.VISIBLE
 
                 // 显示历史记录按钮

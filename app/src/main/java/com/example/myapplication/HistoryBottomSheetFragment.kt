@@ -67,7 +67,7 @@ class HistoryBottomSheetFragment : BottomSheetDialogFragment() {
                             recordManager.clearAllRecords()
                             Toast.makeText(
                                 requireContext(),
-                                "历史记录已清空",
+                                getString(R.string.msg_history_cleared),
                                 Toast.LENGTH_SHORT
                             ).show()
                             dismissAllowingStateLoss()
