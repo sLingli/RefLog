@@ -14,7 +14,6 @@
   </p>
 
   <p>
-    <!-- 语言导航栏 -->
     👇 <strong>Languages / 语言</strong> 👇
   </p>
   <p>
@@ -127,4 +126,4 @@ As a beginner, I know there are coding imperfections and features that need impr
 *   **To Developers**: I warmly welcome any guidance, Issues, or Pull Requests. I am eager to learn from you!
 *   **To Referees**: If you find this tool useful, please recommend it to your referee colleagues.
 
-[Back to Top / 回到顶部](#reflog)
+[Back to Top / 回到顶部](#RefLog)
