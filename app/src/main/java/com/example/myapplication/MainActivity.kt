@@ -23,6 +23,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import androidx.compose.ui.platform.ComposeView
+import android.view.ViewGroup
+import android.widget.FrameLayout
 
 class MainActivity : AppCompatActivity() {
 
@@ -1303,109 +1306,80 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showColorSelectionDialog(isHome: Boolean) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
+        // 获取当前颜色作为初始值
+        val initialColor = if (isHome) homeTeamColor else awayTeamColor
 
-        val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
-        val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
-        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
-        val colors = listOf(
-            0xFFF44336.toInt(), // 红
-            0xFF2196F3.toInt(), // 蓝
-            0xFF4CAF50.toInt(), // 绿
-            0xFFFFEB3B.toInt(), // 黄
-            0xFFFFFFFF.toInt(), // 白
-            0xFF000000.toInt(), // 黑
-            0xFF9C27B0.toInt(), // 紫
-            0xFFFF9800.toInt()  // 橙
-        )
+        // 创建一个全屏的FrameLayout作为容器
+        val rootView = window.decorView.findViewById<FrameLayout>(android.R.id.content)
 
-        var selectedTempColor = if (isHome) colors[1] else colors[0]
+        // 创建一个遮罩背景View
+        val overlayView = View(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(0x80000000.toInt()) // 半透明黑色背景
+            isClickable = true
+            isFocusable = true
+        }
 
-        fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
-            rv.layoutManager = CenterScaleLayoutManager(this)
-            val adapter = ColorWheelAdapter(colors) { }
-            rv.adapter = adapter
-            val density = resources.displayMetrics.density
-            val padding = (45 * density).toInt()
-            rv.setPadding(0, padding, 0, padding)
-            rv.clipToPadding = false
+        // 创建ComposeView来承载Compose UI
+        val composeView = ComposeView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setViewTreeLifecycleOwner(this@MainActivity)
+            setViewTreeViewModelStoreOwner(this@MainActivity)
+            setViewTreeSavedStateRegistryOwner(this@MainActivity)
+        }
 
-            val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
-                override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
-                    return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
-                }
-                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
-                    if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
-                    return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
-                        override fun calculateTimeForDeceleration(dx: Int): Int = super.calculateTimeForDeceleration(dx) * 5
-                        override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
-                            val snapDistances = calculateDistanceToFinalSnap(layoutManager!!, targetView)
-                            action.update(snapDistances!![0], snapDistances[1], calculateTimeForDeceleration(Math.max(Math.abs(snapDistances[0]), Math.abs(snapDistances[1]))), android.view.animation.OvershootInterpolator(2.0f))
-                        }
+        // 定义移除弹窗的方法
+        val dismissDialog: () -> Unit = {
+            rootView.removeView(composeView)
+            rootView.removeView(overlayView)
+        }
+
+        // 点击遮罩关闭弹窗
+        overlayView.setOnClickListener { dismissDialog() }
+
+        // 设置Compose内容
+        composeView.setContent {
+            ColorSelectionDialog(
+                initialColor = initialColor,
+                onColorSelected = { selectedColor ->
+                    val r = 15f * resources.displayMetrics.density
+                    val finalColor = (0x66 shl 24) or (selectedColor and 0x00FFFFFF)
+
+                    if (isHome) {
+                        homeTeamColor = selectedColor
+                        val overlay = findViewById<View>(R.id.overlayHome)
+
+                        val shape = android.graphics.drawable.GradientDrawable()
+                        shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        shape.setColor(finalColor)
+                        shape.cornerRadii = floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
+
+                        overlay?.background = shape
+                    } else {
+                        awayTeamColor = selectedColor
+                        val overlay = findViewById<View>(R.id.overlayAway)
+
+                        val shape = android.graphics.drawable.GradientDrawable()
+                        shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        shape.setColor(finalColor)
+                        shape.cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
+
+                        overlay?.background = shape
                     }
+                    dismissDialog()
                 }
-            }
-            snapHelper.attachToRecyclerView(rv)
-
-            rv.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
-                    if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) {
-                        val centerView = snapHelper.findSnapView(rv.layoutManager)
-                        centerView?.let {
-                            val pos = rv.layoutManager?.getPosition(it) ?: 0
-                            onSelect(colors[pos % colors.size])
-                        }
-                    }
-                }
-            })
-            val centerStart = Int.MAX_VALUE / 2
-            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(centerStart - (centerStart % colors.size) + initialIndex, 0)
-            onSelect(colors[initialIndex])
+            )
         }
 
-        if (isHome) {
-            rvAway.visibility = android.view.View.GONE
-            setupWheel(rvHome, 1) { selectedTempColor = it }
-        } else {
-            rvHome.visibility = android.view.View.GONE
-            setupWheel(rvAway, 0) { selectedTempColor = it }
-        }
-
-        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
-
-        btnConfirm.setOnClickListener {
-            val r = 15f * resources.displayMetrics.density
-
-            val finalColor = (0x66 shl 24) or (selectedTempColor and 0x00FFFFFF)
-
-            if (isHome) {
-                homeTeamColor = selectedTempColor
-                val overlay = findViewById<View>(R.id.overlayHome)
-
-                val shape = android.graphics.drawable.GradientDrawable()
-                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                shape.setColor(finalColor)
-
-                shape.cornerRadii = floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
-
-                overlay?.background = shape
-            } else {
-                awayTeamColor = selectedTempColor
-                val overlay = findViewById<View>(R.id.overlayAway)
-
-                val shape = android.graphics.drawable.GradientDrawable()
-                shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                shape.setColor(finalColor)
-
-                shape.cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
-
-                overlay?.background = shape
-            }
-            dialog.dismiss()
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        // 添加到视图层级
+        rootView.addView(overlayView)
+        rootView.addView(composeView)
     }
     private fun getHalfText(code: String): String {
         return when (code) {
