@@ -26,9 +26,6 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 
-// 保留原文件中的中英文翻译和功能
-// 适配圆形的手表，并且适配各种尺寸的圆形手表
-
 @Composable
 fun EventSelectionDialog(
     onYellowCardClick: () -> Unit,
@@ -143,12 +140,7 @@ fun EventButton(
         contentAlignment = Alignment.Center
     ) {
         if (iconResId != null) {
-            // Check for tint.
-            // In XML:
-            // Injury: iconTint="#FFFFFF"
-            // Goal: iconTint="#FFFFFF"
-            // Sub: iconTint="#FFFFFF"
-            // Cancel: iconTint="#FFFFFF"
+
             Icon(
                 painter = painterResource(id = iconResId),
                 contentDescription = null, // Description is on the button container
@@ -156,8 +148,7 @@ fun EventButton(
                 modifier = Modifier.size(36.dp)
             )
         } else {
-            // For Yellow/Red cards, no icon, just color box effectively.
-            // Semantic description is on the Box.
+
         }
     }
 }
