@@ -4,13 +4,11 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -31,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import kotlinx.coroutines.launch
 
 /**
  * 事件类型枚举
@@ -71,104 +69,123 @@ enum class EventType(
 /**
  * 全屏翻页式事件选择弹窗
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EventSelectionDialog(
     onEventSelected: (EventType) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
 
-    // 获取震动器
-    val vibrator = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = context.getSystemService(VibratorManager::class.java)
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
-        }
-    }
+    // 震动器状态 - 懒加载
+    var vibrator by remember { mutableStateOf<Vibrator?>(null) }
 
     // 事件列表
-    val events = EventType.entries
+    val events = remember { EventType.values() }
 
-    // Pager状态
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { events.size }
-    )
+    // 当前页面索引
+    var currentPage by remember { mutableStateOf(0) }
 
     // 记录上一页，用于检测页面切换
-    var previousPage by remember { mutableIntStateOf(0) }
+    var previousPage by remember { mutableStateOf(0) }
+
+    // 初始化震动器（在 LaunchedEffect 中避免组合期间崩溃）
+    LaunchedEffect(Unit) {
+        vibrator = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = context.getSystemService(VibratorManager::class.java)
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+        } catch (_: Exception) {
+            null
+        }
+        focusRequester.requestFocus()
+    }
 
     // 监听页面切换，触发短震动
-    LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage != previousPage) {
-            previousPage = pagerState.currentPage
+    LaunchedEffect(currentPage) {
+        if (currentPage != previousPage) {
+            previousPage = currentPage
             vibrateShort(vibrator)
         }
     }
 
-    // 请求焦点以接收表冠输入
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+    // 累计旋转量和拖动量
+    var accumulatedRotation by remember { mutableStateOf(0f) }
+    var accumulatedDrag by remember { mutableStateOf(0f) }
+    val rotationThreshold = 30f
+    val dragThreshold = 50f
+
+    // 切换到下一页
+    fun nextPage() {
+        if (currentPage < events.size - 1) {
+            currentPage++
+        }
     }
 
-    // 累计旋转量，用于表冠切换页面
-    var accumulatedRotation by remember { mutableFloatStateOf(0f) }
-    val rotationThreshold = 30f  // 旋转阈值
+    // 切换到上一页
+    fun prevPage() {
+        if (currentPage > 0) {
+            currentPage--
+        }
+    }
+
+    val currentEventType = events[currentPage]
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(currentEventType.backgroundColor)
             .focusRequester(focusRequester)
             .onRotaryScrollEvent { event ->
                 accumulatedRotation += event.verticalScrollPixels
-
                 when {
                     accumulatedRotation > rotationThreshold -> {
                         accumulatedRotation = 0f
-                        if (pagerState.currentPage < events.size - 1) {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                            }
-                        }
+                        nextPage()
                     }
                     accumulatedRotation < -rotationThreshold -> {
                         accumulatedRotation = 0f
-                        if (pagerState.currentPage > 0) {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                            }
-                        }
+                        prevPage()
                     }
                 }
                 true
             }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        when {
+                            accumulatedDrag < -dragThreshold -> nextPage()
+                            accumulatedDrag > dragThreshold -> prevPage()
+                        }
+                        accumulatedDrag = 0f
+                    },
+                    onDragCancel = {
+                        accumulatedDrag = 0f
+                    },
+                    onHorizontalDrag = { _, dragAmount ->
+                        accumulatedDrag += dragAmount
+                    }
+                )
+            }
             .focusable()
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            val eventType = events[page]
-            EventPage(
-                eventType = eventType,
-                onClick = {
-                    vibrateStrong(vibrator)
-                    onEventSelected(eventType)
-                }
-            )
-        }
+        // 事件内容
+        EventPageContent(
+            eventType = currentEventType,
+            onClick = {
+                vibrateStrong(vibrator)
+                onEventSelected(currentEventType)
+            }
+        )
 
         // 底部页面指示器
         PageIndicator(
             pageCount = events.size,
-            currentPage = pagerState.currentPage,
+            currentPage = currentPage,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 16.dp)
@@ -177,10 +194,10 @@ fun EventSelectionDialog(
 }
 
 /**
- * 单个事件页面
+ * 单个事件页面内容
  */
 @Composable
-private fun EventPage(
+private fun EventPageContent(
     eventType: EventType,
     onClick: () -> Unit
 ) {
@@ -189,7 +206,6 @@ private fun EventPage(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(eventType.backgroundColor)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -306,10 +322,24 @@ fun EventSelectionDialog(
 @Composable
 fun EventSelectionDialogPreviewSmall() {
     MaterialTheme {
-        EventSelectionDialog(
-            onEventSelected = {},
-            onDismiss = {}
-        )
+        // 直接预览页面内容，避免触发系统服务调用
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(EventType.YELLOW_CARD.backgroundColor)
+        ) {
+            EventPageContent(
+                eventType = EventType.YELLOW_CARD,
+                onClick = {}
+            )
+            PageIndicator(
+                pageCount = 5,
+                currentPage = 0,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+        }
     }
 }
 
@@ -317,9 +347,23 @@ fun EventSelectionDialogPreviewSmall() {
 @Composable
 fun EventSelectionDialogPreviewLarge() {
     MaterialTheme {
-        EventSelectionDialog(
-            onEventSelected = {},
-            onDismiss = {}
-        )
+        // 直接预览页面内容，避免触发系统服务调用
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(EventType.GOAL.backgroundColor)
+        ) {
+            EventPageContent(
+                eventType = EventType.GOAL,
+                onClick = {}
+            )
+            PageIndicator(
+                pageCount = 5,
+                currentPage = 3,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+        }
     }
 }
