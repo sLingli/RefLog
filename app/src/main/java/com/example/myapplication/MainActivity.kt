@@ -24,7 +24,12 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.compose.ui.platform.ComposeView
+import androidx.wear.compose.material.MaterialTheme
+import android.app.Dialog
 import android.view.ViewGroup
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import android.widget.FrameLayout
 
 class MainActivity : AppCompatActivity() {
@@ -652,50 +657,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEventDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_event_selection, null)
+        // Compose-based Dialog
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
 
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
+        val composeView = ComposeView(this).apply {
+            // 设置 LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner 解决 Crash 问题
+            setViewTreeLifecycleOwner(this@MainActivity)
+            setViewTreeViewModelStoreOwner(this@MainActivity)
+            setViewTreeSavedStateRegistryOwner(this@MainActivity)
 
-        // 黄牌 - 需要选择队伍和号码
-        dialogView.findViewById<View>(R.id.btnYellow).setOnClickListener {
-            dialog.dismiss()
-            showTeamSelectionDialog(getString(R.string.event_yellow))
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                MaterialTheme {
+                    EventSelectionDialog(
+                        onEventSelected = { eventType ->
+                            dialog.dismiss()
+                            when(eventType) {
+                                EventType.YELLOW_CARD -> showTeamSelectionDialog(getString(R.string.event_yellow))
+                                EventType.RED_CARD -> showTeamSelectionDialog(getString(R.string.event_red))
+                                EventType.GOAL -> showTeamSelectionDialog(getString(R.string.event_goal))
+                                EventType.INJURY -> recordSimpleEvent(getString(R.string.event_injury), " ", 30)
+                                EventType.SUBSTITUTION -> recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
+                            }
+                        },
+                        onDismiss = {
+                            dialog.dismiss()
+                        }
+                    )
+                }
+            }
         }
 
-        // 红牌 - 需要选择队伍和号码
-        dialogView.findViewById<View>(R.id.btnRed).setOnClickListener {
-            dialog.dismiss()
-            showTeamSelectionDialog(getString(R.string.event_red))
-        }
-
-        // 进球 - 需要选择队伍和号码
-        dialogView.findViewById<View>(R.id.btnGoal).setOnClickListener {
-            dialog.dismiss()
-            showTeamSelectionDialog(getString(R.string.event_goal))
-        }
-
-        // 伤停 - 直接记录（不需要选择队伍和号码）
-        dialogView.findViewById<View>(R.id.btnInjury).setOnClickListener {
-            dialog.dismiss()
-            recordSimpleEvent(getString(R.string.event_injury), " ", 30)
-        }
-
-        // 换人 - 直接记录（不需要选择队伍和号码）
-        dialogView.findViewById<View>(R.id.btnSubstitution).setOnClickListener {
-            dialog.dismiss()
-            recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
-        }
-
-        // 取消
-        dialogView.findViewById<View>(R.id.btnCancel).setOnClickListener {
-            dialog.dismiss()
-        }
-
+        dialog.setContentView(composeView)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
     }
 
     private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
