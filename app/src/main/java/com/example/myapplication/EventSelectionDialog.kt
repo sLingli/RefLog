@@ -121,16 +121,12 @@ fun EventSelectionDialog(
 
     // 切换到下一页
     fun nextPage() {
-        if (currentPage < events.size - 1) {
-            currentPage++
-        }
+        currentPage = (currentPage + 1) % events.size
     }
 
     // 切换到上一页
     fun prevPage() {
-        if (currentPage > 0) {
-            currentPage--
-        }
+        currentPage = if (currentPage - 1 < 0) events.size - 1 else currentPage - 1
     }
 
     val currentEventType = events[currentPage]
@@ -367,5 +363,4 @@ fun EventSelectionDialogPreviewLarge() {
         }
     }
 }
-
 
