@@ -7,7 +7,9 @@ import android.os.VibratorManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
@@ -17,7 +19,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -84,10 +85,10 @@ fun EventSelectionDialog(
     val events = remember { EventType.values() }
 
     // 当前页面索引
-    var currentPage by remember { mutableStateOf(0) }
+    var currentPage by remember { mutableIntStateOf(0) }
 
     // 记录上一页，用于检测页面切换
-    var previousPage by remember { mutableStateOf(0) }
+    var previousPage by remember { mutableIntStateOf(0) }
 
     // 初始化震动器（在 LaunchedEffect 中避免组合期间崩溃）
     LaunchedEffect(Unit) {
@@ -113,70 +114,76 @@ fun EventSelectionDialog(
         }
     }
 
-    // 累计旋转量和拖动量
-    var accumulatedRotation by remember { mutableStateOf(0f) }
-    var accumulatedDrag by remember { mutableStateOf(0f) }
+    // 累计旋转量（用于旋钮）
+    var accumulatedRotation by remember { mutableFloatStateOf(0f) }
     val rotationThreshold = 30f
-    val dragThreshold = 50f
 
-    // 切换到下一页
-    fun nextPage() {
-        currentPage = (currentPage + 1) % events.size
+    // 累计滑动量（用于手指滑动）
+    var accumulatedScroll by remember { mutableFloatStateOf(0f) }
+    val scrollThreshold = 50f
+
+    // 滑动状态
+    val scrollableState = rememberScrollableState { delta ->
+        accumulatedScroll += delta
+        when {
+            accumulatedScroll > scrollThreshold -> {
+                accumulatedScroll = 0f
+                if (currentPage > 0) {
+                    currentPage--
+                }
+            }
+            accumulatedScroll < -scrollThreshold -> {
+                accumulatedScroll = 0f
+                if (currentPage < events.size - 1) {
+                    currentPage++
+                }
+            }
+        }
+        delta
     }
-
-    // 切换到上一页
-    fun prevPage() {
-        currentPage = if (currentPage - 1 < 0) events.size - 1 else currentPage - 1
-    }
-
-    val currentEventType = events[currentPage]
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(currentEventType.backgroundColor)
             .focusRequester(focusRequester)
             .onRotaryScrollEvent { event ->
                 accumulatedRotation += event.verticalScrollPixels
                 when {
                     accumulatedRotation > rotationThreshold -> {
                         accumulatedRotation = 0f
-                        nextPage()
+                        if (currentPage > 0) {
+                            currentPage--
+                        }
                     }
                     accumulatedRotation < -rotationThreshold -> {
                         accumulatedRotation = 0f
-                        prevPage()
+                        if (currentPage < events.size - 1) {
+                            currentPage++
+                        }
                     }
                 }
                 true
             }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        when {
-                            accumulatedDrag < -dragThreshold -> nextPage()
-                            accumulatedDrag > dragThreshold -> prevPage()
-                        }
-                        accumulatedDrag = 0f
-                    },
-                    onDragCancel = {
-                        accumulatedDrag = 0f
-                    },
-                    onHorizontalDrag = { _, dragAmount ->
-                        accumulatedDrag += dragAmount
-                    }
-                )
-            }
+            .scrollable(
+                state = scrollableState,
+                orientation = Orientation.Horizontal
+            )
             .focusable()
     ) {
-        // 事件内容
-        EventPageContent(
-            eventType = currentEventType,
-            onClick = {
-                vibrateStrong(vibrator)
-                onEventSelected(currentEventType)
-            }
-        )
+        val eventType = events[currentPage]
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(eventType.backgroundColor)
+        ) {
+            EventPageContent(
+                eventType = eventType,
+                onClick = {
+                    vibrateStrong(vibrator)
+                    onEventSelected(eventType)
+                }
+            )
+        }
 
         // 底部页面指示器
         PageIndicator(
@@ -363,4 +370,3 @@ fun EventSelectionDialogPreviewLarge() {
         }
     }
 }
-
