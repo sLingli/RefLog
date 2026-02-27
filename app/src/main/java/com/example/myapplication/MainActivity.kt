@@ -1118,7 +1118,9 @@ class MainActivity : AppCompatActivity() {
                         },
                         onDismiss = {
                             dialog.dismiss()
-                        }
+                        },
+                        homeTeamColor = androidx.compose.ui.graphics.Color(homeTeamColor),
+                        awayTeamColor = androidx.compose.ui.graphics.Color(awayTeamColor)
                     )
                 }
             }

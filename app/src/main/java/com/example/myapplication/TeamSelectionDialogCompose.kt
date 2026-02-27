@@ -63,17 +63,33 @@ class BottomRightTriangleShape : Shape {
 fun TeamSelectionDialogCompose(
     onHomeTeamSelected: () -> Unit,
     onAwayTeamSelected: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    homeTeamColor: Color = Color(0xFF1565C0),
+    awayTeamColor: Color = Color(0xFFC62828)
 ) {
+    // 根据背景颜色亮度计算合适的图标颜色
+    fun getIconColor(backgroundColor: Color): Color {
+        val red = backgroundColor.red
+        val green = backgroundColor.green
+        val blue = backgroundColor.blue
+        // 计算相对亮度 (ITU-R BT.709)
+        val luminance = 0.2126f * red + 0.7152f * green + 0.0722f * blue
+        // 如果背景较亮（亮度 > 0.5），使用黑色图标，否则使用白色图标
+        return if (luminance > 0.5f) Color.Black else Color.White
+    }
+
+    val homeIconColor = getIconColor(homeTeamColor)
+    val awayIconColor = getIconColor(awayTeamColor)
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 左上部分 - 主队区域（蓝色）
+        // 左上部分 - 主队区域
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(TopLeftTriangleShape())
-                .background(Color(0xFF1565C0))
+                .background(homeTeamColor)
                 .clickable(
                     onClick = onHomeTeamSelected,
                     indication = null,
@@ -84,19 +100,19 @@ fun TeamSelectionDialogCompose(
             Icon(
                 painter = painterResource(id = R.drawable.ic_home),
                 contentDescription = "Home Team",
-                tint = Color.White,
+                tint = homeIconColor,
                 modifier = Modifier
                     .size(64.dp)
                     .offset(x = (-20).dp, y = (-20).dp) // 向左上偏移，使图标更居中于三角形区域
             )
         }
 
-        // 右下部分 - 客队区域（红色）
+        // 右下部分 - 客队区域
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(BottomRightTriangleShape())
-                .background(Color(0xFFC62828))
+                .background(awayTeamColor)
                 .clickable(
                     onClick = onAwayTeamSelected,
                     indication = null,
@@ -107,7 +123,7 @@ fun TeamSelectionDialogCompose(
             Icon(
                 painter = painterResource(id = R.drawable.ic_flight),
                 contentDescription = "Away Team",
-                tint = Color.White,
+                tint = awayIconColor,
                 modifier = Modifier
                     .size(64.dp)
                     .offset(x = 20.dp, y = 20.dp) // 向右下偏移，使图标更居中于三角形区域
