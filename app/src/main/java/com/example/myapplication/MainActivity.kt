@@ -388,6 +388,13 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
+
+        // 继续后立刻隐藏控制面板
+        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
+        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
+        hideHandler.removeCallbacks(hideRunnable!!)
+        controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
+        timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
     }
 
     private fun startSecondHalf() {
@@ -409,6 +416,13 @@ class MainActivity : AppCompatActivity() {
         updateStoppageTimeDisplay()
 
         startUpdateLoop()
+
+        // 开始下半场后立刻隐藏控制面板
+        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
+        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
+        hideHandler.removeCallbacks(hideRunnable!!)
+        controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
+        timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
 
         addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
         Log.i("FootballTimer", "📢 下半场开始！从 ${formatTime(mainTime)} 计时")
