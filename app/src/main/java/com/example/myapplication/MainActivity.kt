@@ -1102,70 +1102,39 @@ class MainActivity : AppCompatActivity() {
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_team_selection, null)
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
 
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvTeamSelectionTitle)
-        val btnHomeTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnHomeTeam)
-        val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
+        val composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@MainActivity)
+            setViewTreeViewModelStoreOwner(this@MainActivity)
+            setViewTreeSavedStateRegistryOwner(this@MainActivity)
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
 
-
-        val (iconRes, iconColor) = when (eventType) {
-            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
-            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
-            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
-            else -> 0 to 0
-        }
-        val actionText = getString(R.string.title_select_team_generic)
-        tvTitle.text = "$eventType - $actionText"
-        if (iconRes != 0) {
-            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
-            drawable?.setTint(iconColor)
-            // 设置图标大小为 20dp
-            val size = (20 * resources.displayMetrics.density).toInt()
-            drawable?.setBounds(0, 0, size, size)
-            tvTitle.setCompoundDrawables(drawable, null, null, null)
-            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
-        }
-
-        // 2. 应用主客队颜色
-        btnHomeTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(homeTeamColor)
-        btnAwayTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(awayTeamColor)
-
-        // 3. 智能反色逻辑
-        if (homeTeamColor == 0xFFFFFFFF.toInt()) {
-            btnHomeTeam.setTextColor(android.graphics.Color.BLACK)
-            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
-        } else {
-            btnHomeTeam.setTextColor(android.graphics.Color.WHITE)
-            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+            setContent {
+                MaterialTheme {
+                    TeamSelectionDialogCompose(
+                        onHomeTeamSelected = {
+                            selectedTeam = getString(R.string.team_home)
+                            dialog.dismiss()
+                            showNumberSelectionDialog(eventType, selectedTeam)
+                        },
+                        onAwayTeamSelected = {
+                            selectedTeam = getString(R.string.team_away)
+                            dialog.dismiss()
+                            showNumberSelectionDialog(eventType, selectedTeam)
+                        },
+                        onDismiss = {
+                            dialog.dismiss()
+                        },
+                        homeTeamColor = androidx.compose.ui.graphics.Color(homeTeamColor),
+                        awayTeamColor = androidx.compose.ui.graphics.Color(awayTeamColor)
+                    )
+                }
+            }
         }
 
-        if (awayTeamColor == 0xFFFFFFFF.toInt()) {
-            btnAwayTeam.setTextColor(android.graphics.Color.BLACK)
-            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
-        } else {
-            btnAwayTeam.setTextColor(android.graphics.Color.WHITE)
-            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
-        }
-
-        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
-
-        btnHomeTeam.setOnClickListener {
-            selectedTeam = getString(R.string.team_home)
-            dialog.dismiss()
-            showNumberSelectionDialog(eventType, selectedTeam)
-        }
-
-        btnAwayTeam.setOnClickListener {
-            selectedTeam = getString(R.string.team_away)
-            dialog.dismiss()
-            showNumberSelectionDialog(eventType, selectedTeam)
-        }
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
+        dialog.setContentView(composeView)
         dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 显示号码选择弹窗
