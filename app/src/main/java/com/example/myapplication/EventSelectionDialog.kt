@@ -4,12 +4,14 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
-import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.*
@@ -19,8 +21,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +32,9 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -77,20 +84,29 @@ fun EventSelectionDialog(
 ) {
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
+    val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
 
     // 震动器状态 - 懒加载
     var vibrator by remember { mutableStateOf<Vibrator?>(null) }
 
     // 事件列表
-    val events = remember { EventType.values() }
+    val events = remember { EventType.entries }
 
     // 当前页面索引
     var currentPage by remember { mutableIntStateOf(0) }
-
-    // 记录上一页，用于检测页面切换
     var previousPage by remember { mutableIntStateOf(0) }
 
-    // 初始化震动器（在 LaunchedEffect 中避免组合期间崩溃）
+    // 页面偏移量动画状态 (像素)
+    val offsetX = remember { Animatable(0f) }
+
+    // 屏幕宽度
+    var screenWidth by remember { mutableFloatStateOf(0f) }
+
+    // 拖拽状态
+    var isDragging by remember { mutableStateOf(false) }
+
+    // 初始化震动器
     LaunchedEffect(Unit) {
         vibrator = try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -114,85 +130,140 @@ fun EventSelectionDialog(
         }
     }
 
-    // 累计旋转量（用于旋钮）
+    // 拖拽手势状态 - 支持循环滑动
+    val draggableState = rememberDraggableState { delta ->
+        if (screenWidth > 0f) {
+            coroutineScope.launch {
+                // 允许无限滑动，不限制边界
+                offsetX.snapTo(offsetX.value + delta)
+            }
+        }
+    }
+
+    // 旋转滚动处理
     var accumulatedRotation by remember { mutableFloatStateOf(0f) }
     val rotationThreshold = 30f
 
-    // 累计滑动量（用于手指滑动）
-    var accumulatedScroll by remember { mutableFloatStateOf(0f) }
-    val scrollThreshold = 50f
-
-    // 滑动状态
-    val scrollableState = rememberScrollableState { delta ->
-        accumulatedScroll += delta
-        when {
-            accumulatedScroll > scrollThreshold -> {
-                accumulatedScroll = 0f
-                if (currentPage > 0) {
-                    currentPage--
-                }
-            }
-            accumulatedScroll < -scrollThreshold -> {
-                accumulatedScroll = 0f
-                if (currentPage < events.size - 1) {
-                    currentPage++
-                }
-            }
-        }
-        delta
-    }
-
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .focusRequester(focusRequester)
             .onRotaryScrollEvent { event ->
-                accumulatedRotation += event.verticalScrollPixels
-                when {
-                    accumulatedRotation > rotationThreshold -> {
-                        accumulatedRotation = 0f
-                        if (currentPage > 0) {
-                            currentPage--
+                if (!isDragging) {
+                    accumulatedRotation += event.verticalScrollPixels
+                    when {
+                        accumulatedRotation > rotationThreshold -> {
+                            accumulatedRotation = 0f
+                            // 支持循环：从第0页到最后一页
+                            currentPage = if (currentPage > 0) currentPage - 1 else events.size - 1
+                            coroutineScope.launch {
+                                offsetX.animateTo(-currentPage * screenWidth)
+                            }
                         }
-                    }
-                    accumulatedRotation < -rotationThreshold -> {
-                        accumulatedRotation = 0f
-                        if (currentPage < events.size - 1) {
-                            currentPage++
+                        accumulatedRotation < -rotationThreshold -> {
+                            accumulatedRotation = 0f
+                            // 支持循环：从最后一页到第0页
+                            currentPage = if (currentPage < events.size - 1) currentPage + 1 else 0
+                            coroutineScope.launch {
+                                offsetX.animateTo(-currentPage * screenWidth)
+                            }
                         }
                     }
                 }
                 true
             }
-            .scrollable(
-                state = scrollableState,
-                orientation = Orientation.Horizontal
+            .draggable(
+                state = draggableState,
+                orientation = Orientation.Horizontal,
+                onDragStarted = {
+                    isDragging = true
+                },
+                onDragStopped = { velocity ->
+                    isDragging = false
+
+                    if (screenWidth > 0f) {
+                        coroutineScope.launch {
+                            // 计算当前偏移对应的"虚拟页面"
+                            val virtualPage = -offsetX.value / screenWidth
+
+                            // 计算最近的页面（可能是负数或超过最大值）
+                            val nearestVirtualPage = if (abs(velocity) > 1000f) {
+                                // 惯性滑动：根据速度方向决定
+                                val velocityDirection = if (velocity > 0) -1 else 1
+                                virtualPage.roundToInt() + velocityDirection
+                            } else {
+                                // 普通吸附：找最近页面
+                                virtualPage.roundToInt()
+                            }
+
+                            // 将虚拟页面映射到实际页面（支持循环）
+                            val actualPage = ((nearestVirtualPage % events.size) + events.size) % events.size
+                            currentPage = actualPage
+
+                            // 计算目标偏移（使用最短路径）
+                            val targetOffset = -nearestVirtualPage * screenWidth
+
+                            // 动画到目标位置
+                            if (abs(velocity) > 1000f) {
+                                // 使用衰减动画模拟惯性
+                                offsetX.animateDecay(
+                                    initialVelocity = velocity,
+                                    animationSpec = exponentialDecay()
+                                )
+                            }
+                            // 最终确保位置正确
+                            offsetX.animateTo(targetOffset)
+                        }
+                    }
+                }
             )
             .focusable()
     ) {
-        val eventType = events[currentPage]
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(eventType.backgroundColor)
-        ) {
-            EventPageContent(
-                eventType = eventType,
-                onClick = {
-                    vibrateStrong(vibrator)
-                    onEventSelected(eventType)
-                }
-            )
+        // 记录屏幕宽度
+        LaunchedEffect(constraints.maxWidth) {
+            screenWidth = constraints.maxWidth.toFloat()
         }
 
-        // 底部页面指示器
-        PageIndicator(
-            pageCount = events.size,
-            currentPage = currentPage,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp)
-        )
+        if (screenWidth > 0f) {
+            // 循环渲染页面 - 渲染多个实例以支持无缝循环
+            // 计算当前偏移对应的虚拟页面
+            val virtualPage = -offsetX.value / screenWidth
+
+            // 渲染当前可见区域周围的页面（前后各2页保证流畅）
+            for (virtualIndex in (virtualPage.toInt() - 2)..(virtualPage.toInt() + 2)) {
+                val actualIndex = ((virtualIndex % events.size) + events.size) % events.size
+                val eventType = events[actualIndex]
+                val pageOffsetX = virtualIndex * screenWidth + offsetX.value
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX = pageOffsetX
+                        }
+                        .background(eventType.backgroundColor)
+                ) {
+                    EventPageContent(
+                        eventType = eventType,
+                        onClick = {
+                            if (!isDragging && actualIndex == currentPage) {
+                                vibrateStrong(vibrator)
+                                onEventSelected(eventType)
+                            }
+                        }
+                    )
+                }
+            }
+
+            // 底部页面指示器
+            PageIndicator(
+                pageCount = events.size,
+                currentPage = currentPage,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+        }
     }
 }
 
