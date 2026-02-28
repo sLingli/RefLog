@@ -119,6 +119,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // 尽早预加载所有 Compose 组件，避免首次打开弹窗时的延迟
+        ComposePreloader.preload(this)
+
         initializeUI()
         resetMatch()
         initializeTimer()
