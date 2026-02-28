@@ -57,4 +57,9 @@
     <!-- 清空历史弹窗 -->
     <string name="msg_confirm_clear_all">确定清空所有记录？</string>
     <string name="title_history_details">历史详情</string>
+
+    <!-- 设置界面 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_history">历史记录</string>
+    <string name="settings_about">关于</string>
 </resources>
