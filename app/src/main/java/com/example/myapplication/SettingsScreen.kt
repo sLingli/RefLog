@@ -1,15 +1,19 @@
 package com.example.myapplication
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
@@ -51,57 +55,23 @@ fun SettingsScreen(
                     )
                 }
 
-                // 第二项：历史记录条目
+                // 第二项：历史记录 / History
                 item {
-                    Chip(
+                    SettingsChipItem(
                         onClick = onHistoryClick,
-                        label = {
-                            Text(
-                                text = "历史记录",
-                                color = Color.White
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_history),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        colors = ChipDefaults.chipColors(
-                            backgroundColor = Color(0xFF333333)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                        iconRes = R.drawable.ic_history,
+                        primaryText = "历史记录",
+                        secondaryText = "History"
                     )
                 }
 
-                // 第三项：关于条目
+                // 第三项：关于 / About
                 item {
-                    Chip(
+                    SettingsChipItem(
                         onClick = onAboutClick,
-                        label = {
-                            Text(
-                                text = "关于",
-                                color = Color.White
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.info),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        colors = ChipDefaults.chipColors(
-                            backgroundColor = Color(0xFF333333)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp)
+                        iconRes = R.drawable.info,
+                        primaryText = "关于",
+                        secondaryText = "About"
                     )
                 }
             }
@@ -109,3 +79,47 @@ fun SettingsScreen(
     }
 }
 
+@Composable
+private fun SettingsChipItem(
+    onClick: () -> Unit,
+    iconRes: Int,
+    primaryText: String,
+    secondaryText: String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .clip(RoundedCornerShape(50))
+            .background(Color(0xFF333333))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = primaryText,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = secondaryText,
+                    color = Color(0xFFAAAAAA),
+                    fontSize = 11.sp
+                )
+            }
+        }
+    }
+}
