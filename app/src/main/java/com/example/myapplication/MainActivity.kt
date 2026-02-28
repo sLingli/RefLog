@@ -177,9 +177,9 @@ class MainActivity : AppCompatActivity() {
         btnPauseRound?.setOnClickListener { toggleTimer() }
 
         val openHistoryAction: () -> Unit = {
-            // 统一走底部抽屉弹窗，而不是单独的 Activity
-            if (historySheet?.isShowing != true) {
-                showHistoryDialog()
+            // 统一走底部抽屉弹窗，打开设置界面
+            if (supportFragmentManager.findFragmentByTag(SettingsBottomSheetFragment.TAG) == null) {
+                showSettingsDialog()
             }
         }
 
@@ -1105,6 +1105,12 @@ class MainActivity : AppCompatActivity() {
         // 使用 Fragment 承载 Compose BottomSheet，避免在 Activity 里直接管理 ComposeView 生命周期
         if (supportFragmentManager.findFragmentByTag(HistoryBottomSheetFragment.TAG) != null) return
         HistoryBottomSheetFragment().show(supportFragmentManager, HistoryBottomSheetFragment.TAG)
+    }
+
+    private fun showSettingsDialog() {
+        // 使用 Fragment 承载 Compose BottomSheet，显示设置界面
+        if (supportFragmentManager.findFragmentByTag(SettingsBottomSheetFragment.TAG) != null) return
+        SettingsBottomSheetFragment().show(supportFragmentManager, SettingsBottomSheetFragment.TAG)
     }
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
