@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,8 +61,7 @@ fun SettingsScreen(
                     SettingsChipItem(
                         onClick = onHistoryClick,
                         iconRes = R.drawable.ic_history,
-                        primaryText = "历史记录",
-                        secondaryText = "History"
+                        label = stringResource(R.string.settings_history)
                     )
                 }
 
@@ -70,8 +70,7 @@ fun SettingsScreen(
                     SettingsChipItem(
                         onClick = onAboutClick,
                         iconRes = R.drawable.info,
-                        primaryText = "关于",
-                        secondaryText = "About"
+                        label = stringResource(R.string.settings_about)
                     )
                 }
             }
@@ -83,8 +82,7 @@ fun SettingsScreen(
 private fun SettingsChipItem(
     onClick: () -> Unit,
     iconRes: Int,
-    primaryText: String,
-    secondaryText: String
+    label: String
 ) {
     Box(
         modifier = Modifier
@@ -107,19 +105,12 @@ private fun SettingsChipItem(
                 modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = primaryText,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = secondaryText,
-                    color = Color(0xFFAAAAAA),
-                    fontSize = 11.sp
-                )
-            }
+            Text(
+                text = label,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
