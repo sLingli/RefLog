@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.R.attr.versionName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -53,7 +54,7 @@ fun AboutScreen() {
                 // 版本号
                 item {
                     Text(
-                        text = "V1.0",
+                        text = "V$versionName",
                         color = Color(0xFF888888),
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center
