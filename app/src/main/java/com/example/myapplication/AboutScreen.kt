@@ -48,17 +48,18 @@ fun AboutScreen() {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black),
-                contentPadding = PaddingValues(top = 40.dp, bottom = 40.dp),
+                contentPadding = PaddingValues(top = 90.dp, bottom = 40.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    Image(
+                    Icon(
                         painter = painterResource(id = R.drawable.reflog_logo),
                         contentDescription = "RefLog Logo",
+                        tint = Color.White,
                         modifier = Modifier
-                            .size(48.dp)
-                            .padding(bottom = 8.dp)
+                            .size(120.dp)
+                            .padding(bottom = 3.dp)
                     )
                 }
                 item {
