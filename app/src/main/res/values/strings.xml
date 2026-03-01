@@ -9,7 +9,8 @@
     <string name="status_finished">Full Time</string>
 
     <!-- Buttons & Actions -->
-    <string name="btn_start">START</string>
+    <string name="btn_start">KICK
+    OFF</string>
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
     <string name="btn_stop">Stop</string>
