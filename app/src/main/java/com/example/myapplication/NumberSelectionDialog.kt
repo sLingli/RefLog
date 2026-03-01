@@ -280,7 +280,7 @@ private fun AnimatedDigit(
     ) { digit ->
         Text(
             text = digit.toString(),
-            fontSize = 56.sp,
+            fontSize = 100.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
             modifier = Modifier.scale(scale)

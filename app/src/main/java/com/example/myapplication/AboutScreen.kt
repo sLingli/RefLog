@@ -53,14 +53,21 @@ fun AboutScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 item {
-                    Icon(
-                        painter = painterResource(id = R.drawable.reflog_logo),
-                        contentDescription = "RefLog Logo",
-                        tint = Color.White,
+                    Box(
                         modifier = Modifier
-                            .size(120.dp)
-                            .padding(bottom = 3.dp)
-                    )
+                            .padding(bottom = 6.dp)
+                            .size(90.dp)
+                            .background(Color.White, shape = CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.reflog_logo),
+                            contentDescription = "RefLog Logo",
+                            tint = Color.Black,
+                            modifier = Modifier
+                                .size(100.dp)
+                        )
+                    }
                 }
                 item {
                     Text(
