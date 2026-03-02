@@ -338,3 +338,24 @@ fun MatchSummaryScreenPreview() {
         onClose = {}
     )
 }
+
+@Preview(device = androidx.wear.tooling.preview.devices.WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun MatchSummaryScreenPreviewSquare() {
+    MatchSummaryScreen(
+        isHistory = false,
+        durationMinutes = 90,
+        homeGoals = 2,
+        awayGoals = 1,
+        yellowCount = 3,
+        redCount = 1,
+        stoppageTime1 = "3:00",
+        stoppageTime2 = "5:00",
+        events = listOf(
+            MatchEvent("15'", "Goal", "⚽", "Home Team", "1", 15),
+            MatchEvent("30'", "Yellow", "🟨", "Player A", "1", 30)
+        ),
+        onClose = {}
+    )
+}
+
