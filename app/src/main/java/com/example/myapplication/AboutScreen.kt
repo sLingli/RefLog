@@ -1,25 +1,27 @@
 package com.example.myapplication
 
-import android.R.attr.versionName
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.*
+import androidx.wear.tooling.preview.devices.WearDevices
 
 @Composable
 fun AboutScreen() {
@@ -34,11 +36,15 @@ fun AboutScreen() {
         }
     }
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(2.dp)
-            .clip(CircleShape)
+            .clip(screenShape)
     ) {
         Scaffold(
             positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
@@ -90,6 +96,30 @@ fun AboutScreen() {
                 }
             }
         }
+    }
+}
+
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
+@Composable
+fun AboutScreenPreview() {
+    MaterialTheme {
+        AboutScreen()
+    }
+}
+
+@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
+@Composable
+fun AboutScreenPreviewLarge() {
+    MaterialTheme {
+        AboutScreen()
+    }
+}
+
+@Preview(device = WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun AboutScreenPreviewSquare() {
+    MaterialTheme {
+        AboutScreen()
     }
 }
 
