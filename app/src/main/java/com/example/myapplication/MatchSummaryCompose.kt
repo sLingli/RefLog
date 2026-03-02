@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,10 +42,15 @@ fun MatchSummaryScreen(
 ) {
     val listState = rememberScalingLazyListState(initialCenterItemIndex = 0)
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     // Use Scaffold with ScalingLazyColumn for proper Wear OS circular screen support
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
+            .clip(screenShape)
             .background(Color.Black),
         positionIndicator = {
             PositionIndicator(scalingLazyListState = listState)
