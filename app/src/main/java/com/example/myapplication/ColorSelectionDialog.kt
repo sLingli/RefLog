@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -73,10 +74,15 @@ fun ColorSelectionDialog(
         selectedColor = DEFAULT_TEAM_COLORS[pickerState.selectedOption]
     }
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black), // 适配圆形手表通常使用黑色背景
+            .clip(screenShape)
+            .background(Color.Black), // 适配圆形和方形手表
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -182,6 +188,15 @@ fun ColorSelectionDialogPreview() {
 fun ColorSelectionDialogLargePreview() {
     ColorSelectionDialog(
         initialColor = DEFAULT_TEAM_COLORS[2],
+        onColorSelected = {}
+    )
+}
+
+@Preview(device = WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun ColorSelectionDialogSquarePreview() {
+    ColorSelectionDialog(
+        initialColor = DEFAULT_TEAM_COLORS[0],
         onColorSelected = {}
     )
 }

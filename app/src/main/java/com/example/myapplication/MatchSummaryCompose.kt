@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,10 +42,15 @@ fun MatchSummaryScreen(
 ) {
     val listState = rememberScalingLazyListState(initialCenterItemIndex = 0)
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     // Use Scaffold with ScalingLazyColumn for proper Wear OS circular screen support
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
+            .clip(screenShape)
             .background(Color.Black),
         positionIndicator = {
             PositionIndicator(scalingLazyListState = listState)
@@ -332,3 +338,24 @@ fun MatchSummaryScreenPreview() {
         onClose = {}
     )
 }
+
+@Preview(device = androidx.wear.tooling.preview.devices.WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun MatchSummaryScreenPreviewSquare() {
+    MatchSummaryScreen(
+        isHistory = false,
+        durationMinutes = 90,
+        homeGoals = 2,
+        awayGoals = 1,
+        yellowCount = 3,
+        redCount = 1,
+        stoppageTime1 = "3:00",
+        stoppageTime2 = "5:00",
+        events = listOf(
+            MatchEvent("15'", "Goal", "⚽", "Home Team", "1", 15),
+            MatchEvent("30'", "Yellow", "🟨", "Player A", "1", 30)
+        ),
+        onClose = {}
+    )
+}
+

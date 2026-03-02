@@ -9,14 +9,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,8 +30,8 @@ import androidx.wear.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.wear.tooling.preview.devices.WearDevices
 import kotlinx.coroutines.launch
 
 class TimeSelectionActivity : ComponentActivity() {
@@ -70,9 +73,14 @@ fun TimeSelectionScreen(
         focusRequester.requestFocus()
     }
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(screenShape)
             .background(Color.Black)
             .onRotaryScrollEvent { event ->
                 if (Math.abs(event.verticalScrollPixels) > 16f) {
@@ -164,9 +172,17 @@ fun TimeSelectionScreen(
         }
     }
 }
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun TimeSelectionPreview() {
+    TimeSelectionScreen(
+        onConfirm = { minutes ->  }
+    )
+}
+
+@Preview(device = WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun TimeSelectionPreviewSquare() {
     TimeSelectionScreen(
         onConfirm = { minutes ->  }
     )

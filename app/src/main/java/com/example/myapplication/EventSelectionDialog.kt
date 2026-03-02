@@ -14,6 +14,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,12 +24,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +39,7 @@ import kotlin.math.roundToInt
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.tooling.preview.devices.WearDevices
 
 /**
  * 事件类型枚举
@@ -144,9 +146,14 @@ fun EventSelectionDialog(
     var accumulatedRotation by remember { mutableFloatStateOf(0f) }
     val rotationThreshold = 30f
 
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
+            .clip(screenShape)
             .focusRequester(focusRequester)
             .onRotaryScrollEvent { event ->
                 if (!isDragging) {
@@ -392,7 +399,7 @@ fun EventSelectionDialog(
 
 // ==================== 预览 ====================
 
-@Preview(device = Devices.WEAR_OS_SMALL_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.SMALL_ROUND, showSystemUi = true)
 @Composable
 fun EventSelectionDialogPreviewSmall() {
     MaterialTheme {
@@ -417,7 +424,7 @@ fun EventSelectionDialogPreviewSmall() {
     }
 }
 
-@Preview(device = Devices.WEAR_OS_LARGE_ROUND, showSystemUi = true)
+@Preview(device = WearDevices.LARGE_ROUND, showSystemUi = true)
 @Composable
 fun EventSelectionDialogPreviewLarge() {
     MaterialTheme {
@@ -441,3 +448,30 @@ fun EventSelectionDialogPreviewLarge() {
         }
     }
 }
+
+@Preview(device = WearDevices.SQUARE, showSystemUi = true)
+@Composable
+fun EventSelectionDialogPreviewSquare() {
+    MaterialTheme {
+        // 直接预览页面内容，避免触发系统服务调用
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(16.dp))
+                .background(EventType.RED_CARD.backgroundColor)
+        ) {
+            EventPageContent(
+                eventType = EventType.RED_CARD,
+                onClick = {}
+            )
+            PageIndicator(
+                pageCount = 5,
+                currentPage = 1,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp)
+            )
+        }
+    }
+}
+

@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -169,7 +170,11 @@ fun HistoryScreen(
 
     var showClearAllDialog by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape)) {
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val screenShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
+    Box(modifier = Modifier.fillMaxSize().padding(2.dp).clip(screenShape)) {
         Scaffold(
             positionIndicator = { PositionIndicator(scalingLazyListState = listState) }
         ) {
@@ -427,7 +432,11 @@ fun CircularAlert(
     dismissText: (@Composable () -> Unit)? = null,
     onDismissAction: (() -> Unit)? = null
 ) {
-    // 圆形弹窗 - 不填满整个屏幕，只显示圆形 Card
+    // 检测屏幕形状
+    val isRoundScreen = LocalConfiguration.current.isScreenRound
+    val cardShape = if (isRoundScreen) CircleShape else RoundedCornerShape(16.dp)
+
+    // 圆形/方形弹窗 - 不填满整个屏幕，只显示 Card
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -442,10 +451,10 @@ fun CircularAlert(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
-                    // 圆形内部的点击不会冒泡到背景
+                    // 内部的点击不会冒泡到背景
                     detectTapGestures(onTap = { /* 消费点击事件，不关闭 */ })
                 },
-            shape = CircleShape,
+            shape = cardShape,
             backgroundPainter = CardDefaults.cardBackgroundPainter(Color(0xFF222222)),
             contentColor = Color.White
         ) {
