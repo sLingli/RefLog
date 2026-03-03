@@ -27,6 +27,7 @@ import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.annotation.Keep
 import android.widget.FrameLayout
 
 class MainActivity : AppCompatActivity() {
@@ -1216,6 +1217,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 数据类
+    @Keep
     data class EventItem(
         val displayText: String,
         val type: String,
