@@ -41,7 +41,9 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults
 import androidx.wear.compose.material.*
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import androidx.annotation.Keep
 
+@Keep
 data class MatchHistoryUiModel(
     val id: Long,
     val date: String,

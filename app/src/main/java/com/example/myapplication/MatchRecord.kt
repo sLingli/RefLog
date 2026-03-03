@@ -1,6 +1,9 @@
 package com.example.myapplication
 
+import androidx.annotation.Keep
+
 // 1. 先定义“事件”的格式
+@Keep
 data class MatchEvent(
     val timeStr: String,
     val event: String,
@@ -11,6 +14,7 @@ data class MatchEvent(
 )
 
 // 2. 再定义“整场比赛记录”的格式
+@Keep
 data class MatchRecord(
     val id: Long = System.currentTimeMillis(),
     val date: String,
