@@ -67,8 +67,8 @@ fun TeamSelectionDialogCompose(
     onHomeTeamSelected: () -> Unit,
     onAwayTeamSelected: () -> Unit,
     onDismiss: () -> Unit,
-    homeTeamColor: Color = Color(0xFF1565C0),
-    awayTeamColor: Color = Color(0xFFC62828)
+    homeTeamColor: Color = Color(0xFF2E7D9B),
+    awayTeamColor: Color = Color(0xFF8B1A1A)
 ) {
     // 根据背景颜色亮度计算合适的图标颜色
     fun getIconColor(backgroundColor: Color): Color {
