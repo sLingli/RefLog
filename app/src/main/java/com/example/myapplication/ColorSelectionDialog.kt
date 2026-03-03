@@ -42,14 +42,14 @@ import androidx.wear.tooling.preview.devices.WearDevices
 
 // 默认颜色列表，通过ToInt转换为Int类型以匹配原有逻辑
 val DEFAULT_TEAM_COLORS = listOf(
-    0xFFF44336.toInt(), // 红
-    0xFF2196F3.toInt(), // 蓝
-    0xFF4CAF50.toInt(), // 绿
-    0xFFFFEB3B.toInt(), // 黄
+    0xFF8B1A1A.toInt(), // 红
+    0xFF2E7D9B.toInt(), // 蓝
+    0xFF2E7D32.toInt(), // 绿
+    0xFFB8960C.toInt(), // 黄
     0xFFFFFFFF.toInt(), // 白
     0xFF000000.toInt(), // 黑
-    0xFF9C27B0.toInt(), // 紫
-    0xFFFF9800.toInt()  // 橙
+    0xFF7B1FA2.toInt(), // 紫
+    0xFFD84315.toInt()  // 橙
 )
 
 @Composable
