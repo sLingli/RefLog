@@ -46,21 +46,6 @@
     *   <img src="https://github.com/user-attachments/assets/925bc9f5-f19b-47ce-99d5-d785d57c65c2" width="220"/>
 4.赛前可设置比赛时间
 
-### ✨ 核心亮点
-1.  **惯性滚轮 (Physics Wheel)** 
-    *   用于选择球衣颜色和队员号码，滚轮的设计方便裁判员快速选择
-    *   重写了控件，加入**磁吸回弹**与**物理惯性**效果
-    *   视觉上实现了**近大远小**的 3D 透视感，手感顺滑
-    *   <img src="https://github.com/user-attachments/assets/8626d450-2372-4e5c-8604-8290d16569ba" width="220"/><img src="https://github.com/user-attachments/assets/d628659d-1c7b-4adf-9d24-6979b976d42c" width="220"/>
-
-2.  **流体按钮动画** 
-    *   点击“开始比赛”时，按钮不会生硬消失，而是变红并**平滑向左收缩**，同时“结束”按钮从右侧浮现。拒绝生硬的过渡
-3.  **弹性侧滑删除** 
-    *   历史记录列表支持**跟手左滑**。
-    *   滑动过程带有**阻尼弹性**。点击删除圆圈后，条目会向左平滑飞出消失
-    *   <img src="https://github.com/user-attachments/assets/0638304e-9de9-4253-99ba-0d221228fe75" width="220"/>
-
-
 ### 🤖 特别致谢 (AI 导师)
 作为一个初学者，本项目在代码架构上得到了以下 AI 伙伴的巨大帮助。没有它们，我无法独自完成这个项目：
 *   **DeepSeek**
@@ -100,19 +85,6 @@
     *   **History**: All data is stored locally, allowing you to review past matches at any time.
     *   <img src="https://github.com/user-attachments/assets/8a74133e-1245-4e11-a950-daa14ef93568" width="220"/>
 4.  Match time can be set before the match
-
-### ✨ UX Highlights
-1.  **Inertial Wheel (Physics Wheel)** 
-    *   Designed for selecting jersey colors and player numbers, allowing referees to make quick selections.
-    *   Custom-written view with **magnetic snap** and **physics-based inertia** effects.
-    *   Visually implements a **"Fisheye" (3D perspective)** effect (larger in center, smaller at edges) for a smooth tactile feel.
-    *   <img src="https://github.com/user-attachments/assets/f694e408-0761-4686-9ade-784c0a794eb7" width="220"/><img src="https://github.com/user-attachments/assets/c753a343-357d-4037-a067-f9e537085a80" width="220"/>
-2.  **Fluid Button Animations** 
-    *   When clicking "Start Match", the button doesn't just disappear; it turns red and **shrinks smoothly to the left**, while the "End" button floats in from the right. No harsh transitions.
-3.  **Elastic Swipe-to-Delete** 
-    *   The history list supports a **responsive follow-hand swipe**.
-    *   The sliding process features **elastic damping**. Clicking the delete circle triggers a smooth fly-out animation to the left.
-    *   <img src="https://github.com/user-attachments/assets/b0a3fe24-6547-4859-998b-836641f36935" width="220"/>
 
 ### 🤖 Special Thanks (AI Mentors)
 As a beginner, this project received immense help with code architecture from the following AI partners. I could not have completed this project alone without them:
