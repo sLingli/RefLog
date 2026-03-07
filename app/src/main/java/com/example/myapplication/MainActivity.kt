@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.content.res.Resources
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.os.Bundle
@@ -9,43 +10,23 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.widget.NumberPicker
+import android.content.res.ColorStateList
+import android.util.DisplayMetrics
 import android.transition.TransitionManager
 import android.transition.AutoTransition
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.lifecycle.setViewTreeViewModelStoreOwner
-import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import androidx.compose.ui.platform.ComposeView
-import androidx.wear.compose.material.MaterialTheme
-import android.app.Dialog
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
-import androidx.compose.ui.platform.ViewCompositionStrategy
-import android.widget.FrameLayout
 
 class MainActivity : AppCompatActivity() {
 
-    private val timeSettingLauncher = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val selectedMinutes = result.data?.getIntExtra("SELECTED_TIME", 45) ?: 45
-
-            halfTimeSeconds = selectedMinutes * 60L
-            matchTimeSet = true
-
-            val btnSetMatchTime = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetMatchTime)
-            btnSetMatchTime?.text = getString(R.string.fmt_duration_simple, selectedMinutes)
-
-            addLog("⚙️ 比赛时间调整为: $selectedMinutes 分钟")
-        }
-    }
     //  状态常量
     private companion object {
         const val STATE_READY = "ready"
@@ -73,8 +54,6 @@ class MainActivity : AppCompatActivity() {
     private var currentHalf: String = HALF_FIRST
     private lateinit var btnHistory: Button
     private lateinit var recordManager: MatchRecordManager
-    private var hideRunnable: Runnable? = null
-    private val hideHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
 
     // 计时器变量
@@ -106,28 +85,17 @@ class MainActivity : AppCompatActivity() {
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
-    private val rippleHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var rippleRunnable: Runnable? = null
-
-    // 底部历史条拖拽用的临时变量
-    private var historyStartY: Float = 0f
-    private var historyTriggered: Boolean = false
-    private var historySheet: BottomSheetDialog? = null
-
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // 尽早预加载所有 Compose 组件，避免首次打开弹窗时的延迟
-        ComposePreloader.preload(this)
-
         initializeUI()
         resetMatch()
         initializeTimer()
     }
     private fun initializeTimer() {
+        // 初始化updateRunnable
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
@@ -135,6 +103,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // 立即启动计时器循环（这样计时器就会每秒更新）
         handler.post(updateRunnable)
 
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
@@ -142,177 +111,80 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initializeUI() {
-        // 1. 绑定基础视图
         statusLabel = findViewById(R.id.statusLabel)
         mainTimeLabel = findViewById(R.id.mainTimeLabel)
         stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
+
         mainButton = findViewById(R.id.mainButton)
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
-        val btnBigStart = findViewById<android.view.View>(R.id.btnBigStart)
-        val btnHistorySmall = findViewById<android.view.View>(R.id.btnHistorySmall)
-        val btnSetMatchTime = findViewById<android.view.View>(R.id.btnSetMatchTime)
 
-        // 2. 初始化时间设置按钮文字
-        val initialMinutes = (halfTimeSeconds / 60).toInt()
-        val btn = btnSetMatchTime as? com.google.android.material.button.MaterialButton
-        btn?.text = getString(R.string.fmt_duration_simple, initialMinutes)
-
-        // 3. 颜色选择逻辑
-        val clickHomeColor = findViewById<View>(R.id.clickHomeColor)
-        val clickAwayColor = findViewById<View>(R.id.clickAwayColor)
-
-        clickHomeColor?.setOnClickListener {
-            showColorSelectionDialog(isHome = true)
-        }
-        clickAwayColor?.setOnClickListener {
-            showColorSelectionDialog(isHome = false)
-        }
-
-        // 4. 比赛控制面板逻辑
-        val touchOverlay = findViewById<android.view.View>(R.id.touchOverlay)
-        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
-        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
-        val btnPauseRound = findViewById<android.view.View>(R.id.btnPauseRound)
-        val btnEndRound = findViewById<android.view.View>(R.id.btnEndRound)
-
+        // 绑定点击事件
         mainButton.setOnClickListener { toggleTimer() }
-        btnBigStart?.setOnClickListener { toggleTimer() }
-        btnPauseRound?.setOnClickListener { toggleTimer() }
+        btnHistory.setOnClickListener { showHistoryDialog() }
 
-        val openHistoryAction: () -> Unit = {
-            // 统一走底部抽屉弹窗，打开设置界面
-            if (supportFragmentManager.findFragmentByTag(SettingsBottomSheetFragment.TAG) == null) {
-                showSettingsDialog()
-            }
-        }
-
-        val historyDragTarget: View? = btnHistorySmall ?: btnHistory
-        var startYOnBar = 0f
-        var triggeredOnBar = false
-
-        historyDragTarget?.setOnTouchListener { _, event ->
-            when (event.actionMasked) {
-                android.view.MotionEvent.ACTION_DOWN -> {
-                    startYOnBar = event.y
-                    triggeredOnBar = false
-                    true
-                }
-                android.view.MotionEvent.ACTION_MOVE -> {
-                    val dy = startYOnBar - event.y   // 向上为正
-                    if (!triggeredOnBar && dy > 0f) {
-                        triggeredOnBar = true
-                        openHistoryAction()
-                    }
-                    true
-                }
-                android.view.MotionEvent.ACTION_UP,
-                android.view.MotionEvent.ACTION_CANCEL -> {
-                    triggeredOnBar = false
-                    true
-                }
-                else -> false
-            }
-        }
-
-        // 5. 时间选择跳转 (Compose)
-        btnSetMatchTime.setOnClickListener {
-            val intent = android.content.Intent(this, TimeSelectionActivity::class.java)
-            timeSettingLauncher.launch(intent)
-        }
-
-        hideRunnable = Runnable {
-            controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
-            timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
-        }
-
-        touchOverlay?.setOnClickListener {
-            controlPanel?.animate()?.translationY(0f)?.setDuration(300)?.start()
-            timerContainer?.animate()?.scaleX(0.85f)?.scaleY(0.85f)?.translationY(-60f)?.setDuration(300)?.start()
-
-            hideHandler.removeCallbacks(hideRunnable!!)
-            hideHandler.postDelayed(hideRunnable!!, 3000)
-        }
-
-        btnEndRound?.let { setupLongPressEnd(it) }
-        endHalfButton?.let { setupLongPressEnd(it) }
-
-        recordManager = MatchRecordManager(this)
-
-        val rippleRing = findViewById<View>(R.id.rippleRing)
-        if (rippleRing != null) {
-            rippleRunnable = object : Runnable {
-                override fun run() {
-                    rippleRing.scaleX = 1f
-                    rippleRing.scaleY = 1f
-                    rippleRing.alpha = 1f
-                    rippleRing.visibility = View.VISIBLE
-
-                    rippleRing.animate()
-                        .scaleX(1.5f)
-                        .scaleY(1.5f)
-                        .alpha(0f)
-                        .setDuration(1000)
-                        .withEndAction {
-                            rippleRing.visibility = View.GONE
-                        }
-                        .start()
-
-                    rippleHandler.postDelayed(this, 3000)
-                }
-            }
-            rippleHandler.post(rippleRunnable!!)
-        }
-    }
-
-    private fun setupLongPressEnd(button: android.view.View) {
+        // 定义倒计时任务变量
         var triggerAction: Runnable? = null
+
         val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
             duration = 1500
             addUpdateListener { animation ->
-                button.background?.level = animation.animatedValue as Int
+                endHalfButton.background.level = animation.animatedValue as Int
             }
         }
 
-        button.setOnTouchListener { v, event ->
+        endHalfButton.setOnTouchListener { v, event ->
             if (state == STATE_READY) return@setOnTouchListener false
+
             val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // 暂停自动隐藏倒计时
-                    hideRunnable?.let { hideHandler.removeCallbacks(it) }
-
+                    // 清理旧任务
                     triggerAction?.let { v.removeCallbacks(it) }
+
                     holdAnimator.start()
+
+                    // 初始微震
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
                     }
+
+                    // 创建新任务
                     triggerAction = Runnable {
                         if (holdAnimator.isRunning) {
                             holdAnimator.end()
-                            v.background?.level = 0
+                            v.background.level = 0
+
+                            // 成功大震动
                             if (android.os.Build.VERSION.SDK_INT >= 29) {
                                 vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK))
-                            } else { vibrator.vibrate(100) }
+                            } else {
+                                vibrator.vibrate(100)
+                            }
+
+                            // 触发结束逻辑
                             when (currentHalf) {
                                 HALF_FIRST -> { endFirstHalf(); updateStatusLabel() }
                                 HALF_SECOND -> { endSecondHalf(); updateStatusLabel() }
                             }
                         }
                     }
+
                     v.postDelayed(triggerAction, 1500)
                     true
                 }
+
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
                     triggerAction?.let { v.removeCallbacks(it) }
-                    if (holdAnimator.isRunning) {
-                        // 长按未完成，恢复自动隐藏倒计时
-                        hideRunnable?.let { hideHandler.postDelayed(it, 3000) }
 
-                        val currentLevel = button.background?.level ?: 0
+                    if (holdAnimator.isRunning) {
+                        val currentLevel = endHalfButton.background.level
                         android.animation.ValueAnimator.ofInt(currentLevel, 0).apply {
                             duration = 200
-                            addUpdateListener { anim -> button.background?.level = anim.animatedValue as Int }
+                            addUpdateListener { anim ->
+                                endHalfButton.background.level = anim.animatedValue as Int
+                            }
                         }.start()
                         holdAnimator.cancel()
                     }
@@ -321,6 +193,8 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        recordManager = MatchRecordManager(this)
     }
 
     override fun onDestroy() {
@@ -358,35 +232,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTimer() {
-        rippleRunnable?.let { rippleHandler.removeCallbacks(it) }
-        findViewById<View>(R.id.rippleRing)?.visibility = View.GONE
-
-        // 1. 获取布局引用
-        val layoutReady = findViewById<android.view.View>(R.id.layoutReady)
-        val layoutRunning = findViewById<android.view.View>(R.id.layoutRunning)
-
-        // 2. 动画转场 (手表专用)
-        if (layoutReady != null && layoutRunning != null) {
-            layoutReady.animate().alpha(0f).setDuration(400).withEndAction {
-                layoutReady.visibility = android.view.View.GONE
-                layoutRunning.visibility = android.view.View.VISIBLE
-                layoutRunning.alpha = 0f
-                layoutRunning.animate().alpha(1f).setDuration(400).start()
-            }.start()
+        if (!matchTimeSet) {
+            showColorSelectionDialog()
+            return
         }
 
-        // 3. 启动计时核心逻辑
+        TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
+
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
+
         updateStatusLabel()
+
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
 
-        // 4. 隐藏主页的交互组件
-        btnHistory.visibility = android.view.View.GONE
-        findViewById<android.view.View>(R.id.btnHistorySmall)?.visibility = android.view.View.GONE
+        val btnHistory = findViewById<View>(R.id.btnHistory)
+        btnHistory.visibility = View.GONE
 
         addLog("🏁 比赛开始")
+        val halfTimeMin = halfTimeSeconds / 60
+        Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
     }
 
     private fun resumeTimer() {
@@ -394,13 +260,6 @@ class MainActivity : AppCompatActivity() {
 
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
-
-        // 继续后立刻隐藏控制面板
-        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
-        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
-        hideHandler.removeCallbacks(hideRunnable!!)
-        controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
-        timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
     }
 
     private fun startSecondHalf() {
@@ -422,13 +281,6 @@ class MainActivity : AppCompatActivity() {
         updateStoppageTimeDisplay()
 
         startUpdateLoop()
-
-        // 开始下半场后立刻隐藏控制面板
-        val controlPanel = findViewById<android.view.View>(R.id.controlPanel)
-        val timerContainer = findViewById<android.view.View>(R.id.timerContainer)
-        hideHandler.removeCallbacks(hideRunnable!!)
-        controlPanel?.animate()?.translationY(250f)?.setDuration(300)?.start()
-        timerContainer?.animate()?.scaleX(1.0f)?.scaleY(1.0f)?.translationY(0f)?.setDuration(300)?.start()
 
         addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
         Log.i("FootballTimer", "📢 下半场开始！从 ${formatTime(mainTime)} 计时")
@@ -533,40 +385,28 @@ class MainActivity : AppCompatActivity() {
         fullTimeAlertShown = false
         matchEvents.clear()
 
+
         updateStatusLabel()
+
 
         mainTimeLabel.text = "00:00"
         mainTimeLabel.setTextColor(getColor(R.color.timer_normal))
         stoppageTimeLabel.text = "00:00"
 
-        val layoutReady = findViewById<View>(R.id.layoutReady)
-        val layoutRunning = findViewById<View>(R.id.layoutRunning)
-        val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
-
-        if (layoutReady != null && layoutRunning != null) {
-            layoutRunning.visibility = View.GONE
-            layoutReady.visibility = View.VISIBLE
-            layoutReady.alpha = 1f
-            btnHistorySmall?.visibility = View.VISIBLE
-        }
-
         updateButtonStyle("start")
         updateStoppageDisplay(active = false)
 
-        // 手机版结束按钮隐藏
-        findViewById<View>(R.id.endHalfButton).visibility = View.GONE
+        // 显式确保结束按钮隐藏
+        val endBtn = findViewById<View>(R.id.endHalfButton)
+        endBtn.visibility = View.GONE
 
-        Log.i("FootballTimer", "")
+        Log.i("FootballTimer", "📢 比赛已重置")
         animateHistoryButton(true)
-        val rippleRing = findViewById<View>(R.id.rippleRing)
-        if (rippleRing != null && rippleRunnable != null) {
-            rippleHandler.removeCallbacks(rippleRunnable!!)
-            rippleHandler.post(rippleRunnable!!)
-        }
     }
 
     // 计时器核心逻辑
     private fun startUpdateLoop() {
+        // 先移除之前的计时器（避免重复）
         handler.removeCallbacks(updateRunnable)
 
         updateRunnable = object : Runnable {
@@ -587,21 +427,27 @@ class MainActivity : AppCompatActivity() {
 
             if (state == STATE_RUNNING || state == STATE_PAUSED) {
 
+                // 1. 主计时器：只要没吹终场哨，它就一直加
                 mainTime++
 
+                // 2. 补时计时器：只有在“暂停”状态下，才记录浪费的时间
                 if (state == STATE_PAUSED) {
                     stoppageTime++
                 }
 
+                // 3. 实时更新 UI 显示
                 runOnUiThread {
 
                     mainTimeLabel.text = formatTime(mainTime)
 
+                    // 补时显示 (胶囊区域)
                     updateStoppageTimeDisplay()
 
+                    // 确保结束按钮状态正确
                     updateEndHalfButton()
                 }
 
+                // 4. 检查关键时间点（比如 45 分钟到了震动提醒）
                 checkTimeAlerts()
 
                 // 调试日志
@@ -612,6 +458,7 @@ class MainActivity : AppCompatActivity() {
             lastUpdateTime = currentTime
 
         } else if (lastUpdateTime == 0L) {
+            // 如果是第一次，初始化时间基准
             lastUpdateTime = currentTime
         }
     }
@@ -672,41 +519,50 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEventDialog() {
-        // Compose-based Dialog
-        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_event_selection, null)
 
-        val composeView = ComposeView(this).apply {
-            // 设置 LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner 解决 Crash 问题
-            setViewTreeLifecycleOwner(this@MainActivity)
-            setViewTreeViewModelStoreOwner(this@MainActivity)
-            setViewTreeSavedStateRegistryOwner(this@MainActivity)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
 
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            setContent {
-                MaterialTheme {
-                    EventSelectionDialog(
-                        onEventSelected = { eventType ->
-                            dialog.dismiss()
-                            when(eventType) {
-                                EventType.YELLOW_CARD -> showTeamSelectionDialog(getString(R.string.event_yellow))
-                                EventType.RED_CARD -> showTeamSelectionDialog(getString(R.string.event_red))
-                                EventType.GOAL -> showTeamSelectionDialog(getString(R.string.event_goal))
-                                EventType.INJURY -> recordSimpleEvent(getString(R.string.event_injury), " ", 30)
-                                EventType.SUBSTITUTION -> recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
-                            }
-                        },
-                        onDismiss = {
-                            dialog.dismiss()
-                        }
-                    )
-                }
-            }
+        // 黄牌 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnYellow).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog(getString(R.string.event_yellow))
         }
 
-        dialog.setContentView(composeView)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        dialog.show()
+        // 红牌 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnRed).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog(getString(R.string.event_red))
+        }
 
+        // 进球 - 需要选择队伍和号码
+        dialogView.findViewById<View>(R.id.btnGoal).setOnClickListener {
+            dialog.dismiss()
+            showTeamSelectionDialog(getString(R.string.event_goal))
+        }
+
+        // 伤停 - 直接记录（不需要选择队伍和号码）
+        dialogView.findViewById<View>(R.id.btnInjury).setOnClickListener {
+            dialog.dismiss()
+            recordSimpleEvent(getString(R.string.event_injury), " ", 30)
+        }
+
+        // 换人 - 直接记录（不需要选择队伍和号码）
+        dialogView.findViewById<View>(R.id.btnSubstitution).setOnClickListener {
+            dialog.dismiss()
+            recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
+        }
+
+        // 取消
+        dialogView.findViewById<View>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
@@ -765,242 +621,237 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
-        dialog.show()
-
-        dialog.window?.let { window ->
-            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-            window.setLayout(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            window.decorView.setPadding(0, 0, 0, 0)
-        }
-
         // 取消按钮
         btnCancel.setOnClickListener {
             dialog.dismiss()
         }
+
+        // 确认按钮
         btnConfirm.setOnClickListener {
+            // 设置比赛时间
             halfTimeSeconds = selectedTime * 60L
             matchTimeSet = true
 
-            val btnSetMatchTime = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSetMatchTime)
-            btnSetMatchTime?.text = getString(R.string.fmt_duration_simple, selectedTime)
 
             dialog.dismiss()
+
+            // 开始比赛
+            startTimer()
         }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
-        // Prepare data
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_match_summary, null)
+
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvSummaryTitle)
+        val tvStatMatchTime = dialogView.findViewById<TextView>(R.id.tvStatMatchTime)
+        val tvStatGoals = dialogView.findViewById<TextView>(R.id.tvStatGoals)
+        val tvStatYellow = dialogView.findViewById<TextView>(R.id.tvStatYellow)
+        val tvStatRed = dialogView.findViewById<TextView>(R.id.tvStatRed)
+        val tvStatStoppage = dialogView.findViewById<TextView>(R.id.tvStatStoppage)
+        val listEvents = dialogView.findViewById<LinearLayout>(R.id.listSummaryEvents)
+        val btnClose = dialogView.findViewById<Button>(R.id.btnSummaryClose)
+
+        // 数据准备
         val hTime: Int = if (isHistory) {
-            historyRecord?.halfTimeMinutes ?: 0
+            (historyRecord?.halfTimeMinutes ?: 0).toInt()
         } else {
-            (halfTimeSeconds / 60L).toInt()
+            (halfTimeSeconds.toLong() / 60L).toInt()
         }
 
-        val st1Str = if (isHistory) {
-            historyRecord?.firstHalfStoppage ?: "00:00"
+        val st1: Long = if (isHistory) {
+            historyRecord?.firstHalfStoppage?.toLongOrNull() ?: 0L
         } else {
-            formatTime(firstHalfStoppage)
+            try { firstHalfStoppage.toLong() } catch(e: Exception) { 0L }
         }
 
-        val st2Str = if (isHistory) {
-            historyRecord?.secondHalfStoppage ?: "00:00"
+        val st2: Long = if (isHistory) {
+            historyRecord?.secondHalfStoppage?.toLongOrNull() ?: 0L
         } else {
-            formatTime(stoppageTime)
+            try { stoppageTime.toLong() } catch(e: Exception) { 0L }
         }
 
         val eventsToShow: List<MatchEvent> = if (isHistory) {
             historyRecord?.events ?: listOf()
         } else {
-            matchEvents.toList()
+            matchEvents
         }
+
+        // 1. 设置标题
+        tvTitle.text = if (isHistory) "历史详情" else getString(R.string.title_summary)
 
         val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
         val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
-        val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
-        val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
 
-        // Launch MatchSummaryActivity instead of Dialog to avoid ScalingLazyColumn height issues
-        val intent = android.content.Intent(this, MatchSummaryActivity::class.java).apply {
-            putExtra(MatchSummaryActivity.EXTRA_IS_HISTORY, isHistory)
-            putExtra(MatchSummaryActivity.EXTRA_DURATION_MINUTES, hTime)
-            putExtra(MatchSummaryActivity.EXTRA_HOME_GOALS, homeGoals)
-            putExtra(MatchSummaryActivity.EXTRA_AWAY_GOALS, awayGoals)
-            putExtra(MatchSummaryActivity.EXTRA_YELLOW_COUNT, yellowCount)
-            putExtra(MatchSummaryActivity.EXTRA_RED_COUNT, redCount)
-            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_1, st1Str)
-            putExtra(MatchSummaryActivity.EXTRA_STOPPAGE_TIME_2, st2Str)
-            // Serialize events to JSON
-            val gson = com.google.gson.Gson()
-            putExtra(MatchSummaryActivity.EXTRA_EVENTS_JSON, gson.toJson(eventsToShow))
+        // 1. 时长：使用占位符填入分钟数
+        tvStatMatchTime.text = getString(R.string.summary_duration, hTime)
+
+// 2. 比分：填入主客队进球数
+        tvStatGoals.text = getString(R.string.summary_score, homeGoals, awayGoals)
+
+// 3. 黄牌：先计算数量，再填入占位符
+        val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
+        tvStatYellow.text = getString(R.string.summary_yellow, yellowCount)
+
+// 4. 红牌：先计算数量，再填入占位符
+        val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
+        tvStatRed.text = getString(R.string.summary_red, redCount)
+
+// 5. 补时：填入格式化后的时间字符串
+        tvStatStoppage.text = getString(R.string.summary_stoppage, formatTime(st1), formatTime(st2))
+
+        // 3. 填充事件明细 (使用 LinearLayout 容器法，确保图标贴着文字居中)
+        listEvents.removeAllViews()
+        if (eventsToShow.isEmpty()) {
+            val tv = TextView(this)
+            tv.text = getString(R.string.msg_no_events)
+            tv.setTextColor(android.graphics.Color.GRAY)
+            tv.gravity = android.view.Gravity.CENTER
+            listEvents.addView(tv)
+        } else {
+            eventsToShow.forEach { event ->
+                // 1. 创建一个水平容器
+                val rowContainer = LinearLayout(this)
+                rowContainer.orientation = LinearLayout.HORIZONTAL
+                rowContainer.gravity = android.view.Gravity.CENTER // 让里面的东西居中
+                rowContainer.setPadding(0, 8, 0, 8) // 上下间距
+
+                // 2. 创建图标 ImageView
+                val iconView = android.widget.ImageView(this)
+                val iconRes = when(event.event) {
+                    getString(R.string.event_goal) -> R.drawable.sports_soccer
+                    getString(R.string.event_yellow), getString(R.string.event_red) -> R.drawable.ic_card
+                    getString(R.string.event_substitute) -> R.drawable.ic_substitute
+                    getString(R.string.event_injury) -> R.drawable.ic_medical
+                    else -> R.drawable.ic_history
+                }
+                iconView.setImageResource(iconRes)
+
+                // 设置图标大小 (20dp)
+                val density = resources.displayMetrics.density
+                val iconSize = (20 * density).toInt()
+                val params = LinearLayout.LayoutParams(iconSize, iconSize)
+                params.marginEnd = (8 * density).toInt() // 图标和字的间距
+                iconView.layoutParams = params
+
+                // 设置图标颜色
+                try {
+                    val iconColor = when(event.event){
+                        getString(R.string.event_goal) -> android.graphics.Color.WHITE
+                        getString(R.string.event_yellow) -> android.graphics.Color.YELLOW
+                        getString(R.string.event_red) -> android.graphics.Color.RED
+                        getString(R.string.event_injury) -> android.graphics.Color.parseColor("#2196F3")
+                        else -> android.graphics.Color.GREEN
+                    }
+                    iconView.setColorFilter(iconColor)
+                } catch (e: Exception) {}
+
+                // 3. 创建文字 TextView
+                val textView = TextView(this)
+                val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
+                textView.text = "[${event.timeStr}] $contentText"
+                textView.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+                textView.textSize = 13f
+
+                // 4. 装填进容器
+                rowContainer.addView(iconView)
+                rowContainer.addView(textView)
+
+                // 5. 添加到列表
+                listEvents.addView(rowContainer)
+            }
         }
-        startActivity(intent)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        val window = dialog.window
+        if (window != null) {
+            window.setLayout(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            val params = window.attributes
+
+            // 设置对齐方式为：底部对齐
+            window.setGravity(android.view.Gravity.TOP)
+
+            // 设置 Y 轴偏移量 (距离底部的距离)
+            params.y = (200 * resources.displayMetrics.density).toInt()
+
+            window.attributes = params
+        }
     }
 
-
+    // 辅助函数：dp转px
+    fun Int.dpToPx(): Int = (this * Resources.getSystem().displayMetrics.density).toInt()
 
     // UI 更新方法
 
     private fun updateButtonStyle(mode: String) {
-        // 1. 获取所有按钮引用（包括手表版的）
+
         val btnMain = findViewById<com.google.android.material.button.MaterialButton>(R.id.mainButton)
         val btnEnd = findViewById<com.google.android.material.button.MaterialButton>(R.id.endHalfButton)
 
-        // 手表版特有组件
-        val btnPauseRound = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnPauseRound)
-        val btnEndRound = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnEndRound)
-        val controlPanel = findViewById<View>(R.id.controlPanel)
-        val btnHistorySmall = findViewById<View>(R.id.btnHistorySmall)
 
-        // 辅助函数：转换 dp 到 px
-        fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()
-
-        // 开启过渡动画
         TransitionManager.beginDelayedTransition(findViewById(android.R.id.content), AutoTransition())
 
         when (mode) {
             "start" -> {
-                // 手机版
-                btnMain.text = getString(R.string.btn_start)
-                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt())
-                btnMain.visibility = View.VISIBLE
-                btnEnd.visibility = View.GONE
+                mainButton.text = getString(R.string.btn_start)
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
-                // 手表版：恢复初始状态 (圆形，60dp)
-                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
-                    width = 60.dp()
-                    marginEnd = 16.dp()
-                }
-                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
-                btnPauseRound?.backgroundTintList = null // 清除 tint 以显示 drawable 原色
-                btnPauseRound?.setIconResource(R.drawable.pause_circle)
-                btnPauseRound?.visibility = View.VISIBLE
-
-                btnEndRound?.visibility = View.VISIBLE
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.GONE
             }
 
             "pause" -> {
-                // 手机版
-                btnMain.text = getString(R.string.btn_pause)
-                btnMain.setIconResource(R.drawable.pause_circle)
-                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
-                btnEnd.visibility = View.VISIBLE
+                mainButton.text = getString(R.string.btn_pause)
+                mainButton.setIconResource(R.drawable.pause_circle)
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt()) // 红
 
-                // 手表版：暂停图标 (圆形，60dp)
-                // 动画：绿 -> 红
-                btnPauseRound?.let { btn ->
-                    val startColor = 0xFF2E7D32.toInt() // Green
-                    val endColor = 0xFFD32F2F.toInt()   // Red
+                endHalfButton.text = getString(R.string.btn_stop)
+                endHalfButton.setIconResource(R.drawable.stop_circle)
 
-                    btn.layoutParams = (btn.layoutParams as? LinearLayout.LayoutParams)?.apply {
-                        width = 60.dp()
-                        marginEnd = 16.dp()
-                    }
-                    // 确保背景是圆形
-                    btn.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
-
-                    val animator = android.animation.ValueAnimator.ofArgb(startColor, endColor)
-                    animator.duration = 300
-                    animator.addUpdateListener { anim ->
-                        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(anim.animatedValue as Int)
-                    }
-                    animator.start()
-
-                    btn.setIconResource(R.drawable.pause_circle)
-                    btn.visibility = View.VISIBLE
-                }
-
-                btnEndRound?.visibility = View.VISIBLE
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.VISIBLE
             }
 
             "resume" -> {
-                // 手机版
-                btnMain.text = getString(R.string.btn_resume)
-                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt())
-                btnEnd.visibility = View.VISIBLE
+                mainButton.text = getString(R.string.btn_resume)
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
-                // 手表版：继续图标 (圆形，60dp)
-                // 动画：红 -> 绿
-                btnPauseRound?.let { btn ->
-                    val startColor = 0xFFD32F2F.toInt() // Red
-                    val endColor = 0xFF2E7D32.toInt()   // Green
+                endHalfButton.text = getString(R.string.btn_stop)
+                endHalfButton.setIconResource(R.drawable.stop_circle)
 
-                    btn.layoutParams = (btn.layoutParams as? LinearLayout.LayoutParams)?.apply {
-                        width = 60.dp()
-                        marginEnd = 16.dp()
-                    }
-                    // 确保背景是圆形
-                    btn.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_round)
-
-                    val animator = android.animation.ValueAnimator.ofArgb(startColor, endColor)
-                    animator.duration = 300
-                    animator.addUpdateListener { anim ->
-                        btn.backgroundTintList = android.content.res.ColorStateList.valueOf(anim.animatedValue as Int)
-                    }
-                    animator.start()
-
-                    btn.setIconResource(R.drawable.baseline_play_arrow_24)
-                    btn.visibility = View.VISIBLE
-                }
-
-                btnEndRound?.visibility = View.VISIBLE
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.VISIBLE
             }
 
             "halftime" -> {
-                // 手机版
-                btnMain.text = getString(R.string.status_second_half)
-                btnMain.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
-                btnMain.visibility = View.VISIBLE
-                btnEnd.visibility = View.GONE
+                mainButton.text = getString(R.string.status_second_half)
+                mainButton.setIconResource(R.drawable.baseline_play_arrow_24)
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF2E7D32.toInt()) // 绿
 
-                // 手表版逻辑：
-                controlPanel?.translationY = 0f // 强制弹出
-                btnEndRound?.visibility = View.GONE
-
-                // 变长、变绿、居中
-                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
-                    width = 120.dp() // 变长
-                    marginEnd = 0    // 移除右边距以居中
-                }
-                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_pill_green) // 绿色胶囊
-                btnPauseRound?.backgroundTintList = null
-                btnPauseRound?.setIconResource(R.drawable.baseline_play_arrow_24)
-                btnPauseRound?.visibility = View.VISIBLE
-
-                // 取消自动隐藏
-                hideHandler.removeCallbacks(hideRunnable!!)
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.GONE
             }
 
             "finished" -> {
-                // 手机版
-                btnMain.text = getString(R.string.btn_reset)
-                btnMain.setIconResource(R.drawable.ic_substitute)
-                btnMain.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
-                btnMain.visibility = View.VISIBLE
-                btnEnd.visibility = View.GONE
-
-                // 手表版
-                controlPanel?.translationY = 0f
-                btnEndRound?.visibility = View.GONE
-
-                // 变长、变红、居中
-                btnPauseRound?.layoutParams = (btnPauseRound?.layoutParams as? LinearLayout.LayoutParams)?.apply {
-                    width = 120.dp() // 变长
-                    marginEnd = 0    // 移除右边距以居中
-                }
-                btnPauseRound?.background = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_btn_pause_pill_red) // 红色胶囊
-                btnPauseRound?.backgroundTintList = null
-                btnPauseRound?.setIconResource(R.drawable.ic_substitute)
-                btnPauseRound?.visibility = View.VISIBLE
-
-                // 显示历史记录按钮
-                btnHistorySmall?.visibility = View.VISIBLE
-                hideHandler.removeCallbacks(hideRunnable!!)
+                mainButton.text = getString(R.string.btn_reset)
+                mainButton.setIconResource(R.drawable.ic_substitute)
+                mainButton.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFC62828.toInt())
+                mainButton.visibility = View.VISIBLE
+                endHalfButton.visibility = View.GONE
             }
         }
     }
@@ -1106,82 +957,375 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHistoryDialog() {
-        // 使用 Fragment 承载 Compose BottomSheet，避免在 Activity 里直接管理 ComposeView 生命周期
-        if (supportFragmentManager.findFragmentByTag(HistoryBottomSheetFragment.TAG) != null) return
-        HistoryBottomSheetFragment().show(supportFragmentManager, HistoryBottomSheetFragment.TAG)
-    }
+        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
 
-    private fun showSettingsDialog() {
-        // 使用 Fragment 承载 Compose BottomSheet，显示设置界面
-        if (supportFragmentManager.findFragmentByTag(SettingsBottomSheetFragment.TAG) != null) return
-        SettingsBottomSheetFragment().show(supportFragmentManager, SettingsBottomSheetFragment.TAG)
+        val recordsContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.recordsContainer)
+        val tvNoRecords = dialogView.findViewById<android.widget.TextView>(R.id.tvNoRecords)
+        val btnClearHistory = dialogView.findViewById<android.widget.Button>(R.id.btnClearHistory)
+        val btnCloseHistory = dialogView.findViewById<android.widget.Button>(R.id.btnCloseHistory)
+
+        val records = recordManager.getAllRecords()
+
+        if (records.isEmpty()) {
+            tvNoRecords.visibility = android.view.View.VISIBLE
+            recordsContainer.visibility = android.view.View.GONE
+        } else {
+            tvNoRecords.visibility = android.view.View.GONE
+            recordsContainer.visibility = android.view.View.VISIBLE
+
+            @SuppressLint("ClickableViewAccessibility")
+            records.forEach { record ->
+                val itemWrapper = android.widget.FrameLayout(this)
+                val wrapperParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                wrapperParams.setMargins(0, 0, 0, (8 * resources.displayMetrics.density).toInt())
+                itemWrapper.layoutParams = wrapperParams
+
+
+                val btnDelete = android.widget.ImageView(this).apply {
+                    setImageResource(R.drawable.outline_delete_24)
+                    setColorFilter(android.graphics.Color.WHITE)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(android.graphics.Color.parseColor("#D32F2F"))
+                    }
+                    val btnSize = (42 * resources.displayMetrics.density).toInt()
+                    layoutParams = android.widget.FrameLayout.LayoutParams(btnSize, btnSize).apply {
+                        gravity = android.view.Gravity.CENTER_VERTICAL or android.view.Gravity.END
+                        marginEnd = (16 * resources.displayMetrics.density).toInt()
+                    }
+                    setPadding(24, 24, 24, 24)
+                    elevation = 2f
+                    alpha = 0f
+                    isEnabled = false
+                }
+
+                // 2. 顶层内容布局
+                val itemView = android.view.LayoutInflater.from(this).inflate(R.layout.item_match_record, itemWrapper, false) as android.view.ViewGroup
+
+                itemView.setBackgroundResource(R.drawable.bg_dialog_rounded)
+
+
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple)
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text = getString(R.string.summary_stoppage)
+                itemView.findViewById<android.view.View>(R.id.tvRecordEvents).visibility = android.view.View.GONE
+
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple,record.halfTimeMinutes)
+                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text =
+                    getString(R.string.summary_stoppage,record.firstHalfStoppage, record.secondHalfStoppage)
+
+                val oldTv = itemView.findViewById<android.widget.TextView>(R.id.tvRecordEvents)
+                oldTv.visibility = android.view.View.GONE
+
+                val statsLayout = android.widget.LinearLayout(this)
+                statsLayout.orientation = android.widget.LinearLayout.HORIZONTAL
+                statsLayout.gravity = android.view.Gravity.CENTER_VERTICAL
+                statsLayout.setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
+
+                fun addStat(iconRes: Int, count: Int, color: Int) {
+                    val itemContainer = android.widget.LinearLayout(this)
+                    itemContainer.orientation = android.widget.LinearLayout.HORIZONTAL
+                    itemContainer.gravity = android.view.Gravity.CENTER_VERTICAL
+                    val lp = android.widget.LinearLayout.LayoutParams(
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    lp.setMargins(0, 0, (12 * resources.displayMetrics.density).toInt(), 0)
+                    itemContainer.layoutParams = lp
+                    val iv = android.widget.ImageView(this)
+                    iv.setImageResource(iconRes)
+                    iv.setColorFilter(color)
+                    val size = (16 * resources.displayMetrics.density).toInt()
+                    iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
+                    val tv = android.widget.TextView(this)
+                    tv.text = count.toString()
+                    tv.setTextColor(android.graphics.Color.WHITE)
+                    tv.textSize = 13f
+                    tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
+                    itemContainer.addView(iv)
+                    itemContainer.addView(tv)
+                    statsLayout.addView(itemContainer)
+                }
+
+                addStat(R.drawable.sports_soccer, record.goalCount, android.graphics.Color.WHITE)
+                addStat(R.drawable.ic_card, record.yellowCount, android.graphics.Color.YELLOW)
+                addStat(R.drawable.ic_card, record.redCount, android.graphics.Color.RED)
+                addStat(R.drawable.ic_substitute, record.substitutionCount, android.graphics.Color.GREEN)
+                addStat(R.drawable.ic_medical, record.injuryCount, android.graphics.Color.parseColor("#2196F3"))
+
+                itemView.addView(statsLayout)
+
+
+                var startX = 0f
+                var isSwiped = false
+
+
+                var startRawX = 0f
+                var startTranslationX = 0f
+                val maxSwipeDistance = -200f
+
+                itemView.setOnTouchListener { v, event ->
+                    when (event.action) {
+                        android.view.MotionEvent.ACTION_DOWN -> {
+                            startRawX = event.rawX
+                            startTranslationX = v.translationX
+
+                            v.parent.requestDisallowInterceptTouchEvent(true)
+                            true
+                        }
+
+                        android.view.MotionEvent.ACTION_MOVE -> {
+                            val deltaX = event.rawX - startRawX
+
+                            val targetX = (startTranslationX + deltaX).coerceIn(maxSwipeDistance, 0f)
+
+                            v.translationX = targetX
+
+
+                            val progress = Math.abs(targetX / maxSwipeDistance)
+                            btnDelete.alpha = progress
+
+                            true
+                        }
+
+                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                            val currentX = v.translationX
+                            val totalDelta = Math.abs(event.rawX - startRawX)
+
+
+                            if (totalDelta < 10) {
+                                if (currentX == 0f) {
+
+                                    showMatchSummary(isHistory = true, historyRecord = record)
+                                } else {
+
+                                    v.animate().translationX(0f).setDuration(200).start()
+                                    btnDelete.animate().alpha(0f).setDuration(200).start()
+                                    btnDelete.isEnabled = false
+                                }
+                            }
+                            // 2. 判断滑动意图
+                            else {
+
+                                if (currentX < maxSwipeDistance / 2) {
+                                    v.animate().translationX(maxSwipeDistance).setDuration(200).start()
+                                    btnDelete.animate().alpha(1f).setDuration(200).start()
+                                    btnDelete.isEnabled = true
+                                } else {
+                                    v.animate().translationX(0f).setDuration(200).start()
+                                    btnDelete.animate().alpha(0f).setDuration(200).start()
+                                    btnDelete.isEnabled = false
+                                }
+                            }
+
+                            // 恢复父容器滑动
+                            v.parent.requestDisallowInterceptTouchEvent(false)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                // 4. 删除按钮点击
+                btnDelete.setOnClickListener {
+
+                    recordManager.deleteRecord(record.id)
+                    itemWrapper.animate().alpha(0f).translationX(-500f).setDuration(300).withEndAction {
+                        recordsContainer.removeView(itemWrapper)
+                        if (recordsContainer.childCount == 0) {
+                            tvNoRecords.visibility = android.view.View.VISIBLE
+                        }
+                    }.start()
+                }
+
+                itemWrapper.addView(btnDelete)
+                itemWrapper.addView(itemView)
+                recordsContainer.addView(itemWrapper)
+            }
+        }
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        // 清空按钮点击事件
+        btnClearHistory.setOnClickListener {
+            // 1. 如果没记录，直接提示并返回
+            if (records.isEmpty()) {
+                android.widget.Toast.makeText(this, getString(R.string.msg_no_history_to_clear), android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 2. 加载确认弹窗布局
+            val confirmView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
+
+            val tvMessage = confirmView.findViewById<android.widget.TextView>(R.id.tvConfirmMessage)
+            tvMessage.text = getString(R.string.msg_confirm_clear_all)
+            tvMessage.visibility = android.view.View.VISIBLE
+
+            val confirmDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+                .setView(confirmView)
+                .create()
+
+            // 3. 绑定按钮事件
+            confirmView.findViewById<android.view.View>(R.id.btnNo).setOnClickListener {
+                confirmDialog.dismiss()
+            }
+
+            confirmView.findViewById<android.view.View>(R.id.btnYes).setOnClickListener {
+                recordManager.clearAllRecords()
+                confirmDialog.dismiss()
+                dialog.dismiss()
+                android.widget.Toast.makeText(this, getString(R.string.msg_history_cleared), android.widget.Toast.LENGTH_SHORT).show()
+            }
+
+            // 4. 显示弹窗并去白角
+            confirmDialog.show()
+            confirmDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        }
+
+        btnCloseHistory.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
-        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_team_selection, null)
 
-        val composeView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@MainActivity)
-            setViewTreeViewModelStoreOwner(this@MainActivity)
-            setViewTreeSavedStateRegistryOwner(this@MainActivity)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvTeamSelectionTitle)
+        val btnHomeTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnHomeTeam)
+        val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
 
-            setContent {
-                MaterialTheme {
-                    TeamSelectionDialogCompose(
-                        onHomeTeamSelected = {
-                            selectedTeam = getString(R.string.team_home)
-                            dialog.dismiss()
-                            showNumberSelectionDialog(eventType, selectedTeam)
-                        },
-                        onAwayTeamSelected = {
-                            selectedTeam = getString(R.string.team_away)
-                            dialog.dismiss()
-                            showNumberSelectionDialog(eventType, selectedTeam)
-                        },
-                        onDismiss = {
-                            dialog.dismiss()
-                        },
-                        homeTeamColor = androidx.compose.ui.graphics.Color(homeTeamColor),
-                        awayTeamColor = androidx.compose.ui.graphics.Color(awayTeamColor)
-                    )
-                }
-            }
+
+        val (iconRes, iconColor) = when (eventType) {
+            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
+            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            else -> 0 to 0
+        }
+        val actionText = getString(R.string.title_select_team_generic)
+        tvTitle.text = "$eventType - $actionText"
+        if (iconRes != 0) {
+            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
+            drawable?.setTint(iconColor)
+            // 设置图标大小为 20dp
+            val size = (20 * resources.displayMetrics.density).toInt()
+            drawable?.setBounds(0, 0, size, size)
+            tvTitle.setCompoundDrawables(drawable, null, null, null)
+            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
         }
 
-        dialog.setContentView(composeView)
+        // 2. 应用主客队颜色
+        btnHomeTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(homeTeamColor)
+        btnAwayTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(awayTeamColor)
+
+        // 3. 智能反色逻辑
+        if (homeTeamColor == 0xFFFFFFFF.toInt()) {
+            btnHomeTeam.setTextColor(android.graphics.Color.BLACK)
+            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+        } else {
+            btnHomeTeam.setTextColor(android.graphics.Color.WHITE)
+            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+        }
+
+        if (awayTeamColor == 0xFFFFFFFF.toInt()) {
+            btnAwayTeam.setTextColor(android.graphics.Color.BLACK)
+            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
+        } else {
+            btnAwayTeam.setTextColor(android.graphics.Color.WHITE)
+            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
+        }
+
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
+
+        btnHomeTeam.setOnClickListener {
+            selectedTeam = getString(R.string.team_home)
+            dialog.dismiss()
+            showNumberSelectionDialog(eventType, selectedTeam)
+        }
+
+        btnAwayTeam.setOnClickListener {
+            selectedTeam = getString(R.string.team_away)
+            dialog.dismiss()
+            showNumberSelectionDialog(eventType, selectedTeam)
+        }
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
-    // 显示号码选择弹窗 (使用 Compose NumberSelectionDialog)
+    // 显示号码选择弹窗
     private fun showNumberSelectionDialog(eventType: String, team: String) {
-        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_number_selection, null)
 
-        val composeView = ComposeView(this).apply {
-            setViewTreeLifecycleOwner(this@MainActivity)
-            setViewTreeViewModelStoreOwner(this@MainActivity)
-            setViewTreeSavedStateRegistryOwner(this@MainActivity)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+        val tvTitle = dialogView.findViewById<TextView>(R.id.tvNumberTitle)
+        val tvTeamInfo = dialogView.findViewById<TextView>(R.id.tvTeamInfo)
+        val tvSelectedNumber = dialogView.findViewById<TextView>(R.id.tvSelectedNumber)
+        val pickerTens = dialogView.findViewById<NumberPicker>(R.id.pickerTens)
+        val pickerOnes = dialogView.findViewById<NumberPicker>(R.id.pickerOnes)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelNumber)
+        val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmNumber)
 
-            setContent {
-                MaterialTheme {
-                    NumberSelectionDialog(
-                        initialNumber = 10,
-                        title = eventType,
-                        onNumberConfirmed = { number ->
-                            val numberStr = String.format(Locale.US, "%02d", number)
-                            dialog.dismiss()
-                            recordEventWithDetails(eventType, team, numberStr)
-                        }
-                    )
-                }
-            }
+
+        val (iconRes, iconColor) = when (eventType) {
+            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
+            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
+            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
+            else -> 0 to 0
         }
 
-        dialog.setContentView(composeView)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        tvTitle.text = eventType
+        if (iconRes != 0) {
+            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
+            drawable?.setTint(iconColor)
+            val size = (20 * resources.displayMetrics.density).toInt()
+            drawable?.setBounds(0, 0, size, size)
+            tvTitle.setCompoundDrawables(drawable, null, null, null)
+            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
+        }
+
+        // 设置队伍信息颜色
+        tvTeamInfo.text = team
+        tvTeamInfo.setTextColor(if (team == getString(R.string.team_home)) 0xFF1565C0.toInt() else 0xFFC62828.toInt())
+
+        // 设置滚轮逻辑 (保持不变)
+        pickerTens.minValue = 0
+        pickerTens.maxValue = 9
+        pickerTens.value = 0
+        pickerTens.wrapSelectorWheel = true
+        pickerOnes.minValue = 0
+        pickerOnes.maxValue = 9
+        pickerOnes.value = 1
+        pickerOnes.wrapSelectorWheel = true
+
+        fun updateSelectedNumber() {
+            val number = pickerTens.value * 10 + pickerOnes.value
+            tvSelectedNumber.text = "# ${String.format("%02d", number)}"
+        }
+
+        updateSelectedNumber()
+        pickerTens.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
+        pickerOnes.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
+
+        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnConfirm.setOnClickListener {
+            val number = pickerTens.value * 10 + pickerOnes.value
+            val numberStr = String.format("%02d", number)
+            dialog.dismiss()
+            recordEventWithDetails(eventType, team, numberStr)
+        }
         dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 记录带详细信息的事件
@@ -1255,81 +1399,119 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showColorSelectionDialog(isHome: Boolean) {
-        // 获取当前颜色作为初始值
-        val initialColor = if (isHome) homeTeamColor else awayTeamColor
+    private fun showColorSelectionDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
 
-        // 创建一个全屏的FrameLayout作为容器
-        val rootView = window.decorView.findViewById<FrameLayout>(android.R.id.content)
+        val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
+        val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
+        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
 
-        // 创建一个遮罩背景View
-        val overlayView = View(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            setBackgroundColor(0x80000000.toInt()) // 半透明黑色背景
-            isClickable = true
-            isFocusable = true
-        }
+        val colors = listOf(
+            0xFFF44336.toInt(), // 红 (Index 0)
+            0xFF2196F3.toInt(), // 蓝 (Index 1)
+            0xFF4CAF50.toInt(), // 绿
+            0xFFFFEB3B.toInt(), // 黄
+            0xFFFFFFFF.toInt(), // 白
+            0xFF000000.toInt(), // 黑
+            0xFF9C27B0.toInt(), // 紫
+            0xFFFF9800.toInt()  // 橙
+        )
 
-        // 创建ComposeView来承载Compose UI
-        val composeView = ComposeView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            setViewTreeLifecycleOwner(this@MainActivity)
-            setViewTreeViewModelStoreOwner(this@MainActivity)
-            setViewTreeSavedStateRegistryOwner(this@MainActivity)
-        }
+        var tempHomeColor = colors[1]
+        var tempAwayColor = colors[0]
 
-        // 定义移除弹窗的方法
-        val dismissDialog: () -> Unit = {
-            rootView.removeView(composeView)
-            rootView.removeView(overlayView)
-        }
+        fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
+            rv.layoutManager = CenterScaleLayoutManager(this)
+            val adapter = ColorWheelAdapter(colors) { }
+            rv.adapter = adapter
 
-        // 点击遮罩关闭弹窗
-        overlayView.setOnClickListener { dismissDialog() }
 
-        // 设置Compose内容
-        composeView.setContent {
-            ColorSelectionDialog(
-                initialColor = initialColor,
-                onColorSelected = { selectedColor ->
-                    val r = 15f * resources.displayMetrics.density
-                    val finalColor = (0x66 shl 24) or (selectedColor and 0x00FFFFFF)
+            val density = resources.displayMetrics.density
+            val padding = (45 * density).toInt()
+            rv.setPadding(0, padding, 0, padding)
+            rv.clipToPadding = false
 
-                    if (isHome) {
-                        homeTeamColor = selectedColor
-                        val overlay = findViewById<View>(R.id.overlayHome)
 
-                        val shape = android.graphics.drawable.GradientDrawable()
-                        shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                        shape.setColor(finalColor)
-                        shape.cornerRadii = floatArrayOf(r, r, 0f, 0f, 0f, 0f, r, r)
+            val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
 
-                        overlay?.background = shape
-                    } else {
-                        awayTeamColor = selectedColor
-                        val overlay = findViewById<View>(R.id.overlayAway)
 
-                        val shape = android.graphics.drawable.GradientDrawable()
-                        shape.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                        shape.setColor(finalColor)
-                        shape.cornerRadii = floatArrayOf(0f, 0f, r, r, r, r, 0f, 0f)
-
-                        overlay?.background = shape
-                    }
-                    dismissDialog()
+                override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
+                    return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
                 }
-            )
+
+
+                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
+                    if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
+
+                    return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
+
+
+                        override fun calculateTimeForDeceleration(dx: Int): Int {
+
+                            return super.calculateTimeForDeceleration(dx) * 5
+                        }
+
+
+                        override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
+                            val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
+                            val dx = snapDistances!![0]
+                            val dy = snapDistances[1]
+
+                            // 计算需要的时间
+                            val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
+
+                            if (time > 0) {
+
+                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
+                            }
+                        }
+                    }
+                }
+            }
+            snapHelper.attachToRecyclerView(rv)
+
+            rv.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
+                    if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) {
+                        val centerView = snapHelper.findSnapView(rv.layoutManager)
+                        centerView?.let {
+                            val pos = rv.layoutManager?.getPosition(it) ?: 0
+                            val color = colors[pos % colors.size]
+                            onSelect(color)
+                        }
+                    }
+                }
+            })
+
+
+            val centerStart = Int.MAX_VALUE / 2
+            val startPos = centerStart - (centerStart % colors.size) + initialIndex
+
+
+            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
+
+            onSelect(colors[initialIndex])
         }
 
-        // 添加到视图层级
-        rootView.addView(overlayView)
-        rootView.addView(composeView)
+        // 主队：默认蓝 (Index 1)
+        setupWheel(rvHome, 1) { tempHomeColor = it }
+        // 客队：默认红 (Index 0)
+        setupWheel(rvAway, 0) { tempAwayColor = it }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        btnConfirm.setOnClickListener {
+            homeTeamColor = tempHomeColor
+            awayTeamColor = tempAwayColor
+            dialog.dismiss()
+            showTimeSettingDialog()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
     private fun getHalfText(code: String): String {
         return when (code) {

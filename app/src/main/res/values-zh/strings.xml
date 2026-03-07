@@ -13,7 +13,6 @@
     <string name="btn_resume">继续</string>
     <string name="btn_stop">结束</string>
     <string name="btn_reset">重置比赛</string>
-    <string name="btn_cancel">取消</string>
 
     <string name="title_set_color">设定主客队颜色</string>
     <string name="title_summary">比赛总结</string>
@@ -31,7 +30,6 @@
     <string name="label_stoppage">补时</string>
     <string name="label_event_details">事件明细</string>
     <string name="title_select_number">选择号码</string>
-    <string name="label_min">分钟</string>
     <!-- 带参数的标签 -->
     <string name="summary_duration">时长: 每半场 %1$d分</string>
     <string name="summary_score">比分: %1$d : %2$d</string>
@@ -44,7 +42,7 @@
     <!-- 历史记录相关 -->
     <string name="msg_history_cleared">历史记录已清空</string>
     <string name="msg_no_history_to_clear">暂无历史记录可清空</string>
-    <string name="msg_no_events">暂无比赛记录</string>
+    <string name="msg_no_events">暂无事件记录</string>
 
     <!-- 时间格式 (带参数) -->
     <string name="fmt_duration_simple">%1$d分钟/半场</string>
@@ -56,10 +54,4 @@
     <string name="event_substitute">换人</string>
     <!-- 清空历史弹窗 -->
     <string name="msg_confirm_clear_all">确定清空所有记录？</string>
-    <string name="title_history_details">历史详情</string>
-
-    <!-- 设置界面 -->
-    <string name="settings_title">设置</string>
-    <string name="settings_history">历史记录</string>
-    <string name="settings_about">关于</string>
 </resources>
