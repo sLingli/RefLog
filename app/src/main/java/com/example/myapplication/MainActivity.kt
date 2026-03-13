@@ -24,6 +24,10 @@ import android.content.res.ColorStateList
 import android.util.DisplayMetrics
 import android.transition.TransitionManager
 import android.transition.AutoTransition
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
 
 class MainActivity : AppCompatActivity() {
 
@@ -85,12 +89,19 @@ class MainActivity : AppCompatActivity() {
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
+    // Compose弹窗状态
+    private var showTeamSelectionDialogState by mutableStateOf(false)
+    private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
+    private var showTimeSettingDialogState by mutableStateOf(false)
+    private lateinit var composeDialogContainer: ComposeView
+
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         initializeUI()
+        initializeComposeDialogs()
         resetMatch()
         initializeTimer()
     }
@@ -107,6 +118,70 @@ class MainActivity : AppCompatActivity() {
         handler.post(updateRunnable)
 
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
+    }
+
+    private fun initializeComposeDialogs() {
+        composeDialogContainer = findViewById(R.id.composeDialogContainer)
+        composeDialogContainer.setContent {
+            // 队伍选择弹窗
+            if (showTeamSelectionDialogState) {
+                TeamSelectionDialog(
+                    eventType = currentEventType,
+                    eventTitle = getEventTypeTitle(currentEventType),
+                    homeTeamColor = homeTeamColor,
+                    awayTeamColor = awayTeamColor,
+                    onDismiss = { showTeamSelectionDialogState = false },
+                    onTeamSelected = { selection ->
+                        showTeamSelectionDialogState = false
+                        when (selection) {
+                            TeamSelection.HOME -> {
+                                selectedTeam = getString(R.string.team_home)
+                                showNumberSelectionDialog(pendingEventType, selectedTeam)
+                            }
+                            TeamSelection.AWAY -> {
+                                selectedTeam = getString(R.string.team_away)
+                                showNumberSelectionDialog(pendingEventType, selectedTeam)
+                            }
+                            TeamSelection.CANCEL -> {
+                                // 取消，不做任何操作
+                            }
+                        }
+                    }
+                )
+            }
+
+            // 时间设置弹窗
+            if (showTimeSettingDialogState) {
+                TimeSettingDialog(
+                    initialMinutes = 45,
+                    onDismiss = { showTimeSettingDialogState = false },
+                    onResult = { result ->
+                        showTimeSettingDialogState = false
+                        when (result) {
+                            is TimeSettingResult.Confirmed -> {
+                                halfTimeSeconds = result.minutes * 60L
+                                matchTimeSet = true
+                                startTimer()
+                            }
+                            is TimeSettingResult.Cancelled -> {
+                                // 取消，不做任何操作
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private fun getEventTypeTitle(eventType: EventType): String {
+        return when (eventType) {
+            EventType.YELLOW_CARD -> getString(R.string.event_yellow)
+            EventType.RED_CARD -> getString(R.string.event_red)
+            EventType.GOAL -> getString(R.string.event_goal)
+            EventType.INJURY -> getString(R.string.event_injury)
+            EventType.SUBSTITUTION -> getString(R.string.event_substitute)
+            EventType.CANCEL -> ""
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -584,63 +659,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTimeSettingDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_time_setting, null)
-
-        val tvTimeValue = dialogView.findViewById<TextView>(R.id.tvTimeValue)
-        val btnDecrease = dialogView.findViewById<Button>(R.id.btnDecrease)
-        val btnIncrease = dialogView.findViewById<Button>(R.id.btnIncrease)
-        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
-        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirm)
-
-        // 当前选择的时间（默认45分钟）
-        var selectedTime = 45
-
-        // 更新显示
-        fun updateDisplay() {
-            tvTimeValue.text = selectedTime.toString()
-        }
-
-        // 减少按钮
-        btnDecrease.setOnClickListener {
-            if (selectedTime > 5) {
-                selectedTime -= 5
-                updateDisplay()
-            }
-        }
-
-        // 增加按钮
-        btnIncrease.setOnClickListener {
-            if (selectedTime < 45) {
-                selectedTime += 5
-                updateDisplay()
-            }
-        }
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        // 取消按钮
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        // 确认按钮
-        btnConfirm.setOnClickListener {
-            // 设置比赛时间
-            halfTimeSeconds = selectedTime * 60L
-            matchTimeSet = true
-
-
-            dialog.dismiss()
-
-            // 开始比赛
-            startTimer()
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        // 显示Compose弹窗
+        showTimeSettingDialogState = true
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
@@ -1196,70 +1216,15 @@ class MainActivity : AppCompatActivity() {
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_team_selection, null)
-
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvTeamSelectionTitle)
-        val btnHomeTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnHomeTeam)
-        val btnAwayTeam = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAwayTeam)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelTeam)
-
-
-        val (iconRes, iconColor) = when (eventType) {
-            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
-            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
-            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
-            else -> 0 to 0
+        // 设置当前事件类型用于Compose弹窗
+        currentEventType = when (eventType) {
+            getString(R.string.event_yellow) -> EventType.YELLOW_CARD
+            getString(R.string.event_red) -> EventType.RED_CARD
+            getString(R.string.event_goal) -> EventType.GOAL
+            else -> EventType.YELLOW_CARD
         }
-        val actionText = getString(R.string.title_select_team_generic)
-        tvTitle.text = "$eventType - $actionText"
-        if (iconRes != 0) {
-            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
-            drawable?.setTint(iconColor)
-            // 设置图标大小为 20dp
-            val size = (20 * resources.displayMetrics.density).toInt()
-            drawable?.setBounds(0, 0, size, size)
-            tvTitle.setCompoundDrawables(drawable, null, null, null)
-            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
-        }
-
-        // 2. 应用主客队颜色
-        btnHomeTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(homeTeamColor)
-        btnAwayTeam.backgroundTintList = android.content.res.ColorStateList.valueOf(awayTeamColor)
-
-        // 3. 智能反色逻辑
-        if (homeTeamColor == 0xFFFFFFFF.toInt()) {
-            btnHomeTeam.setTextColor(android.graphics.Color.BLACK)
-            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
-        } else {
-            btnHomeTeam.setTextColor(android.graphics.Color.WHITE)
-            btnHomeTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
-        }
-
-        if (awayTeamColor == 0xFFFFFFFF.toInt()) {
-            btnAwayTeam.setTextColor(android.graphics.Color.BLACK)
-            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.BLACK)
-        } else {
-            btnAwayTeam.setTextColor(android.graphics.Color.WHITE)
-            btnAwayTeam.iconTint = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
-        }
-
-        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
-
-        btnHomeTeam.setOnClickListener {
-            selectedTeam = getString(R.string.team_home)
-            dialog.dismiss()
-            showNumberSelectionDialog(eventType, selectedTeam)
-        }
-
-        btnAwayTeam.setOnClickListener {
-            selectedTeam = getString(R.string.team_away)
-            dialog.dismiss()
-            showNumberSelectionDialog(eventType, selectedTeam)
-        }
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        // 显示Compose弹窗
+        showTeamSelectionDialogState = true
     }
 
     // 显示号码选择弹窗
