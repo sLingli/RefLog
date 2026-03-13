@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     // Compose弹窗状态
     private var showTeamSelectionDialogState by mutableStateOf(false)
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
+    private var showTimeSettingDialogState by mutableStateOf(false)
     private lateinit var composeDialogContainer: ComposeView
 
 
@@ -142,6 +143,27 @@ class MainActivity : AppCompatActivity() {
                                 showNumberSelectionDialog(pendingEventType, selectedTeam)
                             }
                             TeamSelection.CANCEL -> {
+                                // 取消，不做任何操作
+                            }
+                        }
+                    }
+                )
+            }
+
+            // 时间设置弹窗
+            if (showTimeSettingDialogState) {
+                TimeSettingDialog(
+                    initialMinutes = 45,
+                    onDismiss = { showTimeSettingDialogState = false },
+                    onResult = { result ->
+                        showTimeSettingDialogState = false
+                        when (result) {
+                            is TimeSettingResult.Confirmed -> {
+                                halfTimeSeconds = result.minutes * 60L
+                                matchTimeSet = true
+                                startTimer()
+                            }
+                            is TimeSettingResult.Cancelled -> {
                                 // 取消，不做任何操作
                             }
                         }
@@ -637,63 +659,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTimeSettingDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_time_setting, null)
-
-        val tvTimeValue = dialogView.findViewById<TextView>(R.id.tvTimeValue)
-        val btnDecrease = dialogView.findViewById<Button>(R.id.btnDecrease)
-        val btnIncrease = dialogView.findViewById<Button>(R.id.btnIncrease)
-        val btnCancel = dialogView.findViewById<Button>(R.id.btnCancel)
-        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirm)
-
-        // 当前选择的时间（默认45分钟）
-        var selectedTime = 45
-
-        // 更新显示
-        fun updateDisplay() {
-            tvTimeValue.text = selectedTime.toString()
-        }
-
-        // 减少按钮
-        btnDecrease.setOnClickListener {
-            if (selectedTime > 5) {
-                selectedTime -= 5
-                updateDisplay()
-            }
-        }
-
-        // 增加按钮
-        btnIncrease.setOnClickListener {
-            if (selectedTime < 45) {
-                selectedTime += 5
-                updateDisplay()
-            }
-        }
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        // 取消按钮
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        // 确认按钮
-        btnConfirm.setOnClickListener {
-            // 设置比赛时间
-            halfTimeSeconds = selectedTime * 60L
-            matchTimeSet = true
-
-
-            dialog.dismiss()
-
-            // 开始比赛
-            startTimer()
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        // 显示Compose弹窗
+        showTimeSettingDialogState = true
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
