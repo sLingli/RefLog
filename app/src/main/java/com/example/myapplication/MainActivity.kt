@@ -29,9 +29,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 
+/**
+ * 足球比赛计时器主界面
+ *
+ * 状态机流程：READY → RUNNING ↔ PAUSED → HALFTIME → FINISHED
+ * 支持双半场计时、补时统计、事件记录（黄牌/红牌/进球/伤停/换人）及比赛历史管理
+ */
 class MainActivity : AppCompatActivity() {
 
-    //  状态常量
+    // region 状态常量
     private companion object {
         const val STATE_READY = "ready"
         const val STATE_RUNNING = "running"
@@ -47,9 +53,7 @@ class MainActivity : AppCompatActivity() {
 
     // UI 组件
     private lateinit var statusLabel: TextView
-
     private lateinit var mainTimeLabel: TextView
-
     private lateinit var stoppageTimeLabel: TextView
     private lateinit var mainButton: com.google.android.material.button.MaterialButton
     private lateinit var endHalfButton: com.google.android.material.button.MaterialButton
@@ -61,12 +65,12 @@ class MainActivity : AppCompatActivity() {
 
 
     // 计时器变量
-    private var mainTime: Long = 0
+    private var mainTime: Long = 0  // 比赛主计时（秒），RUNNING 和 PAUSED 状态均递增
     private var stoppageTime: Long = 0
     private var firstHalfStoppage: Long = 0
     private var lastUpdateTime: Long = 0
 
-    // 自定义比赛时间（秒）
+    // 自定义比赛时间（秒），默认 45 分钟
     private var halfTimeSeconds: Long = DEFAULT_HALF_TIME * 60L
     private var matchTimeSet: Boolean = false
 
@@ -89,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
-    // Compose弹窗状态
+    // Compose 弹窗状态
     private var showTeamSelectionDialogState by mutableStateOf(false)
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
     private var showTimeSettingDialogState by mutableStateOf(false)
@@ -106,7 +110,6 @@ class MainActivity : AppCompatActivity() {
         initializeTimer()
     }
     private fun initializeTimer() {
-        // 初始化updateRunnable
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
@@ -114,7 +117,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 立即启动计时器循环（这样计时器就会每秒更新）
+        // 启动计时器循环（100ms 间隔，内部按秒更新 UI）
         handler.post(updateRunnable)
 
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
@@ -123,7 +126,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializeComposeDialogs() {
         composeDialogContainer = findViewById(R.id.composeDialogContainer)
         composeDialogContainer.setContent {
-            // 队伍选择弹窗
+            // 队伍选择弹窗（黄牌/红牌/进球后选择主队或客队）
             if (showTeamSelectionDialogState) {
                 TeamSelectionDialog(
                     eventType = currentEventType,
@@ -142,15 +145,13 @@ class MainActivity : AppCompatActivity() {
                                 selectedTeam = getString(R.string.team_away)
                                 showNumberSelectionDialog(pendingEventType, selectedTeam)
                             }
-                            TeamSelection.CANCEL -> {
-                                // 取消，不做任何操作
-                            }
+                            TeamSelection.CANCEL -> { }
                         }
                     }
                 )
             }
 
-            // 时间设置弹窗
+            // 时间设置弹窗（设置每半场时长）
             if (showTimeSettingDialogState) {
                 TimeSettingDialog(
                     initialMinutes = 45,
@@ -163,9 +164,7 @@ class MainActivity : AppCompatActivity() {
                                 matchTimeSet = true
                                 startTimer()
                             }
-                            is TimeSettingResult.Cancelled -> {
-                                // 取消，不做任何操作
-                            }
+                            is TimeSettingResult.Cancelled -> { }
                         }
                     }
                 )
@@ -194,11 +193,10 @@ class MainActivity : AppCompatActivity() {
         endHalfButton = findViewById(R.id.endHalfButton)
         btnHistory = findViewById(R.id.btnHistory)
 
-        // 绑定点击事件
         mainButton.setOnClickListener { toggleTimer() }
         btnHistory.setOnClickListener { showHistoryDialog() }
 
-        // 定义倒计时任务变量
+        // 长按结束半场的延迟触发任务
         var triggerAction: Runnable? = null
 
         val holdAnimator = android.animation.ValueAnimator.ofInt(0, 10000).apply {
@@ -215,23 +213,21 @@ class MainActivity : AppCompatActivity() {
 
             when (event.action) {
                 android.view.MotionEvent.ACTION_DOWN -> {
-                    // 清理旧任务
                     triggerAction?.let { v.removeCallbacks(it) }
 
                     holdAnimator.start()
 
-                    // 初始微震
+                    // 初始微震反馈
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
                     }
 
-                    // 创建新任务
                     triggerAction = Runnable {
                         if (holdAnimator.isRunning) {
                             holdAnimator.end()
                             v.background.level = 0
 
-                            // 成功大震动
+                            // 强震动反馈（长按成功）
                             if (android.os.Build.VERSION.SDK_INT >= 29) {
                                 vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK))
                             } else {
@@ -274,7 +270,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // 停止计时器
         handler.removeCallbacks(updateRunnable)
     }
 
