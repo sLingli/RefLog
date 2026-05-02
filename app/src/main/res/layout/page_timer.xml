@@ -80,7 +80,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#1E1E1E"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp">
@@ -104,14 +104,14 @@
                 android:text="@string/btn_start"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="?attr/colorOnPrimary"
                 app:backgroundTint="#2E7D32"
                 app:cornerRadius="14dp"
                 app:icon="@drawable/baseline_play_arrow_24"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconSize="24dp"
-                app:iconTint="#FFFFFF" />
+                app:iconTint="?attr/colorOnPrimary" />
 
             <!-- 结束半场按钮 -->
             <com.google.android.material.button.MaterialButton
@@ -125,13 +125,13 @@
                 android:text="@string/btn_stop"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#CCCCCC"
+                android:textColor="?attr/colorOnSurfaceVariant"
                 android:visibility="gone"
                 app:icon="@drawable/stop_circle"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconSize="24dp"
-                app:iconTint="#CCCCCC" />
+                app:iconTint="?attr/colorOnSurfaceVariant" />
 
         </LinearLayout>
 

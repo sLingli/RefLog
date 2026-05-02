@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
-        applyThemeColors()
+        setTheme(ThemeManager.getThemeStyleResId(ThemeManager.currentTheme))
         setContentView(R.layout.activity_main)
         recordManager = MatchRecordManager(this)
         initializeComposeDialogs()
@@ -150,10 +150,6 @@ class MainActivity : AppCompatActivity() {
 
         // 动态更新背景
         window.decorView.setBackgroundColor(bgInt)
-
-        // 更新底部导航栏颜色
-        findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
-            ?.setBackgroundColor(bgInt)
     }
 
     private fun initializeComposeDialogs() {
@@ -838,7 +834,9 @@ class MainActivity : AppCompatActivity() {
         if (eventsToShow.isEmpty()) {
             val tv = TextView(this)
             tv.text = getString(R.string.msg_no_events)
-            tv.setTextColor(android.graphics.Color.GRAY)
+            val typedValue = android.util.TypedValue()
+            theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedValue, true)
+            tv.setTextColor(typedValue.data)
             tv.gravity = android.view.Gravity.CENTER
             listEvents.addView(tv)
         } else {
@@ -883,7 +881,9 @@ class MainActivity : AppCompatActivity() {
                 val textView = TextView(this)
                 val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
                 textView.text = "[${event.timeStr}] $contentText"
-                textView.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+                val tvTextTypedValue = android.util.TypedValue()
+                theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, tvTextTypedValue, true)
+                textView.setTextColor(tvTextTypedValue.data)
                 textView.textSize = 13f
 
                 // 4. 装填进容器
@@ -1137,6 +1137,11 @@ class MainActivity : AppCompatActivity() {
 
                 itemView.setBackgroundResource(R.drawable.bg_dialog_rounded)
 
+                // Resolve theme-aware background color for the record item
+                val surfaceTypedValue = android.util.TypedValue()
+                theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, surfaceTypedValue, true)
+                itemView.setBackgroundColor(surfaceTypedValue.data)
+
 
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple)
@@ -1173,7 +1178,9 @@ class MainActivity : AppCompatActivity() {
                     iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
                     val tv = android.widget.TextView(this)
                     tv.text = count.toString()
-                    tv.setTextColor(android.graphics.Color.WHITE)
+                    val countTypedValue = android.util.TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, countTypedValue, true)
+                    tv.setTextColor(countTypedValue.data)
                     tv.textSize = 13f
                     tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
                     itemContainer.addView(iv)

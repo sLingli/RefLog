@@ -69,6 +69,19 @@ object ThemeManager {
     }
 
     /**
+     * 获取主题 XML Style 资源 ID
+     */
+    fun getThemeStyleResId(theme: AppTheme): Int {
+        return when (theme) {
+            AppTheme.DARK_GREEN -> R.style.Theme_MyApplication
+            AppTheme.OCEAN_BLUE -> R.style.Theme_MyApplication_OceanBlue
+            AppTheme.SUNSET_ORANGE -> R.style.Theme_MyApplication_SunsetOrange
+            AppTheme.PURPLE_GALAXY -> R.style.Theme_MyApplication_PurpleGalaxy
+            AppTheme.LIGHT_MODE -> R.style.Theme_MyApplication_LightMode
+        }
+    }
+
+    /**
      * 获取主题名称资源 ID
      */
     fun getThemeNameResId(theme: AppTheme): Int {
