@@ -6,13 +6,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -33,7 +38,7 @@ import androidx.compose.ui.window.DialogProperties
 private val YellowCardColor = Color(0xFFFFEB3B)   // 黄牌
 private val RedCardColor = Color(0xFFF44336)      // 红牌
 private val InjuryColor = Color(0xFF2196F3)       // 伤停
-private val GoalColor = Color(0xFF000000)         // 进球
+private val GoalColor = Color(0xFF2E7D32)         // 进球
 private val SubstitutionColor = Color(0xFF9C27B0) // 换人
 private val CancelColor = Color(0xFF616161)       // 取消
 
@@ -102,6 +107,9 @@ fun EventSelectionContent(
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = YellowCardColor,
+                iconResId = R.drawable.ic_card,
+                label = stringResource(R.string.event_yellow),
+                iconTint = Color(0xFF1A1A1A),
                 onClick = { onEventSelected(EventType.YELLOW_CARD) }
             )
 
@@ -109,6 +117,9 @@ fun EventSelectionContent(
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = RedCardColor,
+                iconResId = R.drawable.ic_card,
+                label = stringResource(R.string.event_red),
+                iconTint = Color.White,
                 onClick = { onEventSelected(EventType.RED_CARD) }
             )
         }
@@ -126,6 +137,7 @@ fun EventSelectionContent(
                 modifier = Modifier.weight(1f),
                 backgroundColor = InjuryColor,
                 iconResId = R.drawable.ic_medical,
+                label = stringResource(R.string.event_injury),
                 onClick = { onEventSelected(EventType.INJURY) }
             )
 
@@ -134,6 +146,7 @@ fun EventSelectionContent(
                 modifier = Modifier.weight(1f),
                 backgroundColor = GoalColor,
                 iconResId = R.drawable.sports_soccer,
+                label = stringResource(R.string.event_goal),
                 onClick = { onEventSelected(EventType.GOAL) }
             )
         }
@@ -151,6 +164,7 @@ fun EventSelectionContent(
                 modifier = Modifier.weight(1f),
                 backgroundColor = SubstitutionColor,
                 iconResId = R.drawable.ic_substitute,
+                label = stringResource(R.string.event_substitute),
                 onClick = { onEventSelected(EventType.SUBSTITUTION) }
             )
 
@@ -159,6 +173,7 @@ fun EventSelectionContent(
                 modifier = Modifier.weight(1f),
                 backgroundColor = CancelColor,
                 iconResId = R.drawable.outline_close_24,
+                iconTint = Color(0xFFAAAAAA),
                 onClick = { onEventSelected(EventType.CANCEL) }
             )
         }
@@ -172,6 +187,8 @@ fun EventSelectionContent(
  * @param modifier Modifier
  * @param backgroundColor 背景颜色
  * @param iconResId 图标资源ID（可选）
+ * @param label 文字标签（可选）
+ * @param iconTint 图标颜色（默认白色）
  * @param onClick 点击回调
  */
 @Composable
@@ -179,6 +196,8 @@ fun EventButton(
     modifier: Modifier = Modifier,
     backgroundColor: Color,
     iconResId: Int? = null,
+    label: String? = null,
+    iconTint: Color = Color.White,
     onClick: () -> Unit
 ) {
     Button(
@@ -189,22 +208,37 @@ fun EventButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = backgroundColor
         ),
-        contentPadding = PaddingValues(0.dp)
+        contentPadding = PaddingValues(8.dp)
     ) {
-        if (iconResId != null) {
-            Icon(
-                painter = painterResource(id = iconResId),
-                contentDescription = null,
-                modifier = Modifier.size(36.dp),
-                tint = Color.White
-            )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (iconResId != null) {
+                Icon(
+                    painter = painterResource(id = iconResId),
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = iconTint
+                )
+            }
+            if (label != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = label,
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
 
 /**
- * 预览
- * Preview
+ * 预览 - 事件选择弹窗
+ * Preview - Event Selection Dialog
  */
 @Preview(showBackground = true)
 @Composable
@@ -213,5 +247,3 @@ fun EventSelectionDialogPreview() {
         onEventSelected = {}
     )
 }
-
-

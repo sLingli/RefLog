@@ -2,12 +2,8 @@ package com.example.myapplication
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,11 +26,7 @@ import androidx.compose.ui.window.DialogProperties
  * Set match duration per half (5-45 minutes)
  */
 
-// 颜色定义
-private val DialogBackgroundColor = Color(0xFF424242)
-private val ButtonBackgroundColor = Color(0xFF333333)
-private val TimeValueColor = Color(0xFF4CAF50)
-private val UnitTextColor = Color(0xFF888888)
+// 语义颜色
 private val CancelButtonColor = Color(0xFFFF3B30)
 private val ConfirmButtonColor = Color(0xFF00E676)
 
@@ -91,120 +83,107 @@ fun TimeSettingContent(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // 时间选择区域
-        // Time Selection Area
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 减少按钮 (Decrease Button)
-            Button(
-                onClick = {
-                    if (selectedTime > 5) {
-                        selectedTime -= 5
-                    }
-                },
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ButtonBackgroundColor
-                ),
-                contentPadding = PaddingValues(0.dp)
+            // 减少按钮
+            IconButton(
+                onClick = { if (selectedTime > 5) selectedTime-- },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.remove),
-                    contentDescription = "Decrease",
-                    modifier = Modifier.size(32.dp),
-                    tint = Color.White
+                    painter = painterResource(id = R.drawable.outline_close_24),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
-            // 时间显示 (Time Display)
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            ) {
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // 时间显示
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = selectedTime.toString(),
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TimeValueColor
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = unitText,
                     fontSize = 14.sp,
-                    color = UnitTextColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // 增加按钮 (Increase Button)
-            Button(
-                onClick = {
-                    if (selectedTime < 45) {
-                        selectedTime += 5
-                    }
-                },
-                modifier = Modifier.size(56.dp),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ButtonBackgroundColor
-                ),
-                contentPadding = PaddingValues(0.dp)
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // 增加按钮
+            IconButton(
+                onClick = { if (selectedTime < 45) selectedTime++ },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.outline_add_24),
-                    contentDescription = "Increase",
-                    modifier = Modifier.size(32.dp),
-                    tint = Color.White
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
 
-        // 按钮区域 (Button Area)
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 按钮行
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 取消按钮 (Cancel Button)
+            // 取消按钮
             Button(
                 onClick = { onResult(TimeSettingResult.Cancelled) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = CancelButtonColor
-                ),
-                contentPadding = PaddingValues(0.dp)
+                )
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.cancel_24dp_1f1f1f_fill0_wght400_grad0_opsz24),
-                    contentDescription = "Cancel",
-                    modifier = Modifier.size(32.dp),
+                    painter = painterResource(id = R.drawable.outline_close_24),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
                     tint = Color.White
                 )
             }
 
-            // 确认按钮 (Confirm Button)
+            // 确认按钮
             Button(
                 onClick = { onResult(TimeSettingResult.Confirmed(selectedTime)) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ConfirmButtonColor
-                ),
-                contentPadding = PaddingValues(0.dp)
+                )
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.baseline_play_arrow_24),
-                    contentDescription = "Confirm",
-                    modifier = Modifier.size(32.dp),
+                    painter = painterResource(id = R.drawable.outline_check_24),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
                     tint = Color.White
                 )
             }
@@ -212,10 +191,6 @@ fun TimeSettingContent(
     }
 }
 
-/**
- * 预览
- * Preview
- */
 @Preview(showBackground = true)
 @Composable
 fun TimeSettingDialogPreview() {
@@ -224,4 +199,3 @@ fun TimeSettingDialogPreview() {
         onResult = {}
     )
 }
-

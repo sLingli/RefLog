@@ -42,6 +42,7 @@
     <!-- 历史记录相关 -->
     <string name="msg_history_cleared">历史记录已清空</string>
     <string name="msg_no_history_to_clear">暂无历史记录可清空</string>
+    <string name="btn_clear_all_history">清空所有记录</string>
     <string name="msg_no_events">暂无事件记录</string>
 
     <!-- 时间格式 (带参数) -->
@@ -55,4 +56,14 @@
     <!-- 清空历史弹窗 -->
     <string name="msg_confirm_clear_all">确定清空所有记录？</string>
     <string name="title_history_details">历史详情</string>
+    <string name="btn_close">关闭</string>
+
+    <!-- 底部导航 -->
+    <string name="nav_timer">计时器</string>
+    <string name="nav_history">历史</string>
+    <string name="nav_me">我的</string>
+
+    <!-- 我的页面 -->
+    <string name="label_set_team_colors">设置主客队颜色</string>
+    <string name="title_about">关于</string>
 </resources>

@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
     private var showTimeSettingDialogState by mutableStateOf(false)
     private var showMeScreenDialogState by mutableStateOf(false)
+    private var showThemeSelectionDialogState by mutableStateOf(false)
     private lateinit var composeDialogContainer: ComposeView
 
     // ViewPager2
@@ -112,6 +113,8 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.init(this)
+        setTheme(ThemeManager.getThemeStyleResId(ThemeManager.currentTheme))
         setContentView(R.layout.activity_main)
         recordManager = MatchRecordManager(this)
         initializeComposeDialogs()
@@ -132,9 +135,41 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
 
+    @Suppress("DEPRECATION")
+    private fun applyThemeColors() {
+        val theme = ThemeManager.currentTheme
+        val bgInt = android.graphics.Color.valueOf(
+            ThemeManager.getThemeBackgroundColor(theme).red,
+            ThemeManager.getThemeBackgroundColor(theme).green,
+            ThemeManager.getThemeBackgroundColor(theme).blue
+        ).toArgb()
+
+        // 更新系统栏颜色
+        window.statusBarColor = bgInt
+        window.navigationBarColor = bgInt
+
+        // 动态更新背景
+        window.decorView.setBackgroundColor(bgInt)
+    }
+
     private fun initializeComposeDialogs() {
         composeDialogContainer = findViewById(R.id.composeDialogContainer)
         composeDialogContainer.setContent {
+            RefLogTheme {
+            // 主题选择弹窗
+            if (showThemeSelectionDialogState) {
+                ThemeSelectionDialog(
+                    currentTheme = ThemeManager.currentTheme,
+                    onDismiss = { showThemeSelectionDialogState = false },
+                    onThemeSelected = { theme ->
+                        ThemeManager.currentTheme = theme
+                        showThemeSelectionDialogState = false
+                        applyThemeColors()
+                        recreate()
+                    }
+                )
+            }
+
             // 队伍选择弹窗（黄牌/红牌/进球后选择主队或客队）
             if (showTeamSelectionDialogState) {
                 TeamSelectionDialog(
@@ -179,7 +214,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-
+            }
         }
     }
 
@@ -232,33 +267,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupHistoryPage(composeView: ComposeView) {
         composeView.setContent {
-            val records = androidx.compose.runtime.mutableStateOf(recordManager.getAllRecords())
-            refreshHistoryPage = { records.value = recordManager.getAllRecords() }
+            RefLogTheme {
+                val records = androidx.compose.runtime.mutableStateOf(recordManager.getAllRecords())
+                refreshHistoryPage = { records.value = recordManager.getAllRecords() }
 
-            HistoryPageContent(
-                records = records.value,
-                onRecordClick = { record ->
-                    showMatchSummary(isHistory = true, historyRecord = record)
-                },
-                onDeleteRecord = { record ->
-                    recordManager.deleteRecord(record.id)
-                    records.value = recordManager.getAllRecords()
-                },
-                onClearAll = {
-                    recordManager.clearAllRecords()
-                    records.value = recordManager.getAllRecords()
-                }
-            )
+                HistoryPageContent(
+                    records = records.value,
+                    onRecordClick = { record ->
+                        showMatchSummary(isHistory = true, historyRecord = record)
+                    },
+                    onDeleteRecord = { record ->
+                        recordManager.deleteRecord(record.id)
+                        records.value = recordManager.getAllRecords()
+                    },
+                    onClearAll = {
+                        recordManager.clearAllRecords()
+                        records.value = recordManager.getAllRecords()
+                    }
+                )
+            }
         }
     }
 
     private fun setupProfilePage(composeView: ComposeView) {
         composeView.setContent {
-            MeScreenContent(
-                onSettingsClick = { showColorSelectionDialog() },
-                onAboutClick = { showAboutDialog() },
-                onDismiss = { /* embedded in ViewPager, not a standalone dialog */ }
-            )
+            RefLogTheme {
+                MeScreenContent(
+                    onThemeClick = { showThemeSelectionDialogState = true },
+                    onSettingsClick = { showColorSelectionDialog() },
+                    onAboutClick = { showAboutDialog() },
+                    onDismiss = { /* embedded in ViewPager, not a standalone dialog */ }
+                )
+            }
         }
     }
 
@@ -794,7 +834,9 @@ class MainActivity : AppCompatActivity() {
         if (eventsToShow.isEmpty()) {
             val tv = TextView(this)
             tv.text = getString(R.string.msg_no_events)
-            tv.setTextColor(android.graphics.Color.GRAY)
+            val typedValue = android.util.TypedValue()
+            theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedValue, true)
+            tv.setTextColor(typedValue.data)
             tv.gravity = android.view.Gravity.CENTER
             listEvents.addView(tv)
         } else {
@@ -839,7 +881,9 @@ class MainActivity : AppCompatActivity() {
                 val textView = TextView(this)
                 val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
                 textView.text = "[${event.timeStr}] $contentText"
-                textView.setTextColor(android.graphics.Color.parseColor("#CCCCCC"))
+                val tvTextTypedValue = android.util.TypedValue()
+                theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, tvTextTypedValue, true)
+                textView.setTextColor(tvTextTypedValue.data)
                 textView.textSize = 13f
 
                 // 4. 装填进容器
@@ -1093,6 +1137,11 @@ class MainActivity : AppCompatActivity() {
 
                 itemView.setBackgroundResource(R.drawable.bg_dialog_rounded)
 
+                // Resolve theme-aware background color for the record item
+                val surfaceTypedValue = android.util.TypedValue()
+                theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, surfaceTypedValue, true)
+                itemView.setBackgroundColor(surfaceTypedValue.data)
+
 
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
                 itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple)
@@ -1129,7 +1178,9 @@ class MainActivity : AppCompatActivity() {
                     iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
                     val tv = android.widget.TextView(this)
                     tv.text = count.toString()
-                    tv.setTextColor(android.graphics.Color.WHITE)
+                    val countTypedValue = android.util.TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, countTypedValue, true)
+                    tv.setTextColor(countTypedValue.data)
                     tv.textSize = 13f
                     tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
                     itemContainer.addView(iv)
