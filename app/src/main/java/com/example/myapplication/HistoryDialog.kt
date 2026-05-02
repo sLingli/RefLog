@@ -496,6 +496,108 @@ fun ConfirmClearDialog(
  * 预览 - 有记录
  * Preview - With Records
  */
+/**
+ * 全屏历史页面内容（用于 ViewPager2）
+ * Full-screen history page content for ViewPager2
+ */
+@Composable
+fun HistoryPageContent(
+    records: List<MatchRecord>,
+    onRecordClick: (MatchRecord) -> Unit,
+    onDeleteRecord: (MatchRecord) -> Unit,
+    onClearAll: () -> Unit
+) {
+    var showConfirmClearDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+            .padding(16.dp)
+    ) {
+        // 顶部标题
+        Icon(
+            painter = painterResource(id = R.drawable.ic_history),
+            contentDescription = null,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterHorizontally),
+            tint = Color.White
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (records.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dialog_no_records),
+                color = Color(0xFF666666),
+                fontSize = 16.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                records.forEach { record ->
+                    key(record.id) {
+                        SwipeableRecordItem(
+                            record = record,
+                            onClick = { onRecordClick(record) },
+                            onDelete = { onDeleteRecord(record) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 清空按钮
+        if (records.isNotEmpty()) {
+            Button(
+                onClick = { showConfirmClearDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ClearButtonColor
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.outline_delete_24),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.btn_clear_all_history),
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+
+    // 确认清空弹窗
+    if (showConfirmClearDialog) {
+        ConfirmClearDialog(
+            onConfirm = {
+                onClearAll()
+                showConfirmClearDialog = false
+            },
+            onDismiss = { showConfirmClearDialog = false }
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun HistoryDialogPreviewWithRecords() {

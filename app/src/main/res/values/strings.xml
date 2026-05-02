@@ -46,6 +46,7 @@
     <!-- History & Records -->
     <string name="msg_history_cleared">History Cleared</string>
     <string name="msg_no_history_to_clear">No history to clear</string>
+    <string name="btn_clear_all_history">Clear All History</string>
     <string name="msg_no_events">No events recorded</string>
 
     <!-- Time Format (带参数) -->
@@ -60,4 +61,13 @@
     <string name="msg_confirm_clear_all">Clear All History?</string>
     <string name="title_history_details">Match Details</string>
     <string name="btn_close">Close</string>
+
+    <!-- Navigation -->
+    <string name="nav_timer">Timer</string>
+    <string name="nav_history">History</string>
+    <string name="nav_me">Me</string>
+
+    <!-- Me Screen -->
+    <string name="label_set_team_colors">Set Home/Away Team Colors</string>
+    <string name="title_about">About</string>
 </resources>

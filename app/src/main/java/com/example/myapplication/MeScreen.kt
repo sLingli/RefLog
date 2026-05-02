@@ -1,0 +1,203 @@
+package com.example.myapplication
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+
+/**
+ * 我的页面弹窗
+ * Me Screen Dialog
+ *
+ * 包含：
+ * - 设置入口（设定主客队颜色）
+ * - 关于入口（AboutScreen）
+ */
+private val DialogBackgroundColor = Color(0xFF424242)
+private val ItemBackgroundColor = Color(0xFF333333)
+private val IconTintColor = Color.White
+private val TextPrimaryColor = Color.White
+private val TextSecondaryColor = Color(0xFFAAAAAA)
+private val ChevronColor = Color(0xFF888888)
+private val CancelButtonColor = Color(0xFF616161)
+
+@Composable
+fun MeScreenDialog(
+    onDismiss: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        MeScreenContent(
+            onSettingsClick = onSettingsClick,
+            onAboutClick = onAboutClick,
+            onDismiss = onDismiss
+        )
+    }
+}
+
+@Composable
+fun MeScreenContent(
+    onSettingsClick: () -> Unit,
+    onAboutClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(DialogBackgroundColor)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 头像区域
+        Box(
+            modifier = Modifier
+                .padding(bottom = 12.dp)
+                .size(72.dp)
+                .background(Color(0xFF333333), shape = CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_profile),
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = Color(0xFF888888)
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.app_name),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimaryColor
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 设置按钮
+        MeMenuItem(
+            iconRes = R.drawable.ic_settings,
+            title = stringResource(R.string.title_set_color),
+            subtitle = stringResource(R.string.label_set_team_colors),
+            onClick = onSettingsClick
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 关于按钮
+        MeMenuItem(
+            iconRes = R.drawable.ic_info,
+            title = stringResource(R.string.title_about),
+            subtitle = stringResource(R.string.app_name),
+            onClick = onAboutClick
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 关闭按钮
+        Button(
+            onClick = onDismiss,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = CancelButtonColor
+            )
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.outline_close_24),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = Color.White
+            )
+        }
+    }
+}
+
+/**
+ * 我的页面菜单项
+ */
+@Composable
+fun MeMenuItem(
+    iconRes: Int,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = ItemBackgroundColor
+        ),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = IconTintColor
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextPrimaryColor
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    color = TextSecondaryColor
+                )
+            }
+            Text(
+                text = ">",
+                fontSize = 18.sp,
+                color = ChevronColor,
+                fontWeight = FontWeight.Light
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MeScreenDialogPreview() {
+    MeScreenContent(
+        onSettingsClick = {},
+        onAboutClick = {},
+        onDismiss = {},
+    )
+}
