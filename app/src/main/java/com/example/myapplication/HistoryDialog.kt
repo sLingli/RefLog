@@ -2,8 +2,9 @@ package com.example.myapplication
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,7 +17,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -148,7 +148,6 @@ fun HistoryDialogContent(
             // 记录列表 Records List
             Column(
                 modifier = Modifier
-                    .weight(1f, fill = false)
                     .heightIn(max = 300.dp)
                     .verticalScroll(rememberScrollState())
             ) {
@@ -218,6 +217,9 @@ fun HistoryDialogContent(
 /**
  * 可滑动删除的记录项
  * Swipeable Record Item
+ *
+ * 向左滑动露出红色删除按钮，点击按钮删除，
+ * 退出动画：水平收缩 + 淡出
  */
 @Composable
 fun SwipeableRecordItem(
@@ -227,17 +229,24 @@ fun SwipeableRecordItem(
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     val maxSwipeDistance = -200f
-    val animatedOffsetX by animateFloatAsState(targetValue = offsetX, label = "offsetX")
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = tween(durationMillis = 200),
+        label = "offsetX"
+    )
     var isDeleted by remember { mutableStateOf(false) }
 
     AnimatedVisibility(
         visible = !isDeleted,
-        exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+        exit = shrinkHorizontally(
+            animationSpec = tween(300),
+            shrinkTowards = Alignment.Start
+        ) + fadeOut(animationSpec = tween(300))
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 删除按钮（背景层） Delete Button (Background Layer)
+            // 删除按钮背景层 — 红色圆形 + 垃圾桶图标
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -249,21 +258,22 @@ fun SwipeableRecordItem(
                         onDelete()
                     },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(46.dp)
                         .clip(CircleShape)
                         .background(DeleteButtonColor)
-                        .alpha((-animatedOffsetX / maxSwipeDistance).coerceIn(0f, 1f))
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.outline_delete_24),
                         contentDescription = "Delete",
                         tint = Color.White,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier
+                            .size(22.dp)
+                            .padding(2.dp)
                     )
                 }
             }
 
-            // 记录卡片（前景层） Record Card (Foreground Layer)
+            // 记录卡片前景层
             RecordCard(
                 record = record,
                 modifier = Modifier
@@ -271,6 +281,7 @@ fun SwipeableRecordItem(
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onDragEnd = {
+                                // 滑过一半则锁定展开，否则回弹
                                 offsetX = if (offsetX < maxSwipeDistance / 2) {
                                     maxSwipeDistance
                                 } else {
@@ -497,12 +508,114 @@ fun ConfirmClearDialog(
  * 预览 - 有记录
  * Preview - With Records
  */
+/**
+ * 全屏历史页面内容（用于 ViewPager2）
+ * Full-screen history page content for ViewPager2
+ */
+@Composable
+fun HistoryPageContent(
+    records: List<MatchRecord>,
+    onRecordClick: (MatchRecord) -> Unit,
+    onDeleteRecord: (MatchRecord) -> Unit,
+    onClearAll: () -> Unit
+) {
+    var showConfirmClearDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+            .padding(16.dp)
+    ) {
+        // 顶部标题
+        Icon(
+            painter = painterResource(id = R.drawable.ic_history),
+            contentDescription = null,
+            modifier = Modifier
+                .size(40.dp)
+                .align(Alignment.CenterHorizontally),
+            tint = Color.White
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (records.isEmpty()) {
+            Text(
+                text = stringResource(R.string.dialog_no_records),
+                color = Color(0xFF666666),
+                fontSize = 16.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                records.forEach { record ->
+                    key(record.id) {
+                        SwipeableRecordItem(
+                            record = record,
+                            onClick = { onRecordClick(record) },
+                            onDelete = { onDeleteRecord(record) }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 清空按钮
+        if (records.isNotEmpty()) {
+            Button(
+                onClick = { showConfirmClearDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ClearButtonColor
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.outline_delete_24),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.btn_clear_all_history),
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+
+    // 确认清空弹窗
+    if (showConfirmClearDialog) {
+        ConfirmClearDialog(
+            onConfirm = {
+                onClearAll()
+                showConfirmClearDialog = false
+            },
+            onDismiss = { showConfirmClearDialog = false }
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun HistoryDialogPreviewWithRecords() {
     val sampleRecords = listOf(
         MatchRecord(
-            id = 1,
+            id = 1L,
             date = "2024-01-01",
             halfTimeMinutes = 45,
             firstHalfStoppage = "3:00",
@@ -516,7 +629,7 @@ fun HistoryDialogPreviewWithRecords() {
             events = emptyList()
         ),
         MatchRecord(
-            id = 2,
+            id = 2L,
             date = "2024-01-02",
             halfTimeMinutes = 45,
             firstHalfStoppage = "2:00",
@@ -563,63 +676,10 @@ fun HistoryDialogPreviewEmpty() {
 @Preview(showBackground = true)
 @Composable
 fun ConfirmClearDialogPreview() {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Clear All History?",
-            color = Color.White,
-            fontSize = 16.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF616161)
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_close_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
-            }
-
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ClearButtonColor
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_check_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
-            }
-        }
-    }
+    ConfirmClearDialog(
+        onConfirm = {},
+        onDismiss = {}
+    )
 }
 
 

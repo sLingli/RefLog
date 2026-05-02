@@ -1,16 +1,19 @@
 package com.example.myapplication
 
-import android.content.res.Resources
 import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.res.Resources
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.transition.AutoTransition
+import android.transition.TransitionManager
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.NumberPicker
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.LinearLayout
@@ -19,15 +22,13 @@ import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.widget.NumberPicker
 import android.content.res.ColorStateList
-import android.util.DisplayMetrics
-import android.transition.TransitionManager
-import android.transition.AutoTransition
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.material3.MaterialTheme
+import androidx.viewpager2.widget.ViewPager2
 
 /**
  * 足球比赛计时器主界面
@@ -60,7 +61,6 @@ class MainActivity : AppCompatActivity() {
 
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
-    private lateinit var btnHistory: Button
     private lateinit var recordManager: MatchRecordManager
 
 
@@ -97,17 +97,26 @@ class MainActivity : AppCompatActivity() {
     private var showTeamSelectionDialogState by mutableStateOf(false)
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
     private var showTimeSettingDialogState by mutableStateOf(false)
+    private var showMeScreenDialogState by mutableStateOf(false)
     private lateinit var composeDialogContainer: ComposeView
+
+    // ViewPager2
+    private lateinit var viewPager: ViewPager2
+    private lateinit var pagerAdapter: MainPagerAdapter
+
+    // 历史和我的页面刷新回调
+    private var refreshHistoryPage: (() -> Unit)? = null
+    private var refreshProfilePage: (() -> Unit)? = null
 
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        initializeUI()
+        recordManager = MatchRecordManager(this)
         initializeComposeDialogs()
-        resetMatch()
         initializeTimer()
+        setupViewPager()
     }
     private fun initializeTimer() {
         updateRunnable = object : Runnable {
@@ -169,6 +178,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 )
             }
+
+
         }
     }
 
@@ -183,18 +194,83 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun initializeUI() {
-        statusLabel = findViewById(R.id.statusLabel)
-        mainTimeLabel = findViewById(R.id.mainTimeLabel)
-        stoppageTimeLabel = findViewById(R.id.stoppageTimeLabel)
+    private fun setupViewPager() {
+        viewPager = findViewById(R.id.viewPager)
 
-        mainButton = findViewById(R.id.mainButton)
-        endHalfButton = findViewById(R.id.endHalfButton)
-        btnHistory = findViewById(R.id.btnHistory)
+        pagerAdapter = MainPagerAdapter(
+            onTimerPageBound = { timerView -> initializeTimerViews(timerView) },
+            onHistoryPageBound = { composeView -> setupHistoryPage(composeView) },
+            onProfilePageBound = { composeView -> setupProfilePage(composeView) }
+        )
+        viewPager.adapter = pagerAdapter
+        viewPager.offscreenPageLimit = 2
+
+        // ViewPager2 ↔ BottomNavigationView 双向同步
+        val bottomNav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                bottomNav.selectedItemId = when (position) {
+                    0 -> R.id.nav_timer
+                    1 -> R.id.nav_history
+                    2 -> R.id.nav_profile
+                    else -> R.id.nav_timer
+                }
+                if (position == 1) {
+                    refreshHistoryPage?.invoke()
+                }
+            }
+        })
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_timer -> { viewPager.currentItem = 0; true }
+                R.id.nav_history -> { viewPager.currentItem = 1; true }
+                R.id.nav_profile -> { viewPager.currentItem = 2; true }
+                else -> false
+            }
+        }
+    }
+
+    private fun setupHistoryPage(composeView: ComposeView) {
+        composeView.setContent {
+            val records = androidx.compose.runtime.mutableStateOf(recordManager.getAllRecords())
+            refreshHistoryPage = { records.value = recordManager.getAllRecords() }
+
+            HistoryPageContent(
+                records = records.value,
+                onRecordClick = { record ->
+                    showMatchSummary(isHistory = true, historyRecord = record)
+                },
+                onDeleteRecord = { record ->
+                    recordManager.deleteRecord(record.id)
+                    records.value = recordManager.getAllRecords()
+                },
+                onClearAll = {
+                    recordManager.clearAllRecords()
+                    records.value = recordManager.getAllRecords()
+                }
+            )
+        }
+    }
+
+    private fun setupProfilePage(composeView: ComposeView) {
+        composeView.setContent {
+            MeScreenContent(
+                onSettingsClick = { showColorSelectionDialog() },
+                onAboutClick = { showAboutDialog() },
+                onDismiss = { /* embedded in ViewPager, not a standalone dialog */ }
+            )
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun initializeTimerViews(timerView: View) {
+        statusLabel = timerView.findViewById(R.id.statusLabel)
+        mainTimeLabel = timerView.findViewById(R.id.mainTimeLabel)
+        stoppageTimeLabel = timerView.findViewById(R.id.stoppageTimeLabel)
+        mainButton = timerView.findViewById(R.id.mainButton)
+        endHalfButton = timerView.findViewById(R.id.endHalfButton)
 
         mainButton.setOnClickListener { toggleTimer() }
-        btnHistory.setOnClickListener { showHistoryDialog() }
 
         // 长按结束半场的延迟触发任务
         var triggerAction: Runnable? = null
@@ -217,7 +293,6 @@ class MainActivity : AppCompatActivity() {
 
                     holdAnimator.start()
 
-                    // 初始微震反馈
                     if (android.os.Build.VERSION.SDK_INT >= 29) {
                         vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_TICK))
                     }
@@ -227,14 +302,12 @@ class MainActivity : AppCompatActivity() {
                             holdAnimator.end()
                             v.background.level = 0
 
-                            // 强震动反馈（长按成功）
                             if (android.os.Build.VERSION.SDK_INT >= 29) {
                                 vibrator.vibrate(android.os.VibrationEffect.createPredefined(android.os.VibrationEffect.EFFECT_HEAVY_CLICK))
                             } else {
                                 vibrator.vibrate(100)
                             }
 
-                            // 触发结束逻辑
                             when (currentHalf) {
                                 HALF_FIRST -> { endFirstHalf(); updateStatusLabel() }
                                 HALF_SECOND -> { endSecondHalf(); updateStatusLabel() }
@@ -264,8 +337,6 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
-
-        recordManager = MatchRecordManager(this)
     }
 
     override fun onDestroy() {
@@ -317,8 +388,7 @@ class MainActivity : AppCompatActivity() {
         updateButtonStyle("pause")
         updateStoppageDisplay(active = false)
 
-        val btnHistory = findViewById<View>(R.id.btnHistory)
-        btnHistory.visibility = View.GONE
+        // 底部导航栏已替代 btnHistory，无需手动隐藏
 
         addLog("🏁 比赛开始")
         val halfTimeMin = halfTimeSeconds / 60
@@ -435,6 +505,7 @@ class MainActivity : AppCompatActivity() {
         addLog("📊 总补时: $totalStr")
 
         saveMatchRecord()
+        refreshHistoryPage?.invoke()
 
         // 自动弹出总结页
         showMatchSummary()
@@ -1326,37 +1397,23 @@ class MainActivity : AppCompatActivity() {
         val color: String
     )
     private fun animateHistoryButton(show: Boolean) {
+        // 底部导航栏已替代 btnHistory，此方法保留为空
+    }
 
-        val historyBtn = findViewById<View>(R.id.btnHistory) ?: return
-
-        if (show) {
-
-            if (historyBtn.visibility == View.VISIBLE && historyBtn.alpha == 1f) return
-
-            historyBtn.visibility = View.VISIBLE
-            historyBtn.alpha = 0f
-            historyBtn.scaleX = 0.8f
-            historyBtn.scaleY = 0.8f
-
-            historyBtn.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(400)
-                .setInterpolator(android.view.animation.OvershootInterpolator())
-                .start()
-        } else {
-
-            if (historyBtn.visibility == View.GONE) return
-
-            historyBtn.animate()
-                .alpha(0f)
-                .scaleX(0.8f)
-                .scaleY(0.8f)
-                .setDuration(300)
-                .withEndAction { historyBtn.visibility = View.GONE }
-                .start()
+    private fun showAboutDialog() {
+        val aboutContainer = ComposeView(this).apply {
+            setContent {
+                MaterialTheme {
+                    AboutScreen(
+                        onDismiss = {
+                            (this@apply.parent as? android.view.ViewGroup)?.removeView(this@apply)
+                        }
+                    )
+                }
+            }
         }
+        val rootView = findViewById<android.view.ViewGroup>(android.R.id.content)
+        rootView.addView(aboutContainer)
     }
 
     private fun showColorSelectionDialog() {
@@ -1400,7 +1457,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
 
-                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager?): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
+                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
                     if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
 
                     return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {

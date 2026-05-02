@@ -54,4 +54,5 @@
     <string name="event_substitute">换人</string>
     <!-- 清空历史弹窗 -->
     <string name="msg_confirm_clear_all">确定清空所有记录？</string>
+    <string name="title_history_details">历史详情</string>
 </resources>

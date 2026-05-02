@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -99,7 +100,7 @@ fun AboutScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "关闭",
+                        text = stringResource(R.string.btn_close),
                         fontSize = 16.sp
                     )
                 }
