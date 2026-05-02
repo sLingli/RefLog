@@ -41,15 +41,9 @@ import kotlin.math.roundToInt
  * - 点击查看详情
  */
 
-// 颜色定义
-private val DialogBackgroundColor = Color(0xFF424242)
+// 语义颜色（不受主题影响）
 private val ClearButtonColor = Color(0xFFFF3B30)      // 清空按钮 - 红色
-private val CloseButtonColor = Color(0xFF00E676)       // 关闭按钮 - 绿色
 private val DeleteButtonColor = Color(0xFFD32F2F)      // 删除按钮 - 红色
-private val DateTextColor = Color(0xFF4CAF50)          // 日期文字 - 绿色
-private val DurationTextColor = Color(0xFF888888)      // 时长文字 - 灰色
-private val StoppageTextColor = Color(0xFFFF9800)      // 补时文字 - 橙色
-private val CardBackgroundColor = Color(0xFF303030)    // 卡片背景
 
 /**
  * 历史记录弹窗
@@ -117,7 +111,7 @@ fun HistoryDialogContent(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(16.dp)
     ) {
         // 顶部图标 History Icon
@@ -127,7 +121,7 @@ fun HistoryDialogContent(
             modifier = Modifier
                 .size(40.dp)
                 .align(Alignment.CenterHorizontally),
-            tint = Color.White
+            tint = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +131,7 @@ fun HistoryDialogContent(
             // 无记录提示 No Records Message
             Text(
                 text = stringResource(R.string.dialog_no_records),
-                color = Color(0xFF666666),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 16.sp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -199,7 +193,7 @@ fun HistoryDialogContent(
                     .height(44.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = CloseButtonColor
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 contentPadding = PaddingValues(0.dp)
             ) {
@@ -318,7 +312,7 @@ fun RecordCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBackgroundColor)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .padding(12.dp)
     ) {
         // 日期和时长行 Date and Duration Row
@@ -330,14 +324,14 @@ fun RecordCard(
             // 日期 Date
             Text(
                 text = record.date,
-                color = DateTextColor,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
             // 时长 Duration
             Text(
                 text = stringResource(R.string.fmt_duration_simple, record.halfTimeMinutes),
-                color = DurationTextColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
@@ -351,7 +345,7 @@ fun RecordCard(
                 record.firstHalfStoppage,
                 record.secondHalfStoppage
             ),
-            color = StoppageTextColor,
+            color = MaterialTheme.colorScheme.tertiary,
             fontSize = 12.sp
         )
 
@@ -418,7 +412,7 @@ fun StatItem(
         )
         Text(
             text = count.toString(),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontSize = 13.sp
         )
     }
@@ -443,14 +437,14 @@ fun ConfirmClearDialog(
         Column(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
-                .background(DialogBackgroundColor)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 确认消息 Confirm Message
             Text(
                 text = stringResource(R.string.msg_confirm_clear_all),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
@@ -470,14 +464,14 @@ fun ConfirmClearDialog(
                         .height(44.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF616161)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     )
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.outline_close_24),
                         contentDescription = null,
                         modifier = Modifier.size(24.dp),
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -505,10 +499,6 @@ fun ConfirmClearDialog(
 }
 
 /**
- * 预览 - 有记录
- * Preview - With Records
- */
-/**
  * 全屏历史页面内容（用于 ViewPager2）
  * Full-screen history page content for ViewPager2
  */
@@ -524,7 +514,7 @@ fun HistoryPageContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         // 顶部标题
@@ -534,7 +524,7 @@ fun HistoryPageContent(
             modifier = Modifier
                 .size(40.dp)
                 .align(Alignment.CenterHorizontally),
-            tint = Color.White
+            tint = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -542,7 +532,7 @@ fun HistoryPageContent(
         if (records.isEmpty()) {
             Text(
                 text = stringResource(R.string.dialog_no_records),
-                color = Color(0xFF666666),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 16.sp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -681,7 +671,3 @@ fun ConfirmClearDialogPreview() {
         onDismiss = {}
     )
 }
-
-
-
-

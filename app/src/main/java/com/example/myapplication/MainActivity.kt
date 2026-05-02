@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
     private var showTimeSettingDialogState by mutableStateOf(false)
     private var showMeScreenDialogState by mutableStateOf(false)
+    private var showThemeSelectionDialogState by mutableStateOf(false)
     private lateinit var composeDialogContainer: ComposeView
 
     // ViewPager2
@@ -112,6 +113,8 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ThemeManager.init(this)
+        applyThemeColors()
         setContentView(R.layout.activity_main)
         recordManager = MatchRecordManager(this)
         initializeComposeDialogs()
@@ -132,9 +135,45 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
 
+    @Suppress("DEPRECATION")
+    private fun applyThemeColors() {
+        val theme = ThemeManager.currentTheme
+        val bgInt = android.graphics.Color.valueOf(
+            ThemeManager.getThemeBackgroundColor(theme).red,
+            ThemeManager.getThemeBackgroundColor(theme).green,
+            ThemeManager.getThemeBackgroundColor(theme).blue
+        ).toArgb()
+
+        // 更新系统栏颜色
+        window.statusBarColor = bgInt
+        window.navigationBarColor = bgInt
+
+        // 动态更新背景
+        window.decorView.setBackgroundColor(bgInt)
+
+        // 更新底部导航栏颜色
+        findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
+            ?.setBackgroundColor(bgInt)
+    }
+
     private fun initializeComposeDialogs() {
         composeDialogContainer = findViewById(R.id.composeDialogContainer)
         composeDialogContainer.setContent {
+            RefLogTheme {
+            // 主题选择弹窗
+            if (showThemeSelectionDialogState) {
+                ThemeSelectionDialog(
+                    currentTheme = ThemeManager.currentTheme,
+                    onDismiss = { showThemeSelectionDialogState = false },
+                    onThemeSelected = { theme ->
+                        ThemeManager.currentTheme = theme
+                        showThemeSelectionDialogState = false
+                        applyThemeColors()
+                        recreate()
+                    }
+                )
+            }
+
             // 队伍选择弹窗（黄牌/红牌/进球后选择主队或客队）
             if (showTeamSelectionDialogState) {
                 TeamSelectionDialog(
@@ -179,7 +218,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-
+            }
         }
     }
 
@@ -232,33 +271,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupHistoryPage(composeView: ComposeView) {
         composeView.setContent {
-            val records = androidx.compose.runtime.mutableStateOf(recordManager.getAllRecords())
-            refreshHistoryPage = { records.value = recordManager.getAllRecords() }
+            RefLogTheme {
+                val records = androidx.compose.runtime.mutableStateOf(recordManager.getAllRecords())
+                refreshHistoryPage = { records.value = recordManager.getAllRecords() }
 
-            HistoryPageContent(
-                records = records.value,
-                onRecordClick = { record ->
-                    showMatchSummary(isHistory = true, historyRecord = record)
-                },
-                onDeleteRecord = { record ->
-                    recordManager.deleteRecord(record.id)
-                    records.value = recordManager.getAllRecords()
-                },
-                onClearAll = {
-                    recordManager.clearAllRecords()
-                    records.value = recordManager.getAllRecords()
-                }
-            )
+                HistoryPageContent(
+                    records = records.value,
+                    onRecordClick = { record ->
+                        showMatchSummary(isHistory = true, historyRecord = record)
+                    },
+                    onDeleteRecord = { record ->
+                        recordManager.deleteRecord(record.id)
+                        records.value = recordManager.getAllRecords()
+                    },
+                    onClearAll = {
+                        recordManager.clearAllRecords()
+                        records.value = recordManager.getAllRecords()
+                    }
+                )
+            }
         }
     }
 
     private fun setupProfilePage(composeView: ComposeView) {
         composeView.setContent {
-            MeScreenContent(
-                onSettingsClick = { showColorSelectionDialog() },
-                onAboutClick = { showAboutDialog() },
-                onDismiss = { /* embedded in ViewPager, not a standalone dialog */ }
-            )
+            RefLogTheme {
+                MeScreenContent(
+                    onThemeClick = { showThemeSelectionDialogState = true },
+                    onSettingsClick = { showColorSelectionDialog() },
+                    onAboutClick = { showAboutDialog() },
+                    onDismiss = { /* embedded in ViewPager, not a standalone dialog */ }
+                )
+            }
         }
     }
 

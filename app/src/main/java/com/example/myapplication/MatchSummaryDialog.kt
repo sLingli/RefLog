@@ -21,32 +21,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-// 颜色定义
-private val DialogBackgroundColor = Color(0xFF000000)
-private val CardBackgroundColor = Color(0xFF1E1E1E)
-private val AccentGreenColor = Color(0xFF4CAF50)
-private val CloseButtonColor = Color(0xFF4CAF50)
-private val TextPrimaryColor = Color(0xFFFFFFFF)
-private val TextSecondaryColor = Color(0xFFCCCCCC)
-private val TextMutedColor = Color(0xFFAAAAAA)
+// 语义颜色（不受主题影响）
 private val YellowCardColor = Color(0xFFFFEB3B)
 private val RedCardColor = Color(0xFFF44336)
 private val StoppageGreenColor = Color(0xFF00FF00)
-private val DividerColor = Color(0xFF333333)
 private val InjuryBlueColor = Color(0xFF2196F3)
 
 /**
  * 比赛总结弹窗
- * @param isHistory 是否为历史记录
- * @param halfTimeMinutes 每半场分钟数
- * @param homeGoals 主队进球数
- * @param awayGoals 客队进球数
- * @param yellowCount 黄牌数
- * @param redCount 红牌数
- * @param firstHalfStoppage 上半场补时（格式化后的字符串）
- * @param secondHalfStoppage 下半场补时（格式化后的字符串）
- * @param events 事件列表
- * @param onDismiss 关闭弹窗回调
  */
 @Composable
 fun MatchSummaryDialog(
@@ -85,7 +67,6 @@ fun MatchSummaryDialog(
 
 /**
  * 弹窗内容
- * Dialog Content
  */
 @Composable
 fun MatchSummaryDialogContent(
@@ -103,7 +84,7 @@ fun MatchSummaryDialogContent(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -117,17 +98,17 @@ fun MatchSummaryDialogContent(
                 painter = painterResource(id = R.drawable.ic_trophy),
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
-                tint = AccentGreenColor
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(
-                    if (isHistory) R.string.title_history_details 
+                    if (isHistory) R.string.title_history_details
                     else R.string.title_summary
                 ),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AccentGreenColor
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -137,7 +118,7 @@ fun MatchSummaryDialogContent(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = CardBackgroundColor)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
             Column(
                 modifier = Modifier
@@ -153,12 +134,12 @@ fun MatchSummaryDialogContent(
                         painter = painterResource(id = R.drawable.ic_history),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = TextMutedColor
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.summary_duration, halfTimeMinutes),
-                        color = TextSecondaryColor,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }
@@ -173,12 +154,12 @@ fun MatchSummaryDialogContent(
                         painter = painterResource(id = R.drawable.sports_soccer),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = TextPrimaryColor
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.summary_score, homeGoals, awayGoals),
-                        color = TextPrimaryColor,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -232,7 +213,7 @@ fun MatchSummaryDialogContent(
                 HorizontalDivider(
                     modifier = Modifier.fillMaxWidth(),
                     thickness = 1.dp,
-                    color = DividerColor
+                    color = MaterialTheme.colorScheme.outlineVariant
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -268,14 +249,14 @@ fun MatchSummaryDialogContent(
                 painter = painterResource(id = R.drawable.ic_event_note),
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
-                tint = AccentGreenColor
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.label_event_details),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = AccentGreenColor
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -285,7 +266,7 @@ fun MatchSummaryDialogContent(
         if (events.isEmpty()) {
             Text(
                 text = stringResource(R.string.msg_no_events),
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(vertical = 16.dp)
@@ -311,12 +292,12 @@ fun MatchSummaryDialogContent(
                 .height(48.dp),
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = CloseButtonColor
+                containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
             Text(
                 text = stringResource(R.string.btn_ok),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 14.sp
             )
         }
@@ -325,7 +306,6 @@ fun MatchSummaryDialogContent(
 
 /**
  * 事件明细项
- * Event Detail Item
  */
 @Composable
 fun EventDetailItem(event: MatchEvent) {
@@ -338,9 +318,9 @@ fun EventDetailItem(event: MatchEvent) {
     ) {
         // 图标 Icon
         val iconRes = when {
-            event.event.contains("Goal", ignoreCase = true) || 
+            event.event.contains("Goal", ignoreCase = true) ||
             event.event.contains("进球", ignoreCase = true) -> R.drawable.sports_soccer
-            event.event.contains("Yellow", ignoreCase = true) || 
+            event.event.contains("Yellow", ignoreCase = true) ||
             event.event.contains("Red", ignoreCase = true) ||
             event.event.contains("黄牌", ignoreCase = true) ||
             event.event.contains("红牌", ignoreCase = true) -> R.drawable.ic_card
@@ -360,7 +340,7 @@ fun EventDetailItem(event: MatchEvent) {
             event.event.contains("红牌", ignoreCase = true) -> RedCardColor
             event.event.contains("Injury", ignoreCase = true) ||
             event.event.contains("受伤", ignoreCase = true) -> InjuryBlueColor
-            else -> AccentGreenColor
+            else -> MaterialTheme.colorScheme.primary
         }
 
         Icon(
@@ -376,7 +356,7 @@ fun EventDetailItem(event: MatchEvent) {
         val contentText = if (event.detail.isNotEmpty()) event.detail else event.event
         Text(
             text = "[${event.timeStr}] $contentText",
-            color = TextSecondaryColor,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp
         )
     }
@@ -384,7 +364,6 @@ fun EventDetailItem(event: MatchEvent) {
 
 /**
  * 预览 - 有事件
- * Preview - With Events
  */
 @Preview(showBackground = true)
 @Composable
@@ -429,7 +408,6 @@ fun MatchSummaryDialogPreviewWithEvents() {
 
 /**
  * 预览 - 无事件
- * Preview - No Events
  */
 @Preview(showBackground = true)
 @Composable
@@ -450,7 +428,6 @@ fun MatchSummaryDialogPreviewEmpty() {
 
 /**
  * 预览 - 历史记录详情
- * Preview - History Details
  */
 @Preview(showBackground = true)
 @Composable
@@ -478,4 +455,3 @@ fun MatchSummaryDialogPreviewHistory() {
         onCloseClick = {}
     )
 }
-

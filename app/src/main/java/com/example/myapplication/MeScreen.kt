@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -24,20 +23,14 @@ import androidx.compose.ui.window.DialogProperties
  * Me Screen Dialog
  *
  * 包含：
+ * - 主题样式入口（ThemeSelectionDialog）
  * - 设置入口（设定主客队颜色）
  * - 关于入口（AboutScreen）
  */
-private val DialogBackgroundColor = Color(0xFF424242)
-private val ItemBackgroundColor = Color(0xFF333333)
-private val IconTintColor = Color.White
-private val TextPrimaryColor = Color.White
-private val TextSecondaryColor = Color(0xFFAAAAAA)
-private val ChevronColor = Color(0xFF888888)
-private val CancelButtonColor = Color(0xFF616161)
-
 @Composable
 fun MeScreenDialog(
     onDismiss: () -> Unit,
+    onThemeClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
 ) {
@@ -49,6 +42,7 @@ fun MeScreenDialog(
         )
     ) {
         MeScreenContent(
+            onThemeClick = onThemeClick,
             onSettingsClick = onSettingsClick,
             onAboutClick = onAboutClick,
             onDismiss = onDismiss
@@ -58,6 +52,7 @@ fun MeScreenDialog(
 
 @Composable
 fun MeScreenContent(
+    onThemeClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     onDismiss: () -> Unit
@@ -65,7 +60,7 @@ fun MeScreenContent(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -74,14 +69,14 @@ fun MeScreenContent(
             modifier = Modifier
                 .padding(bottom = 12.dp)
                 .size(72.dp)
-                .background(Color(0xFF333333), shape = CircleShape),
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_profile),
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = Color(0xFF888888)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -89,10 +84,20 @@ fun MeScreenContent(
             text = stringResource(R.string.app_name),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = TextPrimaryColor
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(20.dp))
+
+        // 主题样式按钮
+        MeMenuItem(
+            iconRes = R.drawable.ic_palette,
+            title = stringResource(R.string.title_theme),
+            subtitle = stringResource(R.string.label_current_theme),
+            onClick = onThemeClick
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // 设置按钮
         MeMenuItem(
@@ -113,7 +118,6 @@ fun MeScreenContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-
     }
 }
 
@@ -134,7 +138,7 @@ fun MeMenuItem(
             .height(64.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = ItemBackgroundColor
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         ),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
@@ -146,7 +150,7 @@ fun MeMenuItem(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
-                tint = IconTintColor
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
@@ -156,18 +160,18 @@ fun MeMenuItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = TextPrimaryColor
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = TextSecondaryColor
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
                 text = ">",
                 fontSize = 18.sp,
-                color = ChevronColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Light
             )
         }
@@ -178,6 +182,7 @@ fun MeMenuItem(
 @Composable
 fun MeScreenDialogPreview() {
     MeScreenContent(
+        onThemeClick = {},
         onSettingsClick = {},
         onAboutClick = {},
         onDismiss = {},

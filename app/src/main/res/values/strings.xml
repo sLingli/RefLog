@@ -70,4 +70,13 @@
     <!-- Me Screen -->
     <string name="label_set_team_colors">Set Home/Away Team Colors</string>
     <string name="title_about">About</string>
+
+    <!-- Theme -->
+    <string name="title_theme">Theme</string>
+    <string name="theme_dark_green">Forest Green</string>
+    <string name="theme_ocean_blue">Ocean Blue</string>
+    <string name="theme_sunset_orange">Sunset Orange</string>
+    <string name="theme_purple_galaxy">Purple Galaxy</string>
+    <string name="theme_light_mode">Light Mode</string>
+    <string name="label_current_theme">Current Theme</string>
 </resources>

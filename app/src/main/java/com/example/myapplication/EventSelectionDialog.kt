@@ -3,10 +3,7 @@ package com.example.myapplication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,13 +31,12 @@ import androidx.compose.ui.window.DialogProperties
  * - 取消 (Cancel)
  */
 
-// 颜色定义
+// 语义颜色（不受主题影响）
 private val YellowCardColor = Color(0xFFFFEB3B)   // 黄牌
 private val RedCardColor = Color(0xFFF44336)      // 红牌
 private val InjuryColor = Color(0xFF2196F3)       // 伤停
 private val GoalColor = Color(0xFF2E7D32)         // 进球
 private val SubstitutionColor = Color(0xFF9C27B0) // 换人
-private val CancelColor = Color(0xFF616161)       // 取消
 
 /**
  * 事件类型枚举
@@ -94,16 +90,14 @@ fun EventSelectionContent(
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF424242))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(12.dp)
     ) {
         // 第一行：黄牌 + 红牌
-        // First Row: Yellow Card + Red Card
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 黄牌按钮 (Yellow Card Button)
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = YellowCardColor,
@@ -113,7 +107,6 @@ fun EventSelectionContent(
                 onClick = { onEventSelected(EventType.YELLOW_CARD) }
             )
 
-            // 红牌按钮 (Red Card Button)
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = RedCardColor,
@@ -127,12 +120,10 @@ fun EventSelectionContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         // 第二行：伤停 + 进球
-        // Second Row: Injury + Goal
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 伤停按钮 (Injury Button)
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = InjuryColor,
@@ -141,7 +132,6 @@ fun EventSelectionContent(
                 onClick = { onEventSelected(EventType.INJURY) }
             )
 
-            // 进球按钮 (Goal Button)
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = GoalColor,
@@ -154,12 +144,10 @@ fun EventSelectionContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         // 第三行：换人 + 取消
-        // Third Row: Substitution + Cancel
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 换人按钮 (Substitution Button)
             EventButton(
                 modifier = Modifier.weight(1f),
                 backgroundColor = SubstitutionColor,
@@ -168,12 +156,11 @@ fun EventSelectionContent(
                 onClick = { onEventSelected(EventType.SUBSTITUTION) }
             )
 
-            // 取消按钮 (Cancel Button)
             EventButton(
                 modifier = Modifier.weight(1f),
-                backgroundColor = CancelColor,
+                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                 iconResId = R.drawable.outline_close_24,
-                iconTint = Color(0xFFAAAAAA),
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                 onClick = { onEventSelected(EventType.CANCEL) }
             )
         }
@@ -183,13 +170,6 @@ fun EventSelectionContent(
 /**
  * 事件按钮组件
  * Event Button Component
- *
- * @param modifier Modifier
- * @param backgroundColor 背景颜色
- * @param iconResId 图标资源ID（可选）
- * @param label 文字标签（可选）
- * @param iconTint 图标颜色（默认白色）
- * @param onClick 点击回调
  */
 @Composable
 fun EventButton(
