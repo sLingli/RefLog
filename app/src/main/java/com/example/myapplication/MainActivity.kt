@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
     private var showThemeSelectionDialogState by mutableStateOf(false)
     private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
+    private var showColorSelectionDialogState by mutableStateOf(false)
 
     // MatchSummary 数据状态
     private var matchSummaryIsHistory by mutableStateOf(false)
@@ -223,6 +224,21 @@ class MainActivity : AppCompatActivity() {
                             }
                             TeamSelection.CANCEL -> { }
                         }
+                    }
+                )
+            }
+
+            // 颜色选择弹窗
+            if (showColorSelectionDialogState) {
+                ColorSelectionDialog(
+                    homeTeamColor = homeTeamColor,
+                    awayTeamColor = awayTeamColor,
+                    onDismiss = { showColorSelectionDialogState = false },
+                    onConfirm = { home, away ->
+                        homeTeamColor = home
+                        awayTeamColor = away
+                        showColorSelectionDialogState = false
+                        showTimeSettingDialog()
                     }
                 )
             }
@@ -979,250 +995,8 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "📁 比赛记录已保存: 主队 $homeGoals - $awayGoals 客队")
     }
 
-    private fun showHistoryDialog() {
-        val dialogView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_history, null)
+    // showHistoryDialog() 已移除 - 被 Compose HistoryPageContent 替代
 
-        val recordsContainer = dialogView.findViewById<android.widget.LinearLayout>(R.id.recordsContainer)
-        val tvNoRecords = dialogView.findViewById<android.widget.TextView>(R.id.tvNoRecords)
-        val btnClearHistory = dialogView.findViewById<android.widget.Button>(R.id.btnClearHistory)
-        val btnCloseHistory = dialogView.findViewById<android.widget.Button>(R.id.btnCloseHistory)
-
-        val records = recordManager.getAllRecords()
-
-        if (records.isEmpty()) {
-            tvNoRecords.visibility = android.view.View.VISIBLE
-            recordsContainer.visibility = android.view.View.GONE
-        } else {
-            tvNoRecords.visibility = android.view.View.GONE
-            recordsContainer.visibility = android.view.View.VISIBLE
-
-            @SuppressLint("ClickableViewAccessibility")
-            records.forEach { record ->
-                val itemWrapper = android.widget.FrameLayout(this)
-                val wrapperParams = android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                wrapperParams.setMargins(0, 0, 0, (8 * resources.displayMetrics.density).toInt())
-                itemWrapper.layoutParams = wrapperParams
-
-
-                val btnDelete = android.widget.ImageView(this).apply {
-                    setImageResource(R.drawable.outline_delete_24)
-                    setColorFilter(android.graphics.Color.WHITE)
-                    background = android.graphics.drawable.GradientDrawable().apply {
-                        shape = android.graphics.drawable.GradientDrawable.OVAL
-                        setColor(android.graphics.Color.parseColor("#D32F2F"))
-                    }
-                    val btnSize = (42 * resources.displayMetrics.density).toInt()
-                    layoutParams = android.widget.FrameLayout.LayoutParams(btnSize, btnSize).apply {
-                        gravity = android.view.Gravity.CENTER_VERTICAL or android.view.Gravity.END
-                        marginEnd = (16 * resources.displayMetrics.density).toInt()
-                    }
-                    setPadding(24, 24, 24, 24)
-                    elevation = 2f
-                    alpha = 0f
-                    isEnabled = false
-                }
-
-                // 2. 顶层内容布局
-                val itemView = android.view.LayoutInflater.from(this).inflate(R.layout.item_match_record, itemWrapper, false) as android.view.ViewGroup
-
-                itemView.setBackgroundResource(R.drawable.bg_dialog_rounded)
-
-                // Resolve theme-aware background color for the record item
-                val surfaceTypedValue = android.util.TypedValue()
-                theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHighest, surfaceTypedValue, true)
-                itemView.setBackgroundColor(surfaceTypedValue.data)
-
-
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple)
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text = getString(R.string.summary_stoppage)
-                itemView.findViewById<android.view.View>(R.id.tvRecordEvents).visibility = android.view.View.GONE
-
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDate).text = record.date
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordDuration).text = getString(R.string.fmt_duration_simple,record.halfTimeMinutes)
-                itemView.findViewById<android.widget.TextView>(R.id.tvRecordStoppage).text =
-                    getString(R.string.summary_stoppage,record.firstHalfStoppage, record.secondHalfStoppage)
-
-                val oldTv = itemView.findViewById<android.widget.TextView>(R.id.tvRecordEvents)
-                oldTv.visibility = android.view.View.GONE
-
-                val statsLayout = android.widget.LinearLayout(this)
-                statsLayout.orientation = android.widget.LinearLayout.HORIZONTAL
-                statsLayout.gravity = android.view.Gravity.CENTER_VERTICAL
-                statsLayout.setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
-
-                fun addStat(iconRes: Int, count: Int, color: Int) {
-                    val itemContainer = android.widget.LinearLayout(this)
-                    itemContainer.orientation = android.widget.LinearLayout.HORIZONTAL
-                    itemContainer.gravity = android.view.Gravity.CENTER_VERTICAL
-                    val lp = android.widget.LinearLayout.LayoutParams(
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
-                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    lp.setMargins(0, 0, (12 * resources.displayMetrics.density).toInt(), 0)
-                    itemContainer.layoutParams = lp
-                    val iv = android.widget.ImageView(this)
-                    iv.setImageResource(iconRes)
-                    iv.setColorFilter(color)
-                    val size = (16 * resources.displayMetrics.density).toInt()
-                    iv.layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
-                    val tv = android.widget.TextView(this)
-                    tv.text = count.toString()
-                    val countTypedValue = android.util.TypedValue()
-                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, countTypedValue, true)
-                    tv.setTextColor(countTypedValue.data)
-                    tv.textSize = 13f
-                    tv.setPadding((4 * resources.displayMetrics.density).toInt(), 0, 0, 0)
-                    itemContainer.addView(iv)
-                    itemContainer.addView(tv)
-                    statsLayout.addView(itemContainer)
-                }
-
-                addStat(R.drawable.sports_soccer, record.goalCount, android.graphics.Color.WHITE)
-                addStat(R.drawable.ic_card, record.yellowCount, android.graphics.Color.YELLOW)
-                addStat(R.drawable.ic_card, record.redCount, android.graphics.Color.RED)
-                addStat(R.drawable.ic_substitute, record.substitutionCount, android.graphics.Color.GREEN)
-                addStat(R.drawable.ic_medical, record.injuryCount, android.graphics.Color.parseColor("#2196F3"))
-
-                itemView.addView(statsLayout)
-
-
-                var startX = 0f
-                var isSwiped = false
-
-
-                var startRawX = 0f
-                var startTranslationX = 0f
-                val maxSwipeDistance = -200f
-
-                itemView.setOnTouchListener { v, event ->
-                    when (event.action) {
-                        android.view.MotionEvent.ACTION_DOWN -> {
-                            startRawX = event.rawX
-                            startTranslationX = v.translationX
-
-                            v.parent.requestDisallowInterceptTouchEvent(true)
-                            true
-                        }
-
-                        android.view.MotionEvent.ACTION_MOVE -> {
-                            val deltaX = event.rawX - startRawX
-
-                            val targetX = (startTranslationX + deltaX).coerceIn(maxSwipeDistance, 0f)
-
-                            v.translationX = targetX
-
-
-                            val progress = Math.abs(targetX / maxSwipeDistance)
-                            btnDelete.alpha = progress
-
-                            true
-                        }
-
-                        android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
-                            val currentX = v.translationX
-                            val totalDelta = Math.abs(event.rawX - startRawX)
-
-
-                            if (totalDelta < 10) {
-                                if (currentX == 0f) {
-
-                                    showMatchSummary(isHistory = true, historyRecord = record)
-                                } else {
-
-                                    v.animate().translationX(0f).setDuration(200).start()
-                                    btnDelete.animate().alpha(0f).setDuration(200).start()
-                                    btnDelete.isEnabled = false
-                                }
-                            }
-                            // 2. 判断滑动意图
-                            else {
-
-                                if (currentX < maxSwipeDistance / 2) {
-                                    v.animate().translationX(maxSwipeDistance).setDuration(200).start()
-                                    btnDelete.animate().alpha(1f).setDuration(200).start()
-                                    btnDelete.isEnabled = true
-                                } else {
-                                    v.animate().translationX(0f).setDuration(200).start()
-                                    btnDelete.animate().alpha(0f).setDuration(200).start()
-                                    btnDelete.isEnabled = false
-                                }
-                            }
-
-                            // 恢复父容器滑动
-                            v.parent.requestDisallowInterceptTouchEvent(false)
-                            true
-                        }
-                        else -> false
-                    }
-                }
-
-                // 4. 删除按钮点击
-                btnDelete.setOnClickListener {
-
-                    recordManager.deleteRecord(record.id)
-                    itemWrapper.animate().alpha(0f).translationX(-500f).setDuration(300).withEndAction {
-                        recordsContainer.removeView(itemWrapper)
-                        if (recordsContainer.childCount == 0) {
-                            tvNoRecords.visibility = android.view.View.VISIBLE
-                        }
-                    }.start()
-                }
-
-                itemWrapper.addView(btnDelete)
-                itemWrapper.addView(itemView)
-                recordsContainer.addView(itemWrapper)
-            }
-        }
-
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-
-        // 清空按钮点击事件
-        btnClearHistory.setOnClickListener {
-            // 1. 如果没记录，直接提示并返回
-            if (records.isEmpty()) {
-                android.widget.Toast.makeText(this, getString(R.string.msg_no_history_to_clear), android.widget.Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 2. 加载确认弹窗布局
-            val confirmView = android.view.LayoutInflater.from(this).inflate(R.layout.dialog_confirm, null)
-
-            val tvMessage = confirmView.findViewById<android.widget.TextView>(R.id.tvConfirmMessage)
-            tvMessage.text = getString(R.string.msg_confirm_clear_all)
-            tvMessage.visibility = android.view.View.VISIBLE
-
-            val confirmDialog = androidx.appcompat.app.AlertDialog.Builder(this)
-                .setView(confirmView)
-                .create()
-
-            // 3. 绑定按钮事件
-            confirmView.findViewById<android.view.View>(R.id.btnNo).setOnClickListener {
-                confirmDialog.dismiss()
-            }
-
-            confirmView.findViewById<android.view.View>(R.id.btnYes).setOnClickListener {
-                recordManager.clearAllRecords()
-                confirmDialog.dismiss()
-                dialog.dismiss()
-                android.widget.Toast.makeText(this, getString(R.string.msg_history_cleared), android.widget.Toast.LENGTH_SHORT).show()
-            }
-
-            // 4. 显示弹窗并去白角
-            confirmDialog.show()
-            confirmDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-        }
-
-        btnCloseHistory.setOnClickListener { dialog.dismiss() }
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-    }
     // 显示队伍选择弹窗
     private fun showTeamSelectionDialog(eventType: String) {
         pendingEventType = eventType
@@ -1361,118 +1135,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showColorSelectionDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_color_selection, null)
-
-        val rvHome = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvHomeColors)
-        val rvAway = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvAwayColors)
-        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirmColor)
-
-        val colors = listOf(
-            0xFFF44336.toInt(), // 红 (Index 0)
-            0xFF2196F3.toInt(), // 蓝 (Index 1)
-            0xFF4CAF50.toInt(), // 绿
-            0xFFFFEB3B.toInt(), // 黄
-            0xFFFFFFFF.toInt(), // 白
-            0xFF000000.toInt(), // 黑
-            0xFF9C27B0.toInt(), // 紫
-            0xFFFF9800.toInt()  // 橙
-        )
-
-        var tempHomeColor = colors[1]
-        var tempAwayColor = colors[0]
-
-        fun setupWheel(rv: androidx.recyclerview.widget.RecyclerView, initialIndex: Int, onSelect: (Int) -> Unit) {
-            rv.layoutManager = CenterScaleLayoutManager(this)
-            val adapter = ColorWheelAdapter(colors) { }
-            rv.adapter = adapter
-
-
-            val density = resources.displayMetrics.density
-            val padding = (45 * density).toInt()
-            rv.setPadding(0, padding, 0, padding)
-            rv.clipToPadding = false
-
-
-            val snapHelper = object : androidx.recyclerview.widget.LinearSnapHelper() {
-
-
-                override fun calculateScrollDistance(velocityX: Int, velocityY: Int): IntArray {
-                    return super.calculateScrollDistance(velocityX, (velocityY * 0.5).toInt())
-                }
-
-
-                override fun createScroller(layoutManager: androidx.recyclerview.widget.RecyclerView.LayoutManager): androidx.recyclerview.widget.RecyclerView.SmoothScroller? {
-                    if (layoutManager !is androidx.recyclerview.widget.RecyclerView.SmoothScroller.ScrollVectorProvider) return null
-
-                    return object : androidx.recyclerview.widget.LinearSmoothScroller(rv.context) {
-
-
-                        override fun calculateTimeForDeceleration(dx: Int): Int {
-
-                            return super.calculateTimeForDeceleration(dx) * 5
-                        }
-
-
-                        override fun onTargetFound(targetView: android.view.View, state: androidx.recyclerview.widget.RecyclerView.State, action: Action) {
-                            val snapDistances = calculateDistanceToFinalSnap(layoutManager, targetView)
-                            val dx = snapDistances!![0]
-                            val dy = snapDistances[1]
-
-                            // 计算需要的时间
-                            val time = calculateTimeForDeceleration(Math.max(Math.abs(dx), Math.abs(dy)))
-
-                            if (time > 0) {
-
-                                action.update(dx, dy, time, android.view.animation.OvershootInterpolator(2.0f))
-                            }
-                        }
-                    }
-                }
-            }
-            snapHelper.attachToRecyclerView(rv)
-
-            rv.addOnScrollListener(object : androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: androidx.recyclerview.widget.RecyclerView, newState: Int) {
-                    if (newState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE) {
-                        val centerView = snapHelper.findSnapView(rv.layoutManager)
-                        centerView?.let {
-                            val pos = rv.layoutManager?.getPosition(it) ?: 0
-                            val color = colors[pos % colors.size]
-                            onSelect(color)
-                        }
-                    }
-                }
-            })
-
-
-            val centerStart = Int.MAX_VALUE / 2
-            val startPos = centerStart - (centerStart % colors.size) + initialIndex
-
-
-            (rv.layoutManager as androidx.recyclerview.widget.LinearLayoutManager).scrollToPositionWithOffset(startPos, 0)
-
-            onSelect(colors[initialIndex])
-        }
-
-        // 主队：默认蓝 (Index 1)
-        setupWheel(rvHome, 1) { tempHomeColor = it }
-        // 客队：默认红 (Index 0)
-        setupWheel(rvAway, 0) { tempAwayColor = it }
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        btnConfirm.setOnClickListener {
-            homeTeamColor = tempHomeColor
-            awayTeamColor = tempAwayColor
-            dialog.dismiss()
-            showTimeSettingDialog()
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        showColorSelectionDialogState = true
     }
     private fun getHalfText(code: String): String {
         return when (code) {
