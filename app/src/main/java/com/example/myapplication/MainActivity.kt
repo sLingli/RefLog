@@ -215,6 +215,9 @@ class MainActivity : AppCompatActivity() {
                     2 -> R.id.nav_profile
                     else -> R.id.nav_timer
                 }
+                if (position == 1) {
+                    refreshHistoryPage?.invoke()
+                }
             }
         })
         bottomNav.setOnItemSelectedListener { item ->
@@ -502,6 +505,7 @@ class MainActivity : AppCompatActivity() {
         addLog("📊 总补时: $totalStr")
 
         saveMatchRecord()
+        refreshHistoryPage?.invoke()
 
         // 自动弹出总结页
         showMatchSummary()

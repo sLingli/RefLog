@@ -2,8 +2,9 @@ package com.example.myapplication
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,7 +17,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -217,6 +217,9 @@ fun HistoryDialogContent(
 /**
  * 可滑动删除的记录项
  * Swipeable Record Item
+ *
+ * 向左滑动露出红色删除按钮，点击按钮删除，
+ * 退出动画：水平收缩 + 淡出
  */
 @Composable
 fun SwipeableRecordItem(
@@ -226,17 +229,24 @@ fun SwipeableRecordItem(
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     val maxSwipeDistance = -200f
-    val animatedOffsetX by animateFloatAsState(targetValue = offsetX, label = "offsetX")
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = offsetX,
+        animationSpec = tween(durationMillis = 200),
+        label = "offsetX"
+    )
     var isDeleted by remember { mutableStateOf(false) }
 
     AnimatedVisibility(
         visible = !isDeleted,
-        exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+        exit = shrinkHorizontally(
+            animationSpec = tween(300),
+            shrinkTowards = Alignment.Start
+        ) + fadeOut(animationSpec = tween(300))
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 删除按钮（背景层） Delete Button (Background Layer)
+            // 删除按钮背景层 — 红色圆形 + 垃圾桶图标
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
@@ -248,21 +258,22 @@ fun SwipeableRecordItem(
                         onDelete()
                     },
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(46.dp)
                         .clip(CircleShape)
                         .background(DeleteButtonColor)
-                        .alpha((-animatedOffsetX / maxSwipeDistance).coerceIn(0f, 1f))
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.outline_delete_24),
                         contentDescription = "Delete",
                         tint = Color.White,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier
+                            .size(22.dp)
+                            .padding(2.dp)
                     )
                 }
             }
 
-            // 记录卡片（前景层） Record Card (Foreground Layer)
+            // 记录卡片前景层
             RecordCard(
                 record = record,
                 modifier = Modifier
@@ -270,6 +281,7 @@ fun SwipeableRecordItem(
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onDragEnd = {
+                                // 滑过一半则锁定展开，否则回弹
                                 offsetX = if (offsetX < maxSwipeDistance / 2) {
                                     maxSwipeDistance
                                 } else {
