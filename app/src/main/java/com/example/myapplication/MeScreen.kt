@@ -114,24 +114,6 @@ fun MeScreenContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 关闭按钮
-        Button(
-            onClick = onDismiss,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = CancelButtonColor
-            )
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.outline_close_24),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = Color.White
-            )
-        }
     }
 }
 
