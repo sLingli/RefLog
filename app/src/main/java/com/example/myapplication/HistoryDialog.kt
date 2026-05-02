@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -222,7 +223,12 @@ fun SwipeableRecordItem(
     onDelete: () -> Unit
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
-    val maxSwipeDistance = -200f
+    val density = LocalDensity.current
+    val horizontalPadding = 12.dp
+    val circleSize = 48.dp
+    val maxSwipeDistancePx = with(density) {
+        -(circleSize + horizontalPadding * 2).toPx()
+    }
     val animatedOffsetX by animateFloatAsState(
         targetValue = offsetX,
         animationSpec = tween(durationMillis = 200),
@@ -244,7 +250,7 @@ fun SwipeableRecordItem(
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp)
+                    .padding(end = horizontalPadding)
             ) {
                 IconButton(
                     onClick = {
@@ -252,7 +258,7 @@ fun SwipeableRecordItem(
                         onDelete()
                     },
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(circleSize)
                         .clip(CircleShape)
                         .background(DeleteButtonColor)
                 ) {
@@ -276,14 +282,14 @@ fun SwipeableRecordItem(
                         detectHorizontalDragGestures(
                             onDragEnd = {
                                 // 滑过一半则锁定展开，否则回弹
-                                offsetX = if (offsetX < maxSwipeDistance / 2) {
-                                    maxSwipeDistance
+                                offsetX = if (offsetX < maxSwipeDistancePx / 2) {
+                                    maxSwipeDistancePx
                                 } else {
                                     0f
                                 }
                             },
                             onHorizontalDrag = { _, dragAmount ->
-                                offsetX = (offsetX + dragAmount).coerceIn(maxSwipeDistance, 0f)
+                                offsetX = (offsetX + dragAmount).coerceIn(maxSwipeDistancePx, 0f)
                             }
                         )
                     }
