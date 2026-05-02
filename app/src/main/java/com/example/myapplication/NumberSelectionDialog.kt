@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -252,6 +253,27 @@ private fun NumberWheel(
     listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
+    // 磁吸吸附：滚动停止时自动对齐到最近的中心项
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (!isScrolling) {
+                    val layoutInfo = listState.layoutInfo
+                    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+                    val centerItem = layoutInfo.visibleItemsInfo.minByOrNull { item ->
+                        abs(item.offset + item.size / 2 - viewportCenter)
+                    }
+                    if (centerItem != null) {
+                        val itemCenter = centerItem.offset + centerItem.size / 2
+                        val scrollOffset = itemCenter - viewportCenter
+                        if (abs(scrollOffset) > 1) {
+                            listState.animateScrollBy(scrollOffset.toFloat())
+                        }
+                    }
+                }
+            }
+    }
+
     Box(modifier = modifier) {
         // 中心选中指示器
         Box(
