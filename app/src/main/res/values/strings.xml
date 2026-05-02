@@ -59,4 +59,5 @@
     <!-- Clear History Dialog -->
     <string name="msg_confirm_clear_all">Clear All History?</string>
     <string name="title_history_details">Match Details</string>
+    <string name="btn_close">Close</string>
 </resources>

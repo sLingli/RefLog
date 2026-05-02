@@ -148,7 +148,6 @@ fun HistoryDialogContent(
             // 记录列表 Records List
             Column(
                 modifier = Modifier
-                    .weight(1f, fill = false)
                     .heightIn(max = 300.dp)
                     .verticalScroll(rememberScrollState())
             ) {
@@ -502,7 +501,7 @@ fun ConfirmClearDialog(
 fun HistoryDialogPreviewWithRecords() {
     val sampleRecords = listOf(
         MatchRecord(
-            id = 1,
+            id = 1L,
             date = "2024-01-01",
             halfTimeMinutes = 45,
             firstHalfStoppage = "3:00",
@@ -516,7 +515,7 @@ fun HistoryDialogPreviewWithRecords() {
             events = emptyList()
         ),
         MatchRecord(
-            id = 2,
+            id = 2L,
             date = "2024-01-02",
             halfTimeMinutes = 45,
             firstHalfStoppage = "2:00",
@@ -563,63 +562,10 @@ fun HistoryDialogPreviewEmpty() {
 @Preview(showBackground = true)
 @Composable
 fun ConfirmClearDialogPreview() {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(DialogBackgroundColor)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Clear All History?",
-            color = Color.White,
-            fontSize = 16.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF616161)
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_close_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
-            }
-
-            Button(
-                onClick = {},
-                modifier = Modifier
-                    .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ClearButtonColor
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.outline_check_24),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
-                )
-            }
-        }
-    }
+    ConfirmClearDialog(
+        onConfirm = {},
+        onDismiss = {}
+    )
 }
 
 
