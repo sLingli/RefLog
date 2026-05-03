@@ -1,7 +1,14 @@
 package com.example.myapplication
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -16,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,8 +42,8 @@ import androidx.compose.ui.unit.sp
  *   STATE_READY    → "start"  模式：显示开始按钮
  *   STATE_RUNNING  → "pause"  模式：显示暂停 + 结束半场按钮
  *   STATE_PAUSED   → "resume" 模式：显示继续 + 结束半场按钮
- *   STATE_HALFTIME → "halftime" 模式：显示开始下半场按钮
- *   STATE_FINISHED → "finished" 模式：显示重置按钮
+ *   STATE_HALFTIME → "halftime" 模式：显示开始下半场按钮（合并按钮）
+ *   STATE_FINISHED → "finished" 模式：显示重置按钮（合并按钮）
  */
 
 // 状态常量（与 MainActivity 保持一致）
@@ -50,6 +56,13 @@ const val TIMER_STATE_FINISHED = "finished"
 const val HALF_FIRST_CODE = "code_first_half"
 const val HALF_BREAK_CODE = "code_halftime"
 const val HALF_SECOND_CODE = "code_second_half"
+
+/**
+ * 按钮布局模式
+ * - TWO_BUTTONS: 主按钮 + 结束半场按钮并排
+ * - SINGLE_MERGED: 仅主按钮，宽度填满（HALFTIME / FINISHED 状态）
+ */
+private enum class ButtonLayout { TWO_BUTTONS, SINGLE_MERGED }
 
 @Composable
 fun TimerPage(
@@ -106,6 +119,16 @@ fun TimerPage(
 
     // 补时颜色
     val stoppageColor = if (stoppageActive) Color(0xFFFF6600) else Color(0xFF666666)
+
+    // 按钮布局模式
+    val buttonLayout = when {
+        // HALFTIME 和 FINISHED 状态：合并为单个按钮
+        state == TIMER_STATE_HALFTIME || state == TIMER_STATE_FINISHED -> ButtonLayout.SINGLE_MERGED
+        // RUNNING 和 PAUSED 状态且显示结束按钮：两个按钮
+        showEndHalfButton -> ButtonLayout.TWO_BUTTONS
+        // READY 等其他状态：仅一个按钮，填满宽度
+        else -> ButtonLayout.SINGLE_MERGED
+    }
 
     Column(
         modifier = Modifier
@@ -206,56 +229,109 @@ fun TimerPage(
             // 原布局中此卡片为空
         }
 
-        // ========== 控制按钮区域 ==========
-        Row(
+        // ========== 控制按钮区域（带动画切换） ==========
+        AnimatedContent(
+            targetState = buttonLayout,
+            transitionSpec = {
+                // 合并：旧内容向左滑出淡出，新内容从右侧滑入淡入
+                // 拆分：旧内容向右滑出淡出，新内容从左侧滑入淡入
+                val direction = if (targetState == ButtonLayout.SINGLE_MERGED) {
+                    // TWO_BUTTONS → SINGLE_MERGED（合并）
+                    slideInHorizontally(tween(300)) { it / 2 } + fadeIn(tween(300)) togetherWith
+                        slideOutHorizontally(tween(300)) { -it / 2 } + fadeOut(tween(300))
+                } else {
+                    // SINGLE_MERGED → TWO_BUTTONS（拆分）
+                    slideInHorizontally(tween(300)) { -it / 2 } + fadeIn(tween(300)) togetherWith
+                        slideOutHorizontally(tween(300)) { it / 2 } + fadeOut(tween(300))
+                }
+                direction using SizeTransform(clip = false)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // 主控制按钮
-            Button(
-                onClick = onMainButtonClick,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(60.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = mainButtonColor,
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = mainButtonIconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = mainButtonText,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            contentKey = { it }
+        ) { layout ->
+            when (layout) {
+                ButtonLayout.TWO_BUTTONS -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // 主控制按钮
+                        MainControlButton(
+                            text = mainButtonText,
+                            iconRes = mainButtonIconRes,
+                            color = mainButtonColor,
+                            onClick = onMainButtonClick,
+                            modifier = Modifier.weight(1f)
+                        )
 
-            // 结束半场按钮（带长按进度动画）
-            if (showEndHalfButton) {
-                EndHalfButton(
-                    onLongPress = onEndHalfButtonLongPress,
-                    modifier = Modifier.weight(1f)
-                )
+                        // 结束半场按钮（带长按进度动画）
+                        if (showEndHalfButton) {
+                            EndHalfButton(
+                                onLongPress = onEndHalfButtonLongPress,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+                ButtonLayout.SINGLE_MERGED -> {
+                    MainControlButton(
+                        text = mainButtonText,
+                        iconRes = mainButtonIconRes,
+                        color = mainButtonColor,
+                        onClick = onMainButtonClick,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
 }
 
 /**
+ * 主控制按钮 - 提取为独立组件以便复用
+ */
+@Composable
+private fun MainControlButton(
+    text: String,
+    iconRes: Int,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(60.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            contentColor = Color.White
+        )
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+/**
  * 结束半场按钮 - 带长按进度动画
  *
- * 对齐原 XML 中 endHalfButton 的长按交互：
- * - 长按 1500ms 触发
- * - 按住时有进度动画（background.level 从 0 到 10000）
- * - 触觉反馈
+ * 交互说明：
+ * - 长按 1500ms 触发结束
+ * - 按住时红色进度条从左向右逐渐填满
+ * - 松手时进度条向左消失（回退动画）
+ * - 进度条颜色从浅红渐变到深红
+ * - 触发成功时有触觉反馈
  */
 @Composable
 private fun EndHalfButton(
@@ -265,6 +341,9 @@ private fun EndHalfButton(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
+    // 触发成功闪烁效果
+    var flashTrigger by remember { mutableStateOf(false) }
+    val flashAlpha = remember { Animatable(0f) }
 
     // 按住时播放进度动画
     LaunchedEffect(isPressed) {
@@ -277,18 +356,35 @@ private fun EndHalfButton(
             // 动画完成 = 长按成功
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onLongPress()
+            // 触发闪烁
+            flashTrigger = true
             isPressed = false
         } else {
             if (progress.isRunning) progress.stop()
             progress.animateTo(
                 targetValue = 0f,
-                animationSpec = tween(durationMillis = 200)
+                animationSpec = tween(durationMillis = 300)
             )
+        }
+    }
+
+    // 闪烁动画
+    LaunchedEffect(flashTrigger) {
+        if (flashTrigger) {
+            flashAlpha.snapTo(0.4f)
+            flashAlpha.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(durationMillis = 400)
+            )
+            flashTrigger = false
         }
     }
 
     val containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // 进度条颜色：纯红
+    val progressColor = Color(0xFFC62828)
 
     Box(
         modifier = modifier
@@ -305,20 +401,29 @@ private fun EndHalfButton(
                     }
                 )
             },
-        contentAlignment = Alignment.Center
     ) {
-        // 进度背景
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction = progress.value)
-                .background(
-                    Color(0xFFC62828).copy(alpha = 0.15f)
-                )
-        )
+        // 进度背景 - 纯红色从左向右填满（底层）
+        if (progress.value > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction = progress.value)
+                    .background(progressColor)
+            )
+        }
 
-        // 按钮内容
+        // 触发成功闪烁叠加层
+        if (flashAlpha.value > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFC62828).copy(alpha = flashAlpha.value))
+            )
+        }
+
+        // 按钮内容（始终居中，浮在进度条之上）
         Row(
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
