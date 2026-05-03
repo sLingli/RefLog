@@ -68,4 +68,13 @@
     <!-- 我的页面 -->
     <string name="label_set_team_colors">设置主客队颜色</string>
     <string name="title_about">关于</string>
+
+    <!-- 主题 -->
+    <string name="title_theme">主题样式</string>
+    <string name="theme_dark_green">森林绿</string>
+    <string name="theme_ocean_blue">海洋蓝</string>
+    <string name="theme_sunset_orange">日落橙</string>
+    <string name="theme_purple_galaxy">星空紫</string>
+    <string name="theme_light_mode">浅色模式</string>
+    <string name="label_current_theme">当前主题</string>
 </resources>

@@ -1,7 +1,11 @@
 package com.example.myapplication
 
 import android.app.Activity
+import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -9,6 +13,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -48,19 +53,54 @@ val LocalAppColors = staticCompositionLocalOf { AppColors() }
  * RefLog 主题包装
  * RefLog Theme Wrapper
  *
- * 所有 Compose UI 应使用此主题。
- * 状态栏/导航栏颜色由 SideEffect 自动同步，无需手动调用 applyThemeColors()。
+ * 支持三种模式：
+ * 1. 跟随系统 (FOLLOW_SYSTEM) — 根据系统深浅色自动切换
+ * 2. 自定义固定主题 — 始终使用对应的 scheme
+ *
+ * 动态取色已集成到 FOLLOW_SYSTEM 中：Android 12+ 自动使用壁纸颜色。
+ * 状态栏/导航栏颜色由 SideEffect 自动同步。
  */
 @Composable
 fun RefLogTheme(
     theme: AppTheme = ThemeManager.currentTheme,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = ThemeManager.getColorScheme(theme)
+    val context = LocalContext.current
+
+    // 确定 colorScheme
+    val colorScheme = when {
+        // 跟随系统 + Android 12+ → 动态取色
+        theme == AppTheme.FOLLOW_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme ->
+            dynamicDarkColorScheme(context)
+        theme == AppTheme.FOLLOW_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !darkTheme ->
+            dynamicLightColorScheme(context)
+        // 跟随系统 + 旧设备 → 使用默认深浅色方案
+        theme == AppTheme.FOLLOW_SYSTEM ->
+            ThemeManager.getColorScheme(AppTheme.FOLLOW_SYSTEM, isDark = darkTheme)
+        // 其他固定主题 → 使用对应 scheme
+        else -> ThemeManager.getColorScheme(theme)
+    }
+
+    // 判断实际是否深色模式（用于语义颜色和状态栏）
+    val isDarkMode = when (theme) {
+        AppTheme.FOLLOW_SYSTEM -> darkTheme
+        AppTheme.LIGHT_GREEN -> false
+        else -> true // DARK_GREEN, OCEAN_BLUE, SUNSET_ORANGE, PURPLE_GALAXY 都是暗色主题
+    }
 
     // 根据主题微调语义颜色
     val appColors = when (theme) {
-        AppTheme.LIGHT_MODE -> AppColors(
+        AppTheme.FOLLOW_SYSTEM -> if (isDarkMode) {
+            AppColors() // 深色默认
+        } else {
+            AppColors(
+                dateText = Color(0xFF2E7D32),
+                stoppageText = Color(0xFFE65100),
+                timerNormal = Color(0xFF2E7D32),
+            )
+        }
+        AppTheme.LIGHT_GREEN -> AppColors(
             dateText = Color(0xFF2E7D32),
             stoppageText = Color(0xFFE65100),
             timerNormal = Color(0xFF2E7D32),
@@ -80,7 +120,7 @@ fun RefLogTheme(
             stoppageText = Color(0xFFFF9800),
             timerNormal = Color(0xFF9C27B0),
         )
-        else -> AppColors() // 默认值
+        else -> AppColors()
     }
 
     // 同步状态栏/导航栏颜色
@@ -90,8 +130,7 @@ fun RefLogTheme(
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
             window.navigationBarColor = colorScheme.surface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
-                theme == AppTheme.LIGHT_MODE
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
         }
     }
 
