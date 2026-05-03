@@ -1,11 +1,16 @@
 package com.example.myapplication
 
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 /**
  * 自定义应用颜色（语义色彩，不受主题影响但可根据主题微调）
@@ -43,7 +48,8 @@ val LocalAppColors = staticCompositionLocalOf { AppColors() }
  * RefLog 主题包装
  * RefLog Theme Wrapper
  *
- * 所有 Compose UI 应使用此主题
+ * 所有 Compose UI 应使用此主题。
+ * 状态栏/导航栏颜色由 SideEffect 自动同步，无需手动调用 applyThemeColors()。
  */
 @Composable
 fun RefLogTheme(
@@ -75,6 +81,18 @@ fun RefLogTheme(
             timerNormal = Color(0xFF9C27B0),
         )
         else -> AppColors() // 默认值
+    }
+
+    // 同步状态栏/导航栏颜色
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.surface.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                theme == AppTheme.LIGHT_MODE
+        }
     }
 
     CompositionLocalProvider(LocalAppColors provides appColors) {

@@ -111,7 +111,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
-        setTheme(ThemeManager.getThemeStyleResId(ThemeManager.currentTheme))
         recordManager = MatchRecordManager(this)
         initializeTimer()
         updateAllComposeState()
@@ -162,7 +161,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        applyThemeColors()
     }
 
     override fun onDestroy() {
@@ -183,18 +181,7 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
 
-    @Suppress("DEPRECATION")
-    private fun applyThemeColors() {
-        val theme = ThemeManager.currentTheme
-        val bgInt = android.graphics.Color.valueOf(
-            ThemeManager.getThemeBackgroundColor(theme).red,
-            ThemeManager.getThemeBackgroundColor(theme).green,
-            ThemeManager.getThemeBackgroundColor(theme).blue
-        ).toArgb()
-        window.statusBarColor = bgInt
-        window.navigationBarColor = bgInt
-        window.decorView.setBackgroundColor(bgInt)
-    }
+
 
     // region 弹窗覆盖层
 
@@ -211,7 +198,6 @@ class MainActivity : AppCompatActivity() {
                 onThemeSelected = { theme ->
                     ThemeManager.currentTheme = theme
                     showThemeSelectionDialogState = false
-                    applyThemeColors()
                     recreate()
                 }
             )
@@ -499,7 +485,7 @@ class MainActivity : AppCompatActivity() {
 
         syncComposeState()
         mainTimeTextCompose = "00:00"
-        mainTimeColorCompose = Color(getColor(R.color.timer_normal))
+        mainTimeColorCompose = Color(0xFF4CAF50)
         stoppageTimeTextCompose = "00:00"
         stoppageActiveCompose = false
 
@@ -556,7 +542,7 @@ class MainActivity : AppCompatActivity() {
                 if (mainTime >= halfTimeSeconds && !halfTimeAlertShown) {
                     halfTimeAlertShown = true
                     triggerAlert("${halfTimeMin}分钟", "准备中场休息")
-                    mainTimeColorCompose = Color(getColor(R.color.timer_warning))
+                    mainTimeColorCompose = Color(0xFFFF9800)
                     statusTextCompose = getString(R.string.status_first_half_stoppage)
                 }
             }
@@ -565,7 +551,7 @@ class MainActivity : AppCompatActivity() {
                 if (mainTime >= targetTime && !fullTimeAlertShown) {
                     fullTimeAlertShown = true
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
-                    mainTimeColorCompose = Color(getColor(R.color.timer_danger))
+                    mainTimeColorCompose = Color(0xFFF44336)
                     statusTextCompose = getString(R.string.status_second_half_stoppage)
 
                     Log.d("时间提醒", "下半场提醒触发：当前mainTime: ${formatTime(mainTime)}, 目标: ${formatTime(targetTime)}")
