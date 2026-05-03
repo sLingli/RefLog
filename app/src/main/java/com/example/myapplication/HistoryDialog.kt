@@ -4,15 +4,16 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 /**
@@ -102,6 +104,7 @@ fun HistoryDialog(
  * Dialog Content
  */
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun HistoryDialogContent(
     records: List<MatchRecord>,
     onRecordClick: (MatchRecord) -> Unit,
@@ -141,20 +144,20 @@ fun HistoryDialogContent(
             )
         } else {
             // 记录列表 Records List
-            Column(
-                modifier = Modifier
-                    .heightIn(max = 300.dp)
-                    .verticalScroll(rememberScrollState())
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 300.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                records.forEach { record ->
-                    key(record.id) {
-                        SwipeableRecordItem(
-                            record = record,
-                            onClick = { onRecordClick(record) },
-                            onDelete = { onDeleteRecord(record) }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                items(
+                    items = records,
+                    key = { it.id }
+                ) { record ->
+                    SwipeableRecordItem(
+                        record = record,
+                        onClick = { onRecordClick(record) },
+                        onDelete = { onDeleteRecord(record) },
+                        modifier = Modifier.animateItemPlacement()
+                    )
                 }
             }
         }
@@ -220,7 +223,8 @@ fun HistoryDialogContent(
 fun SwipeableRecordItem(
     record: MatchRecord,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -236,12 +240,21 @@ fun SwipeableRecordItem(
     )
     var isDeleted by remember { mutableStateOf(false) }
 
+    // 等动画播放完毕再真正从列表移除数据
+    LaunchedEffect(isDeleted) {
+        if (isDeleted) {
+            delay(300)
+            onDelete()
+        }
+    }
+
     AnimatedVisibility(
         visible = !isDeleted,
-        exit = shrinkHorizontally(
+        modifier = modifier,
+        exit = fadeOut(animationSpec = tween(300)) + shrinkVertically(
             animationSpec = tween(300),
-            shrinkTowards = Alignment.Start
-        ) + fadeOut(animationSpec = tween(300))
+            shrinkTowards = Alignment.Top
+        )
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
@@ -255,7 +268,7 @@ fun SwipeableRecordItem(
                 IconButton(
                     onClick = {
                         isDeleted = true
-                        onDelete()
+                        // onDelete() 由 LaunchedEffect 延迟调用
                     },
                     modifier = Modifier
                         .size(circleSize)
@@ -509,6 +522,7 @@ fun ConfirmClearDialog(
  * Full-screen history page content for ViewPager2
  */
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun HistoryPageContent(
     records: List<MatchRecord>,
     onRecordClick: (MatchRecord) -> Unit,
@@ -546,20 +560,20 @@ fun HistoryPageContent(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         } else {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                records.forEach { record ->
-                    key(record.id) {
-                        SwipeableRecordItem(
-                            record = record,
-                            onClick = { onRecordClick(record) },
-                            onDelete = { onDeleteRecord(record) }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                items(
+                    items = records,
+                    key = { it.id }
+                ) { record ->
+                    SwipeableRecordItem(
+                        record = record,
+                        onClick = { onRecordClick(record) },
+                        onDelete = { onDeleteRecord(record) },
+                        modifier = Modifier.animateItemPlacement()
+                    )
                 }
             }
         }

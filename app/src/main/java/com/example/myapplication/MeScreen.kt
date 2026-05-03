@@ -98,15 +98,6 @@ fun MeScreenContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 设置按钮
-        MeMenuItem(
-            iconRes = R.drawable.ic_settings,
-            title = stringResource(R.string.title_set_color),
-            subtitle = stringResource(R.string.label_set_team_colors),
-            onClick = onSettingsClick
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         // 关于按钮
         MeMenuItem(
