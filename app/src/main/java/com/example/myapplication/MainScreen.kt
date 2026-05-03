@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -79,7 +80,7 @@ fun MainScreen(
     }
 
     Scaffold(
-        containerColor = Color.Unspecified, // 由主题 attr/colorSurface 控制
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             BottomNavBar(
                 selectedTab = selectedTab,

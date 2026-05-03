@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -36,11 +37,11 @@ fun BottomNavBar(
     selectedTab: BottomNavTab,
     onTabSelected: (BottomNavTab) -> Unit
 ) {
-    val selectedColor = Color(0xFF4CAF50)
-    val unselectedColor = Color(0xFF888888)
+    val selectedColor = MaterialTheme.colorScheme.primary
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     NavigationBar(
-        containerColor = Color.Unspecified, // 由主题 attr/colorSurfaceContainer 控制
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 0.dp
     ) {
         // 计时器
