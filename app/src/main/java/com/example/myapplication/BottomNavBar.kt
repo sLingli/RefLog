@@ -5,10 +5,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 /**
@@ -51,13 +54,22 @@ fun BottomNavBar(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_play_arrow_24),
-                    contentDescription = stringResource(R.string.nav_timer)
+                    contentDescription = stringResource(R.string.nav_timer),
+                    modifier = Modifier.size(28.dp)
                 )
             },
-            label = null, // 只显示图标
+            label = {
+                Text(
+                    text = stringResource(R.string.nav_timer),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            },
+            alwaysShowLabel = false,
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = selectedColor,
                 unselectedIconColor = unselectedColor,
+                selectedTextColor = selectedColor,
+                unselectedTextColor = unselectedColor,
                 indicatorColor = Color.Transparent
             )
         )
@@ -69,13 +81,22 @@ fun BottomNavBar(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_history),
-                    contentDescription = stringResource(R.string.nav_history)
+                    contentDescription = stringResource(R.string.nav_history),
+                    modifier = Modifier.size(28.dp)
                 )
             },
-            label = null,
+            label = {
+                Text(
+                    text = stringResource(R.string.nav_history),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            },
+            alwaysShowLabel = false,
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = selectedColor,
                 unselectedIconColor = unselectedColor,
+                selectedTextColor = selectedColor,
+                unselectedTextColor = unselectedColor,
                 indicatorColor = Color.Transparent
             )
         )
@@ -87,13 +108,22 @@ fun BottomNavBar(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_profile),
-                    contentDescription = stringResource(R.string.nav_me)
+                    contentDescription = stringResource(R.string.nav_me),
+                    modifier = Modifier.size(28.dp)
                 )
             },
-            label = null,
+            label = {
+                Text(
+                    text = stringResource(R.string.nav_me),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            },
+            alwaysShowLabel = false,
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = selectedColor,
                 unselectedIconColor = unselectedColor,
+                selectedTextColor = selectedColor,
+                unselectedTextColor = unselectedColor,
                 indicatorColor = Color.Transparent
             )
         )
