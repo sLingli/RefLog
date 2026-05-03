@@ -102,6 +102,11 @@ class MainActivity : AppCompatActivity() {
     private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
     private var showColorSelectionDialogState by mutableStateOf(false)
+    private var showNumberSelectionDialogState by mutableStateOf(false)
+    private var numberSelectionEventType by mutableStateOf("")
+    private var numberSelectionTeam by mutableStateOf("")
+    private var numberSelectionTeamColor by mutableStateOf(0)
+    private var numberSelectionEventIconInfo by mutableStateOf(EventIconInfo(R.drawable.ic_card, androidx.compose.ui.graphics.Color.White))
 
     // MatchSummary 数据状态
     private var matchSummaryIsHistory by mutableStateOf(false)
@@ -216,11 +221,19 @@ class MainActivity : AppCompatActivity() {
                         when (selection) {
                             TeamSelection.HOME -> {
                                 selectedTeam = getString(R.string.team_home)
-                                showNumberSelectionDialog(pendingEventType, selectedTeam)
+                                numberSelectionEventType = pendingEventType
+                                numberSelectionTeam = selectedTeam
+                                numberSelectionTeamColor = homeTeamColor
+                                numberSelectionEventIconInfo = getEventIconInfo(currentEventType)
+                                showNumberSelectionDialogState = true
                             }
                             TeamSelection.AWAY -> {
                                 selectedTeam = getString(R.string.team_away)
-                                showNumberSelectionDialog(pendingEventType, selectedTeam)
+                                numberSelectionEventType = pendingEventType
+                                numberSelectionTeam = selectedTeam
+                                numberSelectionTeamColor = awayTeamColor
+                                numberSelectionEventIconInfo = getEventIconInfo(currentEventType)
+                                showNumberSelectionDialogState = true
                             }
                             TeamSelection.CANCEL -> { }
                         }
@@ -257,6 +270,26 @@ class MainActivity : AppCompatActivity() {
                                 startTimer()
                             }
                             is TimeSettingResult.Cancelled -> { }
+                        }
+                    }
+                )
+            }
+
+            // 号码选择弹窗
+            if (showNumberSelectionDialogState) {
+                NumberSelectionDialog(
+                    eventType = numberSelectionEventType,
+                    team = numberSelectionTeam,
+                    teamColor = numberSelectionTeamColor,
+                    eventIconInfo = numberSelectionEventIconInfo,
+                    onDismiss = { showNumberSelectionDialogState = false },
+                    onResult = { result ->
+                        showNumberSelectionDialogState = false
+                        when (result) {
+                            is NumberSelectionResult.Confirmed -> {
+                                recordEventWithDetails(numberSelectionEventType, numberSelectionTeam, result.number)
+                            }
+                            is NumberSelectionResult.Cancelled -> { }
                         }
                     }
                 )
@@ -1009,72 +1042,6 @@ class MainActivity : AppCompatActivity() {
         }
         // 显示Compose弹窗
         showTeamSelectionDialogState = true
-    }
-
-    // 显示号码选择弹窗
-    private fun showNumberSelectionDialog(eventType: String, team: String) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_number_selection, null)
-
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tvNumberTitle)
-        val tvTeamInfo = dialogView.findViewById<TextView>(R.id.tvTeamInfo)
-        val tvSelectedNumber = dialogView.findViewById<TextView>(R.id.tvSelectedNumber)
-        val pickerTens = dialogView.findViewById<NumberPicker>(R.id.pickerTens)
-        val pickerOnes = dialogView.findViewById<NumberPicker>(R.id.pickerOnes)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelNumber)
-        val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmNumber)
-
-
-        val (iconRes, iconColor) = when (eventType) {
-            getString(R.string.event_yellow) -> R.drawable.ic_card to android.graphics.Color.YELLOW
-            getString(R.string.event_red) -> R.drawable.ic_card to android.graphics.Color.RED
-            getString(R.string.event_goal) -> R.drawable.sports_soccer to android.graphics.Color.WHITE
-            else -> 0 to 0
-        }
-
-        tvTitle.text = eventType
-        if (iconRes != 0) {
-            val drawable = androidx.core.content.ContextCompat.getDrawable(this, iconRes)?.mutate()
-            drawable?.setTint(iconColor)
-            val size = (20 * resources.displayMetrics.density).toInt()
-            drawable?.setBounds(0, 0, size, size)
-            tvTitle.setCompoundDrawables(drawable, null, null, null)
-            tvTitle.compoundDrawablePadding = (8 * resources.displayMetrics.density).toInt()
-        }
-
-        // 设置队伍信息颜色
-        tvTeamInfo.text = team
-        tvTeamInfo.setTextColor(if (team == getString(R.string.team_home)) 0xFF1565C0.toInt() else 0xFFC62828.toInt())
-
-        // 设置滚轮逻辑 (保持不变)
-        pickerTens.minValue = 0
-        pickerTens.maxValue = 9
-        pickerTens.value = 0
-        pickerTens.wrapSelectorWheel = true
-        pickerOnes.minValue = 0
-        pickerOnes.maxValue = 9
-        pickerOnes.value = 1
-        pickerOnes.wrapSelectorWheel = true
-
-        fun updateSelectedNumber() {
-            val number = pickerTens.value * 10 + pickerOnes.value
-            tvSelectedNumber.text = "# ${String.format("%02d", number)}"
-        }
-
-        updateSelectedNumber()
-        pickerTens.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
-        pickerOnes.setOnValueChangedListener { _, _, _ -> updateSelectedNumber() }
-
-        val dialog = AlertDialog.Builder(this).setView(dialogView).setCancelable(true).create()
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        btnConfirm.setOnClickListener {
-            val number = pickerTens.value * 10 + pickerOnes.value
-            val numberStr = String.format("%02d", number)
-            dialog.dismiss()
-            recordEventWithDetails(eventType, team, numberStr)
-        }
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     // 记录带详细信息的事件
