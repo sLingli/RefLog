@@ -70,12 +70,12 @@ fun MainScreen(
         pageCount = { 3 } // TIMER, HISTORY, PROFILE
     )
 
-    // Pager → Tab 同步（滑动页面时更新底部导航）
-    LaunchedEffect(pagerState.settledPage) {
-        val newTab = BottomNavTab.fromIndex(pagerState.settledPage)
+    // Pager → Tab 同步（使用 targetPage 实现即时响应，消除导航栏高亮滞后）
+    LaunchedEffect(pagerState.targetPage) {
+        val newTab = BottomNavTab.fromIndex(pagerState.targetPage)
         if (selectedTab != newTab) {
             selectedTab = newTab
-            onPageChanged(pagerState.settledPage)
+            onPageChanged(pagerState.targetPage)
         }
     }
 
