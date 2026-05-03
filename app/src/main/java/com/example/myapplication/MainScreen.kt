@@ -87,7 +87,15 @@ fun MainScreen(
                 onTabSelected = { tab ->
                     selectedTab = tab
                     coroutineScope.launch {
-                        pagerState.animateScrollToPage(tab.index)
+                        val targetPage = tab.index
+                        val currentPage = pagerState.settledPage
+                        if (kotlin.math.abs(targetPage - currentPage) > 1) {
+                            // 跨级切换：瞬间跳转，避免中间页面闪烁
+                            pagerState.scrollToPage(targetPage)
+                        } else {
+                            // 相邻切换：保留丝滑滑动动画
+                            pagerState.animateScrollToPage(targetPage)
+                        }
                     }
                 }
             )
