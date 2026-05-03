@@ -31,7 +31,7 @@ Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JS
 ## Conventions
 
 ### UI Patterns
-- **Dialogs**: Compose for reusable dialogs (`HistoryDialog.kt`), XML + AlertDialog for inline dialogs in MainActivity
+- **Dialogs**: All dialogs are Jetpack Compose-based (`HistoryDialog.kt`, `EventSelectionDialog.kt`, `TeamSelectionDialog.kt`, etc.), managed via `ComposeView` in MainActivity
 - **Color scheme**: Dark theme (`#121212` bg), Material 3 with custom accent colors
 - **String resources**: Localized in `values/strings.xml` and `values-zh/strings.xml` - always use `getString(R.string.*)`, never hardcode text
 - **Icons**: Vector drawables in `res/drawable/`, tinted programmatically
@@ -64,10 +64,11 @@ Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JS
 
 ### Adding New Event Type
 1. Add string to `strings.xml` (both default and zh)
-2. Add button to `dialog_event_selection.xml`
-3. Add click handler in `showEventDialog()` in MainActivity
-4. Add icon drawable and color mapping in `showMatchSummary()` icon switch
-5. Update `MatchRecord` counts if needed
+2. Add event type to `EventType` enum in `EventSelectionDialog.kt`
+3. Add button UI and click handler in `EventSelectionDialog`
+4. Add case in `initializeComposeDialogs()` in MainActivity
+5. Add icon drawable and color mapping in `showMatchSummary()` icon switch
+6. Update `MatchRecord` counts if needed
 
 ### Changing Timer Behavior
 - Timer core: `updateTimer()` method (~line 420)
