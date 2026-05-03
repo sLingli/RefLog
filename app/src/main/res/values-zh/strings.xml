@@ -71,10 +71,17 @@
 
     <!-- 主题 -->
     <string name="title_theme">主题样式</string>
+    <string name="theme_follow_system">跟随系统</string>
+    <string name="theme_dynamic">动态取色</string>
+    <string name="theme_dynamic_unavailable">动态取色 (Android 12+)</string>
     <string name="theme_dark_green">森林绿</string>
     <string name="theme_ocean_blue">海洋蓝</string>
     <string name="theme_sunset_orange">日落橙</string>
     <string name="theme_purple_galaxy">星空紫</string>
-    <string name="theme_light_mode">浅色模式</string>
+    <string name="theme_light_green">浅绿色</string>
     <string name="label_current_theme">当前主题</string>
+    <string name="label_smart_themes">智能主题</string>
+    <string name="label_custom_themes">自定义主题</string>
+    <string name="label_follow_system_desc">自动深浅色</string>
+    <string name="label_dynamic_desc">壁纸取色</string>
 </resources>
