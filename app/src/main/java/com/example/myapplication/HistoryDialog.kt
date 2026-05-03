@@ -6,7 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -305,14 +304,14 @@ fun SwipeableRecordItem(
                                 offsetX = (offsetX + dragAmount).coerceIn(maxSwipeDistancePx, 0f)
                             }
                         )
+                    },
+                onClick = {
+                    if (offsetX == 0f) {
+                        onClick()
+                    } else {
+                        offsetX = 0f
                     }
-                    .clickable {
-                        if (offsetX == 0f) {
-                            onClick()
-                        } else {
-                            offsetX = 0f
-                        }
-                    }
+                }
             )
         }
     }
@@ -321,19 +320,27 @@ fun SwipeableRecordItem(
 /**
  * 记录卡片
  * Record Card
+ *
+ * 使用 MD3 Card 实现，Card 内置波纹剪裁，
+ * 涟漪特效自动限制在圆角内部，不会溢出。
  */
 @Composable
 fun RecordCard(
     record: MatchRecord,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .padding(12.dp)
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+        )
     ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
         // 日期和时长行 Date and Duration Row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -406,6 +413,7 @@ fun RecordCard(
                 tint = Color(0xFF2196F3)
             )
         }
+    }
     }
 }
 
