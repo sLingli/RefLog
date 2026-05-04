@@ -35,12 +35,10 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     // === 首页 Dashboard 状态 ===
-    dashboardTotalMatches: Int = 0,
-    dashboardTotalGoals: Int = 0,
-    dashboardTotalYellowCards: Int = 0,
-    dashboardTotalRedCards: Int = 0,
+    dashboardState: DashboardState = DashboardState(),
     onDashboardStartTimer: () -> Unit = {},
     onDashboardEventPreset: () -> Unit = {},
+    onDashboardRecordClick: (MatchRecord) -> Unit = {},
 
     // === 计时器页面状态 ===
     timerState: String = TIMER_STATE_READY,
@@ -123,12 +121,10 @@ fun MainScreen(
                     // 首页 Dashboard
                     0 -> {
                         DashboardScreen(
-                            totalMatches = dashboardTotalMatches,
-                            totalGoals = dashboardTotalGoals,
-                            totalYellowCards = dashboardTotalYellowCards,
-                            totalRedCards = dashboardTotalRedCards,
+                            state = dashboardState,
                             onStartTimer = onDashboardStartTimer,
                             onEventPreset = onDashboardEventPreset,
+                            onRecordClick = onDashboardRecordClick,
                         )
                     }
 

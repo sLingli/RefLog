@@ -5,9 +5,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -45,6 +47,11 @@ class MainActivity : AppCompatActivity() {
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
     private lateinit var recordManager: MatchRecordManager
+
+    // Dashboard ViewModel
+    private val dashboardViewModel: DashboardViewModel by viewModels {
+        DashboardViewModel.Factory(MatchRecordManager(this))
+    }
 
     private var mainTime: Long = 0
     private var stoppageTime: Long = 0
@@ -121,18 +128,21 @@ class MainActivity : AppCompatActivity() {
         setContent {
             RefLogTheme(theme = currentAppTheme) {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    // Dashboard 状态
+                    val dashboardState by dashboardViewModel.state.collectAsState()
+
                     // 主屏幕（含 Pager + BottomNav）
                     MainScreen(
                         // Dashboard 数据
-                        dashboardTotalMatches = recordManager.getAllRecords().size,
-                        dashboardTotalGoals = recordManager.getAllRecords().sumOf { it.goalCount },
-                        dashboardTotalYellowCards = recordManager.getAllRecords().sumOf { it.yellowCount },
-                        dashboardTotalRedCards = recordManager.getAllRecords().sumOf { it.redCount },
+                        dashboardState = dashboardState,
                         onDashboardStartTimer = {
                             // 跳转到计时器页
                         },
                         onDashboardEventPreset = {
                             // 赛事预设（占位）
+                        },
+                        onDashboardRecordClick = { record ->
+                            showMatchSummary(isHistory = true, historyRecord = record)
                         },
 
                         timerState = timerStateCompose,
@@ -154,15 +164,20 @@ class MainActivity : AppCompatActivity() {
                         onHistoryDeleteRecord = { record ->
                             recordManager.deleteRecord(record.id)
                             historyRecordsCompose = recordManager.getAllRecords()
+                            dashboardViewModel.refresh()
                         },
                         onHistoryClearAll = {
                             recordManager.clearAllRecords()
                             historyRecordsCompose = recordManager.getAllRecords()
+                            dashboardViewModel.refresh()
                         },
                         onThemeClick = { showThemeSelectionDialogState = true },
                         onSettingsClick = { showColorSelectionDialog() },
                         onAboutClick = { showAboutDialog() },
                         onPageChanged = { page ->
+                            if (page == 0) {
+                                dashboardViewModel.refresh()
+                            }
                             if (page == 2) {
                                 historyRecordsCompose = recordManager.getAllRecords()
                             }
@@ -651,6 +666,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         recordManager.saveRecord(record)
+        dashboardViewModel.refresh()
         Log.i("FootballTimer", "📁 比赛记录已保存: 主队 $homeGoals - $awayGoals 客队")
     }
 

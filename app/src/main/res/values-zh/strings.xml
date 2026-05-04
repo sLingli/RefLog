@@ -81,6 +81,8 @@
     <string name="dashboard_quick_timer">独立计时</string>
     <string name="dashboard_event_preset">赛事预设</string>
     <string name="dashboard_recent_matches">近期执法</string>
+    <string name="dashboard_no_records">暂无比赛记录</string>
+    <string name="dashboard_no_records_hint">开始你的第一场比赛吧！</string>
 
     <!-- 我的页面 -->
     <string name="label_set_team_colors">设置主客队颜色</string>

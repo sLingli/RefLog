@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,16 +27,14 @@ import java.util.Calendar
  * 1. 顶部状态区 (Header)：问候语 + 手表同步胶囊
  * 2. 核心数据看板 (Dashboard Card)：甜甜圈占位 + 2x2 统计网格
  * 3. 快捷行动区 (Quick Actions)：独立计时 / 赛事预设
- * 4. 近期执法 (Recent Matches)：历史记录占位卡片
+ * 4. 近期执法 (Recent Matches)：真实历史记录卡片 / 空状态
  */
 @Composable
 fun DashboardScreen(
-    totalMatches: Int = 0,
-    totalGoals: Int = 0,
-    totalYellowCards: Int = 0,
-    totalRedCards: Int = 0,
+    state: DashboardState = DashboardState(),
     onStartTimer: () -> Unit = {},
     onEventPreset: () -> Unit = {},
+    onRecordClick: (MatchRecord) -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier
@@ -55,10 +54,10 @@ fun DashboardScreen(
         // ═══════════════════════════════════════
         item {
             DashboardCard(
-                totalMatches = totalMatches,
-                totalGoals = totalGoals,
-                totalYellowCards = totalYellowCards,
-                totalRedCards = totalRedCards,
+                totalMatches = state.totalMatches,
+                totalGoals = state.totalGoals,
+                totalYellowCards = state.totalYellowCards,
+                totalRedCards = state.totalRedCards,
             )
         }
 
@@ -76,7 +75,10 @@ fun DashboardScreen(
         // 4. 近期执法 (Recent Matches)
         // ═══════════════════════════════════════
         item {
-            RecentMatchesSection()
+            RecentMatchesSection(
+                recentRecords = state.recentRecords,
+                onRecordClick = onRecordClick,
+            )
         }
     }
 }
@@ -372,8 +374,17 @@ private fun QuickActionCard(
 // 4. 近期执法
 // ═══════════════════════════════════════════════
 
+/**
+ * 近期执法区域
+ *
+ * 当有历史记录时，展示最近 3 条比赛卡片；
+ * 当无记录时，显示空状态引导。
+ */
 @Composable
-private fun RecentMatchesSection() {
+private fun RecentMatchesSection(
+    recentRecords: List<MatchRecord>,
+    onRecordClick: (MatchRecord) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -387,46 +398,29 @@ private fun RecentMatchesSection() {
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // 占位卡片 1
-        RecentMatchPlaceholderCard(
-            matchTitle = "Team A  vs  Team B",
-            score = "2 : 1",
-            date = "2026-05-01",
-            events = "⚽2  🟨1  🟥0",
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 占位卡片 2
-        RecentMatchPlaceholderCard(
-            matchTitle = "Team C  vs  Team D",
-            score = "0 : 0",
-            date = "2026-04-28",
-            events = "⚽0  🟨3  🟥1",
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 占位卡片 3
-        RecentMatchPlaceholderCard(
-            matchTitle = "Team E  vs  Team F",
-            score = "3 : 2",
-            date = "2026-04-25",
-            events = "⚽5  🟨2  🟥0",
-        )
+        if (recentRecords.isEmpty()) {
+            EmptyRecentMatchesPlaceholder()
+        } else {
+            recentRecords.forEachIndexed { index, record ->
+                MatchRecentCard(
+                    record = record,
+                    onClick = { onRecordClick(record) },
+                )
+                if (index < recentRecords.lastIndex) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+        }
     }
 }
 
 /**
- * 近期执法占位卡片
+ * 空状态占位卡片
+ *
+ * 当近期执法区域无比赛记录时展示，引导用户开始第一场比赛。
  */
 @Composable
-private fun RecentMatchPlaceholderCard(
-    matchTitle: String,
-    score: String,
-    date: String,
-    events: String,
-) {
+private fun EmptyRecentMatchesPlaceholder() {
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -434,48 +428,103 @@ private fun RecentMatchPlaceholderCard(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         ),
         border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-            )
+            brush = SolidColor(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 左侧赛事信息
-            Column(modifier = Modifier.weight(1f)) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_history),
+                contentDescription = null,
+                modifier = Modifier.size(36.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.dashboard_no_records),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.dashboard_no_records_hint),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+        }
+    }
+}
+
+/**
+ * 近期执法真实卡片
+ *
+ * 展示一条 [MatchRecord] 的摘要信息：
+ * 日期 + 时长 / 比分 / 事件统计（进球 · 黄牌 · 红牌）。
+ * 复用与 HistoryDialog.RecordCard 一致的视觉风格。
+ */
+@Composable
+private fun MatchRecentCard(
+    record: MatchRecord,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            // 日期 + 时长
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = matchTitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = record.date,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = date,
+                    text = stringResource(R.string.fmt_duration_simple, record.halfTimeMinutes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            // 中间比分
-            Text(
-                text = score,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 右侧事件统计
-            Text(
-                text = events,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // 比分 + 事件统计
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 比分
+                Text(
+                    text = "${record.homeGoals} : ${record.awayGoals}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // 事件统计 emoji
+                Text(
+                    text = "⚽${record.goalCount}  🟨${record.yellowCount}  🟥${record.redCount}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -489,10 +538,54 @@ private fun RecentMatchPlaceholderCard(
 private fun DashboardScreenPreview() {
     MaterialTheme {
         DashboardScreen(
-            totalMatches = 12,
-            totalGoals = 34,
-            totalYellowCards = 8,
-            totalRedCards = 2,
+            state = DashboardState(
+                totalMatches = 12,
+                totalGoals = 34,
+                totalYellowCards = 8,
+                totalRedCards = 2,
+                recentRecords = listOf(
+                    MatchRecord(
+                        date = "2026-05-01",
+                        halfTimeMinutes = 45,
+                        firstHalfStoppage = "3 min",
+                        secondHalfStoppage = "5 min",
+                        totalStoppage = "8 min",
+                        goalCount = 3,
+                        yellowCount = 1,
+                        redCount = 0,
+                        substitutionCount = 0,
+                        injuryCount = 0,
+                        events = emptyList(),
+                        homeGoals = 2,
+                        awayGoals = 1,
+                    ),
+                    MatchRecord(
+                        date = "2026-04-28",
+                        halfTimeMinutes = 45,
+                        firstHalfStoppage = "2 min",
+                        secondHalfStoppage = "3 min",
+                        totalStoppage = "5 min",
+                        goalCount = 0,
+                        yellowCount = 3,
+                        redCount = 1,
+                        substitutionCount = 0,
+                        injuryCount = 0,
+                        events = emptyList(),
+                        homeGoals = 0,
+                        awayGoals = 0,
+                    ),
+                ),
+            ),
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun DashboardScreenEmptyPreview() {
+    MaterialTheme {
+        DashboardScreen(
+            state = DashboardState(),
         )
     }
 }
