@@ -253,12 +253,7 @@ private fun DonutPlaceholder() {
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_chart),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                
             }
         }
     }
@@ -523,14 +518,56 @@ private fun MatchRecentCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 事件统计 emoji
-                Text(
-                    text = "⚽${record.goalCount}  🟨${record.yellowCount}  🟥${record.redCount}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                // 事件统计矢量图标
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    EventIconStat(
+                        iconRes = R.drawable.sports_soccer,
+                        count = record.goalCount,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    EventIconStat(
+                        iconRes = R.drawable.ic_card,
+                        count = record.yellowCount,
+                        tint = Color(0xFFFFEB3B),
+                    )
+                    EventIconStat(
+                        iconRes = R.drawable.ic_card,
+                        count = record.redCount,
+                        tint = Color(0xFFF44336),
+                    )
+                }
             }
         }
+    }
+}
+
+/**
+ * 事件统计图标 + 数字
+ */
+@Composable
+private fun EventIconStat(
+    iconRes: Int,
+    count: Int,
+    tint: Color,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = tint,
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
