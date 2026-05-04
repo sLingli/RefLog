@@ -11,12 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import java.util.Calendar
 
 /**
@@ -113,9 +113,11 @@ private fun HeaderSection() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = "⌚",
-                    fontSize = 12.sp,
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_watch),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = stringResource(R.string.dashboard_watch_sync),
@@ -246,9 +248,11 @@ private fun DonutPlaceholder() {
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "📊",
-                    fontSize = 20.sp,
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_chart),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -303,7 +307,7 @@ private fun QuickActionsSection(
         // 左侧：独立计时
         QuickActionCard(
             modifier = Modifier.weight(1f),
-            icon = "▶️",
+            iconRes = R.drawable.baseline_play_arrow_24,
             label = stringResource(R.string.dashboard_quick_timer),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -313,7 +317,7 @@ private fun QuickActionsSection(
         // 右侧：赛事预设
         QuickActionCard(
             modifier = Modifier.weight(1f),
-            icon = "🛠️",
+            iconRes = R.drawable.ic_wrench,
             label = stringResource(R.string.dashboard_event_preset),
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -328,7 +332,7 @@ private fun QuickActionsSection(
 @Composable
 private fun QuickActionCard(
     modifier: Modifier = Modifier,
-    icon: String,
+    iconRes: Int,
     label: String,
     containerColor: Color,
     contentColor: Color,
@@ -348,9 +352,11 @@ private fun QuickActionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = icon,
-                fontSize = 22.sp,
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = contentColor
             )
             Text(
                 text = label,
