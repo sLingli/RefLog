@@ -76,7 +76,7 @@
     <string name="greeting_afternoon">Afternoon</string>
     <string name="greeting_evening">Evening</string>
     <string name="greeting_night">Night</string>
-    <string name="dashboard_greeting">Good %1$s, Referee</string>
+    <string name="dashboard_greeting">Good %1$s\nReferee</string>
     <string name="dashboard_watch_sync">Not Synced</string>
     <string name="dashboard_total_matches">Total Matches</string>
     <string name="dashboard_goals">Goals</string>

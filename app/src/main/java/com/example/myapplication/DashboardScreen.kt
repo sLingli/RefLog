@@ -102,6 +102,7 @@ private fun HeaderSection() {
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 2,
         )
 
         // 右侧手表同步胶囊
@@ -195,27 +196,29 @@ private fun DashboardCard(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     StatItem(
+                        modifier = Modifier.weight(1f),
                         value = totalMatches.toString(),
                         label = stringResource(R.string.dashboard_total_matches),
                     )
                     StatItem(
+                        modifier = Modifier.weight(1f),
                         value = totalGoals.toString(),
                         label = stringResource(R.string.dashboard_goals),
                     )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     StatItem(
+                        modifier = Modifier.weight(1f),
                         value = totalYellowCards.toString(),
                         label = stringResource(R.string.dashboard_yellow_cards),
                         valueColor = Color(0xFFFFEB3B),
                     )
                     StatItem(
+                        modifier = Modifier.weight(1f),
                         value = totalRedCards.toString(),
                         label = stringResource(R.string.dashboard_red_cards),
                         valueColor = Color(0xFFF44336),
@@ -266,11 +269,13 @@ private fun DonutPlaceholder() {
  */
 @Composable
 private fun StatItem(
+    modifier: Modifier = Modifier,
     value: String,
     label: String,
     valueColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(

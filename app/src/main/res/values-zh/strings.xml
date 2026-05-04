@@ -72,7 +72,7 @@
     <string name="greeting_afternoon">下午</string>
     <string name="greeting_evening">晚上</string>
     <string name="greeting_night">深夜</string>
-    <string name="dashboard_greeting">%1$s好，裁判</string>
+    <string name="dashboard_greeting">%1$s好\n裁判</string>
     <string name="dashboard_watch_sync">未同步</string>
     <string name="dashboard_total_matches">总场次</string>
     <string name="dashboard_goals">进球</string>
