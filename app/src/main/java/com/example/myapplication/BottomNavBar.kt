@@ -18,12 +18,13 @@ import androidx.compose.ui.unit.dp
  * 底部导航栏标签枚举
  */
 enum class BottomNavTab(val index: Int) {
-    TIMER(0),
-    HISTORY(1),
-    PROFILE(2);
+    HOME(0),
+    TIMER(1),
+    HISTORY(2),
+    PROFILE(3);
 
     companion object {
-        fun fromIndex(index: Int): BottomNavTab = entries.firstOrNull { it.index == index } ?: TIMER
+        fun fromIndex(index: Int): BottomNavTab = entries.firstOrNull { it.index == index } ?: HOME
     }
 }
 
@@ -47,6 +48,33 @@ fun BottomNavBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 0.dp
     ) {
+        // 首页
+        NavigationBarItem(
+            selected = selectedTab == BottomNavTab.HOME,
+            onClick = { onTabSelected(BottomNavTab.HOME) },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_home),
+                    contentDescription = stringResource(R.string.nav_home),
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            label = {
+                Text(
+                    text = stringResource(R.string.nav_home),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            },
+            alwaysShowLabel = false,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = selectedColor,
+                unselectedIconColor = unselectedColor,
+                selectedTextColor = selectedColor,
+                unselectedTextColor = unselectedColor,
+                indicatorColor = Color.Transparent
+            )
+        )
+
         // 计时器
         NavigationBarItem(
             selected = selectedTab == BottomNavTab.TIMER,

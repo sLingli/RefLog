@@ -34,6 +34,12 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
+    // === 首页 Dashboard 状态 ===
+    dashboardState: DashboardState = DashboardState(),
+    onDashboardStartTimer: () -> Unit = {},
+    onDashboardEventPreset: () -> Unit = {},
+    onDashboardRecordClick: (MatchRecord) -> Unit = {},
+
     // === 计时器页面状态 ===
     timerState: String = TIMER_STATE_READY,
     currentHalf: String = HALF_FIRST_CODE,
@@ -67,7 +73,7 @@ fun MainScreen(
 
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { 3 } // TIMER, HISTORY, PROFILE
+        pageCount = { 4 } // HOME, TIMER, HISTORY, PROFILE
     )
 
     // Pager → Tab 同步（使用 targetPage 实现即时响应，消除导航栏高亮滞后）
@@ -112,8 +118,18 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (page) {
-                    // 计时器页面
+                    // 首页 Dashboard
                     0 -> {
+                        DashboardScreen(
+                            state = dashboardState,
+                            onStartTimer = onDashboardStartTimer,
+                            onEventPreset = onDashboardEventPreset,
+                            onRecordClick = onDashboardRecordClick,
+                        )
+                    }
+
+                    // 计时器页面
+                    1 -> {
                         TimerPage(
                             state = timerState,
                             currentHalf = currentHalf,
@@ -131,7 +147,7 @@ fun MainScreen(
                     }
 
                     // 历史记录页面
-                    1 -> {
+                    2 -> {
                         HistoryPageContent(
                             records = historyRecords,
                             onRecordClick = onHistoryRecordClick,
@@ -141,7 +157,7 @@ fun MainScreen(
                     }
 
                     // 我的页面
-                    2 -> {
+                    3 -> {
                         MeScreenContent(
                             onThemeClick = onThemeClick,
                             onSettingsClick = onSettingsClick,
