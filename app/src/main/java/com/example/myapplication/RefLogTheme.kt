@@ -2,7 +2,11 @@ package com.example.myapplication
 
 import android.app.Activity
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -46,6 +50,81 @@ data class AppColors(
     // 清空按钮颜色 (红色语义)
     val clearAllColor: Color = Color(0xFFFF3B30),
 )
+
+/** 动画时长 */
+private const val THEME_ANIM_DURATION = 400
+
+/**
+ * 动画化 ColorScheme
+ *
+ * 将 ColorScheme 中所有颜色字段用 animateColorAsState(tween) 包裹，
+ * 使主题切换时所有颜色平滑过渡而非瞬间跳变。
+ */
+@Composable
+private fun animateColorScheme(target: ColorScheme): ColorScheme {
+    val spec = tween<Color>(durationMillis = THEME_ANIM_DURATION, easing = FastOutSlowInEasing)
+    return target.copy(
+        primary = animateColorAsState(target.primary, spec, label = "primary").value,
+        onPrimary = animateColorAsState(target.onPrimary, spec, label = "onPrimary").value,
+        primaryContainer = animateColorAsState(target.primaryContainer, spec, label = "primaryContainer").value,
+        onPrimaryContainer = animateColorAsState(target.onPrimaryContainer, spec, label = "onPrimaryContainer").value,
+        secondary = animateColorAsState(target.secondary, spec, label = "secondary").value,
+        onSecondary = animateColorAsState(target.onSecondary, spec, label = "onSecondary").value,
+        secondaryContainer = animateColorAsState(target.secondaryContainer, spec, label = "secondaryContainer").value,
+        onSecondaryContainer = animateColorAsState(target.onSecondaryContainer, spec, label = "onSecondaryContainer").value,
+        tertiary = animateColorAsState(target.tertiary, spec, label = "tertiary").value,
+        onTertiary = animateColorAsState(target.onTertiary, spec, label = "onTertiary").value,
+        tertiaryContainer = animateColorAsState(target.tertiaryContainer, spec, label = "tertiaryContainer").value,
+        onTertiaryContainer = animateColorAsState(target.onTertiaryContainer, spec, label = "onTertiaryContainer").value,
+        background = animateColorAsState(target.background, spec, label = "background").value,
+        onBackground = animateColorAsState(target.onBackground, spec, label = "onBackground").value,
+        surface = animateColorAsState(target.surface, spec, label = "surface").value,
+        onSurface = animateColorAsState(target.onSurface, spec, label = "onSurface").value,
+        surfaceVariant = animateColorAsState(target.surfaceVariant, spec, label = "surfaceVariant").value,
+        onSurfaceVariant = animateColorAsState(target.onSurfaceVariant, spec, label = "onSurfaceVariant").value,
+        error = animateColorAsState(target.error, spec, label = "error").value,
+        onError = animateColorAsState(target.onError, spec, label = "onError").value,
+        errorContainer = animateColorAsState(target.errorContainer, spec, label = "errorContainer").value,
+        onErrorContainer = animateColorAsState(target.onErrorContainer, spec, label = "onErrorContainer").value,
+        outline = animateColorAsState(target.outline, spec, label = "outline").value,
+        outlineVariant = animateColorAsState(target.outlineVariant, spec, label = "outlineVariant").value,
+        surfaceContainerHighest = animateColorAsState(target.surfaceContainerHighest, spec, label = "surfaceContainerHighest").value,
+        surfaceContainerHigh = animateColorAsState(target.surfaceContainerHigh, spec, label = "surfaceContainerHigh").value,
+        surfaceContainer = animateColorAsState(target.surfaceContainer, spec, label = "surfaceContainer").value,
+        surfaceContainerLow = animateColorAsState(target.surfaceContainerLow, spec, label = "surfaceContainerLow").value,
+        surfaceBright = animateColorAsState(target.surfaceBright, spec, label = "surfaceBright").value,
+        surfaceDim = animateColorAsState(target.surfaceDim, spec, label = "surfaceDim").value,
+        inverseSurface = animateColorAsState(target.inverseSurface, spec, label = "inverseSurface").value,
+        inverseOnSurface = animateColorAsState(target.inverseOnSurface, spec, label = "inverseOnSurface").value,
+        inversePrimary = animateColorAsState(target.inversePrimary, spec, label = "inversePrimary").value,
+        scrim = animateColorAsState(target.scrim, spec, label = "scrim").value,
+    )
+}
+
+/**
+ * 动画化 AppColors
+ *
+ * 将语义色（事件色、计时器色等）同样做平滑过渡，保持全局视觉一致性。
+ */
+@Composable
+private fun animateAppColors(target: AppColors): AppColors {
+    val spec = tween<Color>(durationMillis = THEME_ANIM_DURATION, easing = FastOutSlowInEasing)
+    return AppColors(
+        goalColor = animateColorAsState(target.goalColor, spec, label = "goalColor").value,
+        yellowCardColor = animateColorAsState(target.yellowCardColor, spec, label = "yellowCardColor").value,
+        redCardColor = animateColorAsState(target.redCardColor, spec, label = "redCardColor").value,
+        injuryColor = animateColorAsState(target.injuryColor, spec, label = "injuryColor").value,
+        substitutionColor = animateColorAsState(target.substitutionColor, spec, label = "substitutionColor").value,
+        timerNormal = animateColorAsState(target.timerNormal, spec, label = "timerNormal").value,
+        timerWarning = animateColorAsState(target.timerWarning, spec, label = "timerWarning").value,
+        timerDanger = animateColorAsState(target.timerDanger, spec, label = "timerDanger").value,
+        timerInactive = animateColorAsState(target.timerInactive, spec, label = "timerInactive").value,
+        dateText = animateColorAsState(target.dateText, spec, label = "dateText").value,
+        stoppageText = animateColorAsState(target.stoppageText, spec, label = "stoppageText").value,
+        deleteColor = animateColorAsState(target.deleteColor, spec, label = "deleteColor").value,
+        clearAllColor = animateColorAsState(target.clearAllColor, spec, label = "clearAllColor").value,
+    )
+}
 
 val LocalAppColors = staticCompositionLocalOf { AppColors() }
 
@@ -123,20 +202,24 @@ fun RefLogTheme(
         else -> AppColors()
     }
 
-    // 同步状态栏/导航栏颜色
+    // 动画化所有颜色，实现丝滑过渡
+    val animatedScheme = animateColorScheme(colorScheme)
+    val animatedAppColors = animateAppColors(appColors)
+
+    // 同步状态栏/导航栏颜色（使用动画化后的颜色，消除渲染时差）
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb()
-            window.navigationBarColor = colorScheme.surface.toArgb()
+            window.statusBarColor = animatedScheme.background.toArgb()
+            window.navigationBarColor = animatedScheme.surface.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
         }
     }
 
-    CompositionLocalProvider(LocalAppColors provides appColors) {
+    CompositionLocalProvider(LocalAppColors provides animatedAppColors) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = animatedScheme,
             content = content
         )
     }

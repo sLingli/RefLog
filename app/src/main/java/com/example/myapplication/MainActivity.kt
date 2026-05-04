@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
     private var showTimeSettingDialogState by mutableStateOf(false)
     private var showThemeSelectionDialogState by mutableStateOf(false)
+    private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN) // 临时默认，onCreate 中更新
     private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
     private var showColorSelectionDialogState by mutableStateOf(false)
@@ -111,13 +112,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
+        currentAppTheme = ThemeManager.currentTheme // 从持久化读取实际主题
         recordManager = MatchRecordManager(this)
         initializeTimer()
         updateAllComposeState()
 
         // 使用 Compose 主屏幕替代 XML 布局
         setContent {
-            RefLogTheme {
+            RefLogTheme(theme = currentAppTheme) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     // 主屏幕（含 Pager + BottomNav）
                     MainScreen(
@@ -193,12 +195,12 @@ class MainActivity : AppCompatActivity() {
         // 主题选择弹窗
         if (showThemeSelectionDialogState) {
             ThemeSelectionDialog(
-                currentTheme = ThemeManager.currentTheme,
+                currentTheme = currentAppTheme,
                 onDismiss = { showThemeSelectionDialogState = false },
                 onThemeSelected = { theme ->
                     ThemeManager.currentTheme = theme
+                    currentAppTheme = theme  // 触发 Compose 重组 + 自动颜色动画
                     showThemeSelectionDialogState = false
-                    recreate()
                 }
             )
         }
