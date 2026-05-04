@@ -65,9 +65,26 @@
     <string name="btn_close">Close</string>
 
     <!-- Navigation -->
+    <string name="nav_home">Home</string>
     <string name="nav_timer">Timer</string>
     <string name="nav_history">History</string>
     <string name="nav_me">Me</string>
+
+    <!-- Dashboard -->
+    <string name="greeting_morning">Morning</string>
+    <string name="greeting_noon">Noon</string>
+    <string name="greeting_afternoon">Afternoon</string>
+    <string name="greeting_evening">Evening</string>
+    <string name="greeting_night">Night</string>
+    <string name="dashboard_greeting">Good %1$s, Referee</string>
+    <string name="dashboard_watch_sync">Not Synced</string>
+    <string name="dashboard_total_matches">Total Matches</string>
+    <string name="dashboard_goals">Goals</string>
+    <string name="dashboard_yellow_cards">Yellow Cards</string>
+    <string name="dashboard_red_cards">Red Cards</string>
+    <string name="dashboard_quick_timer">Standalone Timer</string>
+    <string name="dashboard_event_preset">Event Preset</string>
+    <string name="dashboard_recent_matches">Recent Matches</string>
 
     <!-- Me Screen -->
     <string name="label_set_team_colors">Set Home/Away Team Colors</string>

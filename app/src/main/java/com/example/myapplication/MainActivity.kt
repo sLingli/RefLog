@@ -123,6 +123,18 @@ class MainActivity : AppCompatActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     // 主屏幕（含 Pager + BottomNav）
                     MainScreen(
+                        // Dashboard 数据
+                        dashboardTotalMatches = recordManager.getAllRecords().size,
+                        dashboardTotalGoals = recordManager.getAllRecords().sumOf { it.goalCount },
+                        dashboardTotalYellowCards = recordManager.getAllRecords().sumOf { it.yellowCount },
+                        dashboardTotalRedCards = recordManager.getAllRecords().sumOf { it.redCount },
+                        onDashboardStartTimer = {
+                            // 跳转到计时器页
+                        },
+                        onDashboardEventPreset = {
+                            // 赛事预设（占位）
+                        },
+
                         timerState = timerStateCompose,
                         currentHalf = currentHalf,
                         statusText = statusTextCompose,
@@ -151,7 +163,7 @@ class MainActivity : AppCompatActivity() {
                         onSettingsClick = { showColorSelectionDialog() },
                         onAboutClick = { showAboutDialog() },
                         onPageChanged = { page ->
-                            if (page == 1) {
+                            if (page == 2) {
                                 historyRecordsCompose = recordManager.getAllRecords()
                             }
                         }

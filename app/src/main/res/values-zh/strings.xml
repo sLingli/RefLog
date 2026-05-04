@@ -61,9 +61,26 @@
     <string name="btn_close">关闭</string>
 
     <!-- 底部导航 -->
+    <string name="nav_home">首页</string>
     <string name="nav_timer">计时器</string>
     <string name="nav_history">历史</string>
     <string name="nav_me">我的</string>
+
+    <!-- 首页仪表盘 -->
+    <string name="greeting_morning">上午</string>
+    <string name="greeting_noon">中午</string>
+    <string name="greeting_afternoon">下午</string>
+    <string name="greeting_evening">晚上</string>
+    <string name="greeting_night">深夜</string>
+    <string name="dashboard_greeting">%1$s好，裁判</string>
+    <string name="dashboard_watch_sync">未同步</string>
+    <string name="dashboard_total_matches">总场次</string>
+    <string name="dashboard_goals">进球</string>
+    <string name="dashboard_yellow_cards">黄牌</string>
+    <string name="dashboard_red_cards">红牌</string>
+    <string name="dashboard_quick_timer">独立计时</string>
+    <string name="dashboard_event_preset">赛事预设</string>
+    <string name="dashboard_recent_matches">近期执法</string>
 
     <!-- 我的页面 -->
     <string name="label_set_team_colors">设置主客队颜色</string>
