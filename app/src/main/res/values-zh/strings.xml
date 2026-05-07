@@ -87,6 +87,9 @@
     <!-- 我的页面 -->
     <string name="label_set_team_colors">设置主客队颜色</string>
     <string name="title_about">关于</string>
+    <string name="label_version">版本</string>
+    <string name="label_official_website">官网</string>
+    <string name="label_github">GitHub</string>
 
     <!-- 主题 -->
     <string name="title_theme">主题样式</string>

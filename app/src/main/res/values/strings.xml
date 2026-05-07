@@ -91,6 +91,9 @@
     <!-- Me Screen -->
     <string name="label_set_team_colors">Set Home/Away Team Colors</string>
     <string name="title_about">About</string>
+    <string name="label_version">Version</string>
+    <string name="label_official_website">Official Website</string>
+    <string name="label_github">GitHub</string>
 
     <!-- Theme -->
     <string name="title_theme">Theme</string>

@@ -88,33 +88,39 @@ fun TimerPage(
         TIMER_STATE_READY -> Triple(
             stringResource(R.string.btn_start),
             R.drawable.baseline_play_arrow_24,
-            Color(0xFF2E7D32)
+            MaterialTheme.colorScheme.primary
         )
         TIMER_STATE_RUNNING -> Triple(
             stringResource(R.string.btn_pause),
             R.drawable.pause_circle,
-            Color(0xFFC62828)
+            MaterialTheme.colorScheme.error
         )
         TIMER_STATE_PAUSED -> Triple(
             stringResource(R.string.btn_resume),
             R.drawable.baseline_play_arrow_24,
-            Color(0xFF2E7D32)
+            MaterialTheme.colorScheme.primary
         )
         TIMER_STATE_HALFTIME -> Triple(
             stringResource(R.string.status_second_half),
             R.drawable.baseline_play_arrow_24,
-            Color(0xFF2E7D32)
+            MaterialTheme.colorScheme.primary
         )
         TIMER_STATE_FINISHED -> Triple(
             stringResource(R.string.btn_reset),
             R.drawable.ic_substitute,
-            Color(0xFFC62828)
+            MaterialTheme.colorScheme.error
         )
         else -> Triple(
             stringResource(R.string.btn_start),
             R.drawable.baseline_play_arrow_24,
-            Color(0xFF2E7D32)
+            MaterialTheme.colorScheme.primary
         )
+    }
+
+    // 主按钮内容颜色（跟随主题）
+    val mainButtonContentColor = when (state) {
+        TIMER_STATE_RUNNING, TIMER_STATE_FINISHED -> MaterialTheme.colorScheme.onError
+        else -> MaterialTheme.colorScheme.onPrimary
     }
 
     // 补时颜色
@@ -262,6 +268,7 @@ fun TimerPage(
                             text = mainButtonText,
                             iconRes = mainButtonIconRes,
                             color = mainButtonColor,
+                            contentColor = mainButtonContentColor,
                             onClick = onMainButtonClick,
                             modifier = Modifier.weight(1f)
                         )
@@ -280,6 +287,7 @@ fun TimerPage(
                         text = mainButtonText,
                         iconRes = mainButtonIconRes,
                         color = mainButtonColor,
+                        contentColor = mainButtonContentColor,
                         onClick = onMainButtonClick,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -297,6 +305,7 @@ private fun MainControlButton(
     text: String,
     iconRes: Int,
     color: Color,
+    contentColor: Color = Color.White,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -306,7 +315,7 @@ private fun MainControlButton(
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = color,
-            contentColor = Color.White
+            contentColor = contentColor
         )
     ) {
         Icon(
