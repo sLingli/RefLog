@@ -103,4 +103,11 @@
     <string name="label_custom_themes">自定义主题</string>
     <string name="label_follow_system_desc">自动深浅色</string>
     <string name="label_dynamic_desc">壁纸取色</string>
+
+    <!-- 语言 -->
+    <string name="title_language">语言</string>
+    <string name="label_current_language">当前语言</string>
+    <string name="language_default">跟随系统</string>
+    <string name="language_zh">简体中文</string>
+    <string name="language_en">English</string>
 </resources>

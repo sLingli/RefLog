@@ -62,6 +62,7 @@ fun MainScreen(
 
     // === 我的页面回调 ===
     onThemeClick: () -> Unit = {},
+    onLanguageClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
 
@@ -160,6 +161,7 @@ fun MainScreen(
                     3 -> {
                         MeScreenContent(
                             onThemeClick = onThemeClick,
+                            onLanguageClick = onLanguageClick,
                             onSettingsClick = onSettingsClick,
                             onAboutClick = onAboutClick,
                             onDismiss = { /* 嵌入在 Pager 中，不需要单独关闭 */ }

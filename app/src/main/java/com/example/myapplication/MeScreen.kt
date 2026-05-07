@@ -30,6 +30,7 @@ import androidx.compose.ui.window.DialogProperties
 fun MeScreenDialog(
     onDismiss: () -> Unit,
     onThemeClick: () -> Unit,
+    onLanguageClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
 ) {
@@ -42,6 +43,7 @@ fun MeScreenDialog(
     ) {
         MeScreenContent(
             onThemeClick = onThemeClick,
+            onLanguageClick = onLanguageClick,
             onSettingsClick = onSettingsClick,
             onAboutClick = onAboutClick,
             onDismiss = onDismiss
@@ -52,6 +54,7 @@ fun MeScreenDialog(
 @Composable
 fun MeScreenContent(
     onThemeClick: () -> Unit,
+    onLanguageClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
     onDismiss: () -> Unit
@@ -98,6 +101,15 @@ fun MeScreenContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // 语言切换按钮
+        MeMenuItem(
+            iconRes = R.drawable.language,
+            title = stringResource(R.string.title_language),
+            subtitle = stringResource(R.string.label_current_language),
+            onClick = onLanguageClick
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // 关于按钮
         MeMenuItem(
@@ -173,6 +185,7 @@ fun MeMenuItem(
 fun MeScreenDialogPreview() {
     MeScreenContent(
         onThemeClick = {},
+        onLanguageClick = {},
         onSettingsClick = {},
         onAboutClick = {},
         onDismiss = {},

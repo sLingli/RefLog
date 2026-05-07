@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity() {
     private var showTimeSettingDialogState by mutableStateOf(false)
     private var showThemeSelectionDialogState by mutableStateOf(false)
     private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN) // 临时默认，onCreate 中更新
+    private var showLanguageSelectionDialogState by mutableStateOf(false)
+    private var currentLanguage by mutableStateOf(AppLanguage.DEFAULT)
     private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
     private var showColorSelectionDialogState by mutableStateOf(false)
@@ -120,6 +122,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
         currentAppTheme = ThemeManager.currentTheme // 从持久化读取实际主题
+        LanguageManager.init(this)
+        currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
         initializeTimer()
         updateAllComposeState()
@@ -172,6 +176,7 @@ class MainActivity : AppCompatActivity() {
                             dashboardViewModel.refresh()
                         },
                         onThemeClick = { showThemeSelectionDialogState = true },
+                        onLanguageClick = { showLanguageSelectionDialogState = true },
                         onSettingsClick = { showColorSelectionDialog() },
                         onAboutClick = { showAboutDialog() },
                         onPageChanged = { page ->
@@ -228,6 +233,20 @@ class MainActivity : AppCompatActivity() {
                     ThemeManager.currentTheme = theme
                     currentAppTheme = theme  // 触发 Compose 重组 + 自动颜色动画
                     showThemeSelectionDialogState = false
+                }
+            )
+        }
+
+        // 语言选择弹窗
+        if (showLanguageSelectionDialogState) {
+            LanguageSelectionDialog(
+                currentLanguage = currentLanguage,
+                onDismiss = { showLanguageSelectionDialogState = false },
+                onLanguageSelected = { language ->
+                    LanguageManager.currentLanguage = language
+                    currentLanguage = language
+                    showLanguageSelectionDialogState = false
+                    LanguageManager.applyLanguage(this)
                 }
             )
         }

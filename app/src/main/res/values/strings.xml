@@ -107,4 +107,11 @@
     <string name="label_custom_themes">Custom Themes</string>
     <string name="label_follow_system_desc">Auto light/dark</string>
     <string name="label_dynamic_desc">Wallpaper colors</string>
+
+    <!-- Language -->
+    <string name="title_language">Language</string>
+    <string name="label_current_language">Current Language</string>
+    <string name="language_default">Follow System</string>
+    <string name="language_zh">简体中文</string>
+    <string name="language_en">English</string>
 </resources>
