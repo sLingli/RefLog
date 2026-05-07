@@ -117,15 +117,7 @@ fun HistoryDialogContent(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(16.dp)
     ) {
-        // 顶部图标 History Icon
-        Icon(
-            painter = painterResource(id = R.drawable.ic_history),
-            contentDescription = null,
-            modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.CenterHorizontally),
-            tint = MaterialTheme.colorScheme.onSurface
-        )
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -545,15 +537,7 @@ fun HistoryPageContent(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        // 顶部标题
-        Icon(
-            painter = painterResource(id = R.drawable.ic_history),
-            contentDescription = null,
-            modifier = Modifier
-                .size(40.dp)
-                .align(Alignment.CenterHorizontally),
-            tint = MaterialTheme.colorScheme.onSurface
-        )
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
