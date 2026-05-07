@@ -90,6 +90,7 @@
     <string name="label_version">版本</string>
     <string name="label_official_website">官网</string>
     <string name="label_github">GitHub</string>
+    <string name="back">返回</string>
 
     <!-- 主题 -->
     <string name="title_theme">主题样式</string>

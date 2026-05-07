@@ -7,6 +7,8 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
@@ -15,6 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -99,7 +104,6 @@ class MainActivity : AppCompatActivity() {
     private var showMatchSummaryDialogState by mutableStateOf(false)
     private var showColorSelectionDialogState by mutableStateOf(false)
     private var showNumberSelectionDialogState by mutableStateOf(false)
-    private var showAboutDialogState by mutableStateOf(false)
     private var numberSelectionEventType by mutableStateOf("")
     private var numberSelectionTeam by mutableStateOf("")
     private var numberSelectionTeamColor by mutableStateOf(0)
@@ -131,66 +135,82 @@ class MainActivity : AppCompatActivity() {
         // 使用 Compose 主屏幕替代 XML 布局
         setContent {
             RefLogTheme(theme = currentAppTheme) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    // Dashboard 状态
-                    val dashboardState by dashboardViewModel.state.collectAsState()
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "home") {
+                    composable("home") {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Dashboard 状态
+                            val dashboardState by dashboardViewModel.state.collectAsState()
 
-                    // 主屏幕（含 Pager + BottomNav）
-                    MainScreen(
-                        // Dashboard 数据
-                        dashboardState = dashboardState,
-                        onDashboardStartTimer = {
-                            // 跳转到计时器页
-                        },
-                        onDashboardEventPreset = {
-                            // 赛事预设（占位）
-                        },
-                        onDashboardRecordClick = { record ->
-                            showMatchSummary(isHistory = true, historyRecord = record)
-                        },
+                            // 主屏幕（含 Pager + BottomNav）
+                            MainScreen(
+                                // Dashboard 数据
+                                dashboardState = dashboardState,
+                                onDashboardStartTimer = {
+                                    // 跳转到计时器页
+                                },
+                                onDashboardEventPreset = {
+                                    // 赛事预设（占位）
+                                },
+                                onDashboardRecordClick = { record ->
+                                    showMatchSummary(isHistory = true, historyRecord = record)
+                                },
 
-                        timerState = timerStateCompose,
-                        currentHalf = currentHalf,
-                        statusText = statusTextCompose,
-                        statusColor = statusColorCompose,
-                        statusIconRes = statusIconResCompose,
-                        mainTimeText = mainTimeTextCompose,
-                        mainTimeColor = mainTimeColorCompose,
-                        stoppageTimeText = stoppageTimeTextCompose,
-                        stoppageActive = stoppageActiveCompose,
-                        showEndHalfButton = showEndHalfButtonCompose,
-                        onTimerMainButtonClick = { toggleTimer() },
-                        onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
-                        historyRecords = historyRecordsCompose,
-                        onHistoryRecordClick = { record ->
-                            showMatchSummary(isHistory = true, historyRecord = record)
-                        },
-                        onHistoryDeleteRecord = { record ->
-                            recordManager.deleteRecord(record.id)
-                            historyRecordsCompose = recordManager.getAllRecords()
-                            dashboardViewModel.refresh()
-                        },
-                        onHistoryClearAll = {
-                            recordManager.clearAllRecords()
-                            historyRecordsCompose = recordManager.getAllRecords()
-                            dashboardViewModel.refresh()
-                        },
-                        onThemeClick = { showThemeSelectionDialogState = true },
-                        onLanguageClick = { showLanguageSelectionDialogState = true },
-                        onSettingsClick = { showColorSelectionDialog() },
-                        onAboutClick = { showAboutDialog() },
-                        onPageChanged = { page ->
-                            if (page == 0) {
-                                dashboardViewModel.refresh()
-                            }
-                            if (page == 2) {
-                                historyRecordsCompose = recordManager.getAllRecords()
-                            }
+                                timerState = timerStateCompose,
+                                currentHalf = currentHalf,
+                                statusText = statusTextCompose,
+                                statusColor = statusColorCompose,
+                                statusIconRes = statusIconResCompose,
+                                mainTimeText = mainTimeTextCompose,
+                                mainTimeColor = mainTimeColorCompose,
+                                stoppageTimeText = stoppageTimeTextCompose,
+                                stoppageActive = stoppageActiveCompose,
+                                showEndHalfButton = showEndHalfButtonCompose,
+                                onTimerMainButtonClick = { toggleTimer() },
+                                onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
+                                historyRecords = historyRecordsCompose,
+                                onHistoryRecordClick = { record ->
+                                    showMatchSummary(isHistory = true, historyRecord = record)
+                                },
+                                onHistoryDeleteRecord = { record ->
+                                    recordManager.deleteRecord(record.id)
+                                    historyRecordsCompose = recordManager.getAllRecords()
+                                    dashboardViewModel.refresh()
+                                },
+                                onHistoryClearAll = {
+                                    recordManager.clearAllRecords()
+                                    historyRecordsCompose = recordManager.getAllRecords()
+                                    dashboardViewModel.refresh()
+                                },
+                                onThemeClick = { showThemeSelectionDialogState = true },
+                                onLanguageClick = { showLanguageSelectionDialogState = true },
+                                onSettingsClick = { showColorSelectionDialog() },
+                                onAboutClick = { navController.navigate("about") },
+                                onPageChanged = { page ->
+                                    if (page == 0) {
+                                        dashboardViewModel.refresh()
+                                    }
+                                    if (page == 2) {
+                                        historyRecordsCompose = recordManager.getAllRecords()
+                                    }
+                                }
+                            )
+
+                            // 弹窗覆盖层（替代原 ComposeView composeDialogContainer）
+                            DialogOverlay()
                         }
-                    )
-
-                    // 弹窗覆盖层（替代原 ComposeView composeDialogContainer）
-                    DialogOverlay()
+                    }
+                    composable(
+                        route = "about",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        AboutScreen(
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
                 }
             }
         }
@@ -372,12 +392,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 关于弹窗
-        if (showAboutDialogState) {
-            AboutScreen(
-                onDismiss = { showAboutDialogState = false }
-            )
-        }
     }
 
     // region 状态机
@@ -708,10 +722,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun showColorSelectionDialog() {
         showColorSelectionDialogState = true
-    }
-
-    private fun showAboutDialog() {
-        showAboutDialogState = true
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {

@@ -94,6 +94,7 @@
     <string name="label_version">Version</string>
     <string name="label_official_website">Official Website</string>
     <string name="label_github">GitHub</string>
+    <string name="back">Back</string>
 
     <!-- Theme -->
     <string name="title_theme">Theme</string>

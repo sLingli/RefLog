@@ -32,11 +32,14 @@ import androidx.compose.ui.unit.sp
  * - 头部：圆形 Logo + "RefLog"
  * - 卡片1：基础信息（版本）
  * - 卡片2：相关链接（官网、GitHub）
+ *
+ * 页面转场动画由 Navigation Compose 的 NavHost 统一管理，
+ * 通过 onNavigateBack 回调触发 navController.popBackStack() 实现返回。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    onDismiss: () -> Unit = {}
+    onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -45,7 +48,7 @@ fun AboutScreen(
         try {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
     }
@@ -60,17 +63,17 @@ fun AboutScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.btn_close)
+                            contentDescription = stringResource(R.string.back),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
@@ -89,7 +92,7 @@ fun AboutScreen(
             // Logo 圆形背景
             Box(
                 modifier = Modifier
-                    .size(260.dp)
+                    .size(200.dp)
                     .background(Color.White, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -97,7 +100,7 @@ fun AboutScreen(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
                     contentDescription = "RefLog Logo",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(250.dp)
+                    modifier = Modifier.size(200.dp)
                 )
             }
 
