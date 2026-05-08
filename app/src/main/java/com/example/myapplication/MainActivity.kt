@@ -1,10 +1,15 @@
 package com.example.myapplication
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.slideInHorizontally
@@ -120,6 +125,11 @@ class MainActivity : AppCompatActivity() {
     private var matchSummarySecondHalfStoppage by mutableStateOf("00:00")
     private var matchSummaryEvents by mutableStateOf<List<MatchEvent>>(emptyList())
 
+    // 个人资料状态（头像 & 昵称）
+    private var userAvatarUriString: String? by mutableStateOf(null)
+    private var userNickname: String by mutableStateOf("")
+    private lateinit var profilePrefs: android.content.SharedPreferences
+
     // region 生命周期
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,6 +139,27 @@ class MainActivity : AppCompatActivity() {
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
+
+        // 加载个人资料
+        profilePrefs = getSharedPreferences("user_profile", MODE_PRIVATE)
+        userAvatarUriString = profilePrefs.getString("avatar_uri", null)
+        userNickname = profilePrefs.getString("nickname", null)
+            ?: getString(R.string.default_nickname)
+
+        // 注册 Photo Picker（系统级选择器，无需额外权限）
+        val photoPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
+            uri?.let {
+                // 获取持久化读取权限（跨重启仍可访问）
+                contentResolver.takePersistableUriPermission(
+                    it, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                userAvatarUriString = it.toString()
+                profilePrefs.edit().putString("avatar_uri", it.toString()).apply()
+            }
+        }
+
         initializeTimer()
         updateAllComposeState()
 
@@ -193,6 +224,19 @@ class MainActivity : AppCompatActivity() {
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
                                 onSettingsClick = { showColorSelectionDialog() },
                                 onAboutClick = { navController.navigate("about") },
+                                avatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                                nickname = userNickname,
+                                onAvatarClick = {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
+                                    )
+                                },
+                                onNicknameChange = { newName ->
+                                    userNickname = newName
+                                    profilePrefs.edit().putString("nickname", newName).apply()
+                                },
                                 onPageChanged = { page ->
                                     if (page == 0) {
                                         dashboardViewModel.refresh()
