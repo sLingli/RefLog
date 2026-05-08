@@ -66,10 +66,9 @@ fun MainScreen(
     onLanguageClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
     avatarUri: Uri? = null,
     nickname: String = "",
-    onAvatarClick: () -> Unit = {},
-    onNicknameChange: (String) -> Unit = {},
 
     // === 页面切换回调 ===
     onPageChanged: (Int) -> Unit = {},
@@ -172,8 +171,7 @@ fun MainScreen(
                             onDismiss = { /* 嵌入在 Pager 中，不需要单独关闭 */ },
                             avatarUri = avatarUri,
                             nickname = nickname,
-                            onAvatarClick = onAvatarClick,
-                            onNicknameChange = onNicknameChange,
+                            onEditProfileClick = onEditProfileClick,
                         )
                     }
                 }

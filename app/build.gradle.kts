@@ -68,4 +68,10 @@ dependencies {
 
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.8.9")
+
+    // Coil - Compose 图片加载 (支持 AsyncImage)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // 图片裁剪库 (基于 uCrop 的现代 fork)
+    implementation("com.vanniktech:android-image-cropper:4.7.0")
 }

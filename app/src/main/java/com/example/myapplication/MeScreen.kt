@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,8 +48,7 @@ fun MeScreenDialog(
     onAboutClick: () -> Unit,
     avatarUri: Uri? = null,
     nickname: String = stringResource(R.string.default_nickname),
-    onAvatarClick: () -> Unit = {},
-    onNicknameChange: (String) -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -67,8 +65,7 @@ fun MeScreenDialog(
             onDismiss = onDismiss,
             avatarUri = avatarUri,
             nickname = nickname,
-            onAvatarClick = onAvatarClick,
-            onNicknameChange = onNicknameChange,
+            onEditProfileClick = onEditProfileClick,
         )
     }
 }
@@ -82,11 +79,8 @@ fun MeScreenContent(
     onDismiss: () -> Unit,
     avatarUri: Uri? = null,
     nickname: String = stringResource(R.string.default_nickname),
-    onAvatarClick: () -> Unit = {},
-    onNicknameChange: (String) -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
 ) {
-    var showEditNicknameDialog by remember { mutableStateOf(false) }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -94,33 +88,37 @@ fun MeScreenContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 头像区域 - 点击可更换
+        // 右上角编辑按钮 - 统一跳转编辑资料页面
+        Box(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            IconButton(
+                onClick = onEditProfileClick,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(R.string.title_edit_profile),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // 头像区域 - 仅展示，不可点击（编辑统一走编辑页）
         ProfileAvatar(
             avatarUri = avatarUri,
-            onClick = onAvatarClick
+            onClick = {}
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 昵称区域 - 点击可编辑
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { showEditNicknameDialog = true }
-        ) {
-            Text(
-                text = nickname,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        // 昵称区域 - 仅展示，不可点击（编辑统一走编辑页）
+        Text(
+            text = nickname,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -150,18 +148,6 @@ fun MeScreenContent(
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-    }
-
-    // 编辑昵称弹窗
-    if (showEditNicknameDialog) {
-        EditNicknameDialog(
-            currentNickname = nickname,
-            onDismiss = { showEditNicknameDialog = false },
-            onConfirm = { newNickname ->
-                showEditNicknameDialog = false
-                onNicknameChange(newNickname)
-            }
-        )
     }
 }
 
@@ -215,75 +201,6 @@ private fun ProfileAvatar(
             )
         }
     }
-}
-
-/**
- * 编辑昵称弹窗
- */
-@Composable
-fun EditNicknameDialog(
-    currentNickname: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var text by remember { mutableStateOf(currentNickname) }
-    var isError by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.edit_nickname_title),
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { newValue ->
-                        if (newValue.length <= 20) {
-                            text = newValue
-                            isError = false
-                        } else {
-                            isError = true
-                        }
-                    },
-                    label = { Text(stringResource(R.string.nickname_hint)) },
-                    isError = isError,
-                    supportingText = {
-                        if (isError) {
-                            Text(
-                                text = stringResource(R.string.nickname_too_long),
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        } else {
-                            Text(
-                                text = "${text.length}/20",
-                                textAlign = TextAlign.End,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onConfirm(text.trim()) },
-                enabled = text.trim().isNotEmpty()
-            ) {
-                Text(stringResource(R.string.nickname_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.nickname_cancel))
-            }
-        }
-    )
 }
 
 /**

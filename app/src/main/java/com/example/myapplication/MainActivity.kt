@@ -8,8 +8,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.setContent
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.slideInHorizontally
@@ -146,20 +144,6 @@ class MainActivity : AppCompatActivity() {
         userNickname = profilePrefs.getString("nickname", null)
             ?: getString(R.string.default_nickname)
 
-        // 注册 Photo Picker（系统级选择器，无需额外权限）
-        val photoPickerLauncher = registerForActivityResult(
-            ActivityResultContracts.PickVisualMedia()
-        ) { uri ->
-            uri?.let {
-                // 获取持久化读取权限（跨重启仍可访问）
-                contentResolver.takePersistableUriPermission(
-                    it, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-                userAvatarUriString = it.toString()
-                profilePrefs.edit().putString("avatar_uri", it.toString()).apply()
-            }
-        }
-
         initializeTimer()
         updateAllComposeState()
 
@@ -224,19 +208,9 @@ class MainActivity : AppCompatActivity() {
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
                                 onSettingsClick = { showColorSelectionDialog() },
                                 onAboutClick = { navController.navigate("about") },
+                                onEditProfileClick = { navController.navigate("edit_profile") },
                                 avatarUri = userAvatarUriString?.let { Uri.parse(it) },
                                 nickname = userNickname,
-                                onAvatarClick = {
-                                    photoPickerLauncher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                                        )
-                                    )
-                                },
-                                onNicknameChange = { newName ->
-                                    userNickname = newName
-                                    profilePrefs.edit().putString("nickname", newName).apply()
-                                },
                                 onPageChanged = { page ->
                                     if (page == 0) {
                                         dashboardViewModel.refresh()
@@ -260,6 +234,34 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         AboutScreen(
                             onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(
+                        route = "edit_profile",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        EditProfileScreen(
+                            currentAvatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                            currentNickname = userNickname,
+                            onNavigateBack = { navController.popBackStack() },
+                            onSave = { newNickname, newAvatarUri ->
+                                userNickname = newNickname
+                                profilePrefs.edit().putString("nickname", newNickname).apply()
+                                newAvatarUri?.let { uri ->
+                                    userAvatarUriString = uri.toString()
+                                    profilePrefs.edit().putString("avatar_uri", uri.toString()).apply()
+                                    try {
+                                        contentResolver.takePersistableUriPermission(
+                                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        )
+                                    } catch (_: Exception) {
+                                        // 部分设备可能不支持持久化权限
+                                    }
+                                }
+                            }
                         )
                     }
                 }

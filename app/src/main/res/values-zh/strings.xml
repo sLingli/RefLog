@@ -122,4 +122,9 @@
     <string name="nickname_confirm">确定</string>
     <string name="nickname_cancel">取消</string>
     <string name="nickname_too_long">昵称过长（最多20个字符）</string>
+
+    <!-- 编辑资料页面 -->
+    <string name="title_edit_profile">编辑资料</string>
+    <string name="label_save_and_back">保存并返回</string>
+    <string name="label_change_avatar">更换头像</string>
 </resources>
