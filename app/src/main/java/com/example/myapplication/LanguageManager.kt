@@ -77,7 +77,7 @@ object LanguageManager {
      * 获取语言描述的字符串资源 ID
      */
     fun getLanguageDescResId(language: AppLanguage): Int? = when (language) {
-        AppLanguage.DEFAULT -> R.string.label_follow_system_desc
+        AppLanguage.DEFAULT -> null
         AppLanguage.CHINESE_SIMPLIFIED -> null
         AppLanguage.ENGLISH -> null
     }
