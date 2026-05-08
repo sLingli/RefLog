@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,6 +66,9 @@ fun MainScreen(
     onLanguageClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
+    avatarUri: Uri? = null,
+    nickname: String = "",
 
     // === 页面切换回调 ===
     onPageChanged: (Int) -> Unit = {},
@@ -164,7 +168,10 @@ fun MainScreen(
                             onLanguageClick = onLanguageClick,
                             onSettingsClick = onSettingsClick,
                             onAboutClick = onAboutClick,
-                            onDismiss = { /* 嵌入在 Pager 中，不需要单独关闭 */ }
+                            onDismiss = { /* 嵌入在 Pager 中，不需要单独关闭 */ },
+                            avatarUri = avatarUri,
+                            nickname = nickname,
+                            onEditProfileClick = onEditProfileClick,
                         )
                     }
                 }

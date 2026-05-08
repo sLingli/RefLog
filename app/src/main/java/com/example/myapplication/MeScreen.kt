@@ -1,13 +1,24 @@
 package com.example.myapplication
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -22,8 +33,10 @@ import androidx.compose.ui.window.DialogProperties
  * Me Screen Dialog
  *
  * 包含：
+ * - 自定义头像（点击从相册选择）
+ * - 自定义昵称（点击编辑）
  * - 主题样式入口（ThemeSelectionDialog）
- * - 设置入口（设定主客队颜色）
+ * - 语言切换入口（LanguageSelectionDialog）
  * - 关于入口（AboutScreen）
  */
 @Composable
@@ -33,6 +46,9 @@ fun MeScreenDialog(
     onLanguageClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
+    avatarUri: Uri? = null,
+    nickname: String = stringResource(R.string.default_nickname),
+    onEditProfileClick: () -> Unit = {},
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -46,7 +62,10 @@ fun MeScreenDialog(
             onLanguageClick = onLanguageClick,
             onSettingsClick = onSettingsClick,
             onAboutClick = onAboutClick,
-            onDismiss = onDismiss
+            onDismiss = onDismiss,
+            avatarUri = avatarUri,
+            nickname = nickname,
+            onEditProfileClick = onEditProfileClick,
         )
     }
 }
@@ -57,7 +76,10 @@ fun MeScreenContent(
     onLanguageClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAboutClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    avatarUri: Uri? = null,
+    nickname: String = stringResource(R.string.default_nickname),
+    onEditProfileClick: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -66,24 +88,33 @@ fun MeScreenContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 头像区域
+        // 右上角编辑按钮 - 统一跳转编辑资料页面
         Box(
-            modifier = Modifier
-                .padding(bottom = 12.dp)
-                .size(72.dp)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape = CircleShape),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_profile),
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            IconButton(
+                onClick = onEditProfileClick,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(R.string.title_edit_profile),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
+        // 头像区域 - 仅展示，不可点击（编辑统一走编辑页）
+        ProfileAvatar(
+            avatarUri = avatarUri,
+            onClick = {}
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 昵称区域 - 仅展示，不可点击（编辑统一走编辑页）
         Text(
-            text = stringResource(R.string.app_name),
+            text = nickname,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -95,7 +126,6 @@ fun MeScreenContent(
         MeMenuItem(
             iconRes = R.drawable.ic_palette,
             title = stringResource(R.string.title_theme),
-            subtitle = stringResource(R.string.label_current_theme),
             onClick = onThemeClick
         )
 
@@ -105,7 +135,6 @@ fun MeScreenContent(
         MeMenuItem(
             iconRes = R.drawable.language,
             title = stringResource(R.string.title_language),
-            subtitle = stringResource(R.string.label_current_language),
             onClick = onLanguageClick
         )
 
@@ -115,11 +144,62 @@ fun MeScreenContent(
         MeMenuItem(
             iconRes = R.drawable.ic_info,
             title = stringResource(R.string.title_about),
-            subtitle = stringResource(R.string.app_name),
             onClick = onAboutClick
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+/**
+ * 头像组件 - 显示用户自定义头像或默认图标
+ */
+@Composable
+private fun ProfileAvatar(
+    avatarUri: Uri?,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+
+    // 将 URI 加载为 ImageBitmap（避免引入 Coil 等额外依赖）
+    val avatarBitmap: ImageBitmap? = remember(avatarUri) {
+        avatarUri?.let { uri ->
+            try {
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .padding(bottom = 4.dp)
+            .size(80.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, shape = CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (avatarBitmap != null) {
+            Image(
+                bitmap = avatarBitmap,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_profile),
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -130,7 +210,7 @@ fun MeScreenContent(
 fun MeMenuItem(
     iconRes: Int,
     title: String,
-    subtitle: String,
+    subtitle: String = "",
     onClick: () -> Unit
 ) {
     Button(
@@ -164,11 +244,13 @@ fun MeMenuItem(
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             Icon(
                 painter = painterResource(id = R.drawable.ic_chevron_right),

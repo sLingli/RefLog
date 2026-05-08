@@ -1,5 +1,8 @@
 package com.example.myapplication
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -120,6 +123,11 @@ class MainActivity : AppCompatActivity() {
     private var matchSummarySecondHalfStoppage by mutableStateOf("00:00")
     private var matchSummaryEvents by mutableStateOf<List<MatchEvent>>(emptyList())
 
+    // 个人资料状态（头像 & 昵称）
+    private var userAvatarUriString: String? by mutableStateOf(null)
+    private var userNickname: String by mutableStateOf("")
+    private lateinit var profilePrefs: android.content.SharedPreferences
+
     // region 生命周期
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,6 +137,13 @@ class MainActivity : AppCompatActivity() {
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
+
+        // 加载个人资料
+        profilePrefs = getSharedPreferences("user_profile", MODE_PRIVATE)
+        userAvatarUriString = profilePrefs.getString("avatar_uri", null)
+        userNickname = profilePrefs.getString("nickname", null)
+            ?: getString(R.string.default_nickname)
+
         initializeTimer()
         updateAllComposeState()
 
@@ -186,6 +201,9 @@ class MainActivity : AppCompatActivity() {
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
                                 onSettingsClick = { showColorSelectionDialog() },
                                 onAboutClick = { navController.navigate("about") },
+                                onEditProfileClick = { navController.navigate("edit_profile") },
+                                avatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                                nickname = userNickname,
                                 onPageChanged = { page ->
                                     if (page == 0) {
                                         dashboardViewModel.refresh()
@@ -209,6 +227,34 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         AboutScreen(
                             onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable(
+                        route = "edit_profile",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        EditProfileScreen(
+                            currentAvatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                            currentNickname = userNickname,
+                            onNavigateBack = { navController.popBackStack() },
+                            onSave = { newNickname, newAvatarUri ->
+                                userNickname = newNickname
+                                profilePrefs.edit().putString("nickname", newNickname).apply()
+                                newAvatarUri?.let { uri ->
+                                    userAvatarUriString = uri.toString()
+                                    profilePrefs.edit().putString("avatar_uri", uri.toString()).apply()
+                                    try {
+                                        contentResolver.takePersistableUriPermission(
+                                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        )
+                                    } catch (_: Exception) {
+                                        // 部分设备可能不支持持久化权限
+                                    }
+                                }
+                            }
                         )
                     }
                 }

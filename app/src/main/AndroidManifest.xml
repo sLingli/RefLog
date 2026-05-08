@@ -2,9 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <uses-feature android:name="android.hardware.type.watch" />
 
     <application
         android:allowBackup="true"
@@ -16,10 +15,6 @@
         android:theme="@style/Theme.Material3.Dark.NoActionBar"
         tools:targetApi="31">
 
-        <meta-data
-            android:name="com.google.android.wearable.standalone"
-            android:value="true" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -29,25 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".TimeSelectionActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar" />
-        <activity
-            android:name=".HistoryActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MyApplication.WearBlack" />
-
-        <activity
-            android:name=".MatchSummaryActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MyApplication.WearBlack" />
-
-        <activity
-            android:name=".AboutActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MyApplication.WearBlack" />
 
     </application>
 
