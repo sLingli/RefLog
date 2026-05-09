@@ -11,49 +11,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 
 /**
  * 主屏幕 - Compose 版本
  *
- * 对齐原 activity_main.xml 的功能结构：
- * - Scaffold + BottomNavBar（替代 BottomNavigationView）
- * - HorizontalPager（替代 ViewPager2，3 个页面：计时器 / 历史 / 我的）
- * - 弹窗覆盖层（替代 ComposeView composeDialogContainer）
- *
- * 使用方式：
- * ```kotlin
- * // 在 MainActivity 中替代 setContentView(R.layout.activity_main)
- * setContent {
- *     RefLogTheme {
- *         MainScreen(...)
- *     }
- * }
- * ```
+ * 重构后结构（3 个页面）：
+ * - Scaffold + BottomNavBar（首页 / 历史 / 我的）
+ * - HorizontalPager（替代 ViewPager2，3 个页面）
+ * - 计时器已移至独立全屏路由，不再占用底部导航栏
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     // === 首页 Dashboard 状态 ===
     dashboardState: DashboardState = DashboardState(),
-    onDashboardStartTimer: () -> Unit = {},
-    onDashboardEventPreset: () -> Unit = {},
+    onDashboardQuickMatch: () -> Unit = {},
+    onDashboardMatchTemplates: () -> Unit = {},
     onDashboardRecordClick: (MatchRecord) -> Unit = {},
-
-    // === 计时器页面状态 ===
-    timerState: String = TIMER_STATE_READY,
-    currentHalf: String = HALF_FIRST_CODE,
-    statusText: String = "",
-    statusColor: Color = Color(0xFF4CAF50),
-    statusIconRes: Int = 0,
-    mainTimeText: String = "00:00",
-    mainTimeColor: Color = Color(0xFF4CAF50),
-    stoppageTimeText: String = "00:00",
-    stoppageActive: Boolean = false,
-    showEndHalfButton: Boolean = false,
-    onTimerMainButtonClick: () -> Unit = {},
-    onEndHalfButtonLongPress: () -> Unit = {},
 
     // === 历史页面状态 ===
     historyRecords: List<MatchRecord> = emptyList(),
@@ -74,14 +49,14 @@ fun MainScreen(
     onPageChanged: (Int) -> Unit = {},
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var selectedTab by remember { mutableStateOf(BottomNavTab.TIMER) }
+    var selectedTab by remember { mutableStateOf(BottomNavTab.HOME) }
 
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { 4 } // HOME, TIMER, HISTORY, PROFILE
+        pageCount = { 3 } // HOME(0), HISTORY(1), PROFILE(2)
     )
 
-    // Pager → Tab 同步（使用 targetPage 实现即时响应，消除导航栏高亮滞后）
+    // Pager → Tab 同步
     LaunchedEffect(pagerState.targetPage) {
         val newTab = BottomNavTab.fromIndex(pagerState.targetPage)
         if (selectedTab != newTab) {
@@ -101,10 +76,8 @@ fun MainScreen(
                         val targetPage = tab.index
                         val currentPage = pagerState.settledPage
                         if (kotlin.math.abs(targetPage - currentPage) > 1) {
-                            // 跨级切换：瞬间跳转，避免中间页面闪烁
                             pagerState.scrollToPage(targetPage)
                         } else {
-                            // 相邻切换：保留丝滑滑动动画
                             pagerState.animateScrollToPage(targetPage)
                         }
                     }
@@ -117,7 +90,6 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 页面容器（替代 ViewPager2）
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
@@ -127,32 +99,14 @@ fun MainScreen(
                     0 -> {
                         DashboardScreen(
                             state = dashboardState,
-                            onStartTimer = onDashboardStartTimer,
-                            onEventPreset = onDashboardEventPreset,
+                            onQuickMatch = onDashboardQuickMatch,
+                            onMatchTemplates = onDashboardMatchTemplates,
                             onRecordClick = onDashboardRecordClick,
                         )
                     }
 
-                    // 计时器页面
-                    1 -> {
-                        TimerPage(
-                            state = timerState,
-                            currentHalf = currentHalf,
-                            statusText = statusText,
-                            statusColor = statusColor,
-                            statusIconRes = statusIconRes,
-                            mainTimeText = mainTimeText,
-                            mainTimeColor = mainTimeColor,
-                            stoppageTimeText = stoppageTimeText,
-                            stoppageActive = stoppageActive,
-                            showEndHalfButton = showEndHalfButton,
-                            onMainButtonClick = onTimerMainButtonClick,
-                            onEndHalfButtonLongPress = onEndHalfButtonLongPress,
-                        )
-                    }
-
                     // 历史记录页面
-                    2 -> {
+                    1 -> {
                         HistoryPageContent(
                             records = historyRecords,
                             onRecordClick = onHistoryRecordClick,
@@ -162,7 +116,7 @@ fun MainScreen(
                     }
 
                     // 我的页面
-                    3 -> {
+                    2 -> {
                         MeScreenContent(
                             onThemeClick = onThemeClick,
                             onLanguageClick = onLanguageClick,

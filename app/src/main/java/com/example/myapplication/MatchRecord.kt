@@ -25,5 +25,10 @@ data class MatchRecord(
     val injuryCount: Int,
     val events: List<MatchEvent>,
     val homeGoals: Int = 0,
-    val awayGoals: Int = 0
+    val awayGoals: Int = 0,
+    val matchName: String = "",
+    val homeTeamName: String = "",
+    val awayTeamName: String = "",
+    val homeTeamColor: Int = 0xFF1565C0.toInt(),
+    val awayTeamColor: Int = 0xFFC62828.toInt(),
 )

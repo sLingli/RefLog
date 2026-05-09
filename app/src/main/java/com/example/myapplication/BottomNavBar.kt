@@ -16,12 +16,14 @@ import androidx.compose.ui.unit.dp
 
 /**
  * 底部导航栏标签枚举
+ *
+ * 重构后仅保留 3 个 Tab：首页 / 历史 / 我的
+ * 计时器页面已独立为全屏沉浸式页面，不再占用底部导航栏
  */
 enum class BottomNavTab(val index: Int) {
     HOME(0),
-    TIMER(1),
-    HISTORY(2),
-    PROFILE(3);
+    HISTORY(1),
+    PROFILE(2);
 
     companion object {
         fun fromIndex(index: Int): BottomNavTab = entries.firstOrNull { it.index == index } ?: HOME
@@ -62,33 +64,6 @@ fun BottomNavBar(
             label = {
                 Text(
                     text = stringResource(R.string.nav_home),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            },
-            alwaysShowLabel = false,
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = selectedColor,
-                unselectedIconColor = unselectedColor,
-                selectedTextColor = selectedColor,
-                unselectedTextColor = unselectedColor,
-                indicatorColor = Color.Transparent
-            )
-        )
-
-        // 计时器
-        NavigationBarItem(
-            selected = selectedTab == BottomNavTab.TIMER,
-            onClick = { onTabSelected(BottomNavTab.TIMER) },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.baseline_play_arrow_24),
-                    contentDescription = stringResource(R.string.nav_timer),
-                    modifier = Modifier.size(28.dp)
-                )
-            },
-            label = {
-                Text(
-                    text = stringResource(R.string.nav_timer),
                     style = MaterialTheme.typography.labelSmall
                 )
             },

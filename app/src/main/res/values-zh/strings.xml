@@ -127,4 +127,21 @@
     <string name="title_edit_profile">编辑资料</string>
     <string name="label_save_and_back">保存并返回</string>
     <string name="label_change_avatar">更换头像</string>
+
+    <!-- 赛事预设 -->
+    <string name="dashboard_quick_match">快速开球</string>
+    <string name="dashboard_match_templates">赛事预设</string>
+    <string name="title_match_templates">赛事预设库</string>
+    <string name="btn_new_template">新建预设</string>
+    <string name="hint_template_name">赛事名称</string>
+    <string name="hint_team_name">队伍名称</string>
+    <string name="label_half_duration">半场时长</string>
+    <string name="label_home_team">主队</string>
+    <string name="label_away_team">客队</string>
+    <string name="msg_no_templates">暂无赛事预设</string>
+    <string name="msg_no_templates_hint">创建你的第一个赛事预设吧！</string>
+    <string name="default_template_name">快速比赛</string>
+    <string name="default_home_team">主队</string>
+    <string name="default_away_team">客队</string>
+    <string name="label_vs">vs</string>
 </resources>
