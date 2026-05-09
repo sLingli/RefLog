@@ -32,8 +32,8 @@ import java.util.Calendar
 @Composable
 fun DashboardScreen(
     state: DashboardState = DashboardState(),
-    onStartTimer: () -> Unit = {},
-    onEventPreset: () -> Unit = {},
+    onQuickMatch: () -> Unit = {},
+    onMatchTemplates: () -> Unit = {},
     onRecordClick: (MatchRecord) -> Unit = {},
 ) {
     LazyColumn(
@@ -66,8 +66,8 @@ fun DashboardScreen(
         // ═══════════════════════════════════════
         item {
             QuickActionsSection(
-                onStartTimer = onStartTimer,
-                onEventPreset = onEventPreset,
+                onQuickMatch = onQuickMatch,
+                onMatchTemplates = onMatchTemplates,
             )
         }
 
@@ -297,8 +297,8 @@ private fun StatItem(
 
 @Composable
 private fun QuickActionsSection(
-    onStartTimer: () -> Unit,
-    onEventPreset: () -> Unit,
+    onQuickMatch: () -> Unit,
+    onMatchTemplates: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -306,24 +306,24 @@ private fun QuickActionsSection(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 左侧：独立计时
+        // 左侧：快速开球
         QuickActionCard(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.baseline_play_arrow_24,
-            label = stringResource(R.string.dashboard_quick_timer),
+            label = stringResource(R.string.dashboard_quick_match),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            onClick = onStartTimer,
+            onClick = onQuickMatch,
         )
 
         // 右侧：赛事预设
         QuickActionCard(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.ic_wrench,
-            label = stringResource(R.string.dashboard_event_preset),
+            label = stringResource(R.string.dashboard_match_templates),
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            onClick = onEventPreset,
+            onClick = onMatchTemplates,
         )
     }
 }

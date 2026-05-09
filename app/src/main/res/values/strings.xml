@@ -118,4 +118,17 @@
     <string name="language_default">Follow System</string>
     <string name="language_zh">简体中文</string>
     <string name="language_en">English</string>
+
+    <!-- Profile / Me Screen -->
+    <string name="default_nickname">RefLog</string>
+    <string name="edit_nickname_title">Edit Nickname</string>
+    <string name="nickname_hint">Enter nickname</string>
+    <string name="nickname_confirm">Confirm</string>
+    <string name="nickname_cancel">Cancel</string>
+    <string name="nickname_too_long">Nickname too long (max 20 characters)</string>
+
+    <!-- Edit Profile Screen -->
+    <string name="title_edit_profile">Edit Profile</string>
+    <string name="label_save_and_back">Save &amp; Back</string>
+    <string name="label_change_avatar">Change avatar</string>
 </resources>

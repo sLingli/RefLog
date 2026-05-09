@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -66,6 +67,12 @@ private enum class ButtonLayout { TWO_BUTTONS, SINGLE_MERGED }
 
 @Composable
 fun TimerPage(
+    // 赛事信息
+    matchName: String = "",
+    homeTeamName: String = "",
+    awayTeamName: String = "",
+    homeTeamColor: Int = 0xFF1565C0.toInt(),
+    awayTeamColor: Int = 0xFFC62828.toInt(),
     // 状态
     state: String,
     currentHalf: String,
@@ -143,6 +150,18 @@ fun TimerPage(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // ========== 赛事信息头部 ==========
+        if (homeTeamName.isNotBlank() || awayTeamName.isNotBlank()) {
+            MatchInfoHeader(
+                matchName = matchName,
+                homeTeamName = homeTeamName,
+                awayTeamName = awayTeamName,
+                homeTeamColor = homeTeamColor,
+                awayTeamColor = awayTeamColor,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // ========== 主计时器卡片 ==========
         Surface(
             modifier = Modifier
@@ -448,6 +467,80 @@ private fun EndHalfButton(
                 color = contentColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+/**
+ * 赛事信息头部 - 显示在计时器页面顶部
+ *
+ * 展示赛事名称和主客队信息（带颜色标识）
+ */
+@Composable
+private fun MatchInfoHeader(
+    matchName: String,
+    homeTeamName: String,
+    awayTeamName: String,
+    homeTeamColor: Int,
+    awayTeamColor: Int,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 赛事名称
+        if (matchName.isNotBlank()) {
+            Text(
+                text = matchName,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // 主队 vs 客队
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // 主队色块
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(Color(homeTeamColor))
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = homeTeamName,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "  ${stringResource(R.string.label_vs)}  ",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = awayTeamName,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            // 客队色块
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(CircleShape)
+                    .background(Color(awayTeamColor))
             )
         }
     }

@@ -151,7 +151,14 @@ class MainActivity : AppCompatActivity() {
         setContent {
             RefLogTheme(theme = currentAppTheme) {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "home") {
+                NavHost(
+                    navController = navController,
+                    startDestination = "home",
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 3 }) },
+                    popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }) },
+                    popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+                ) {
                     composable("home") {
                         Box(modifier = Modifier.fillMaxSize()) {
                             // Dashboard 状态
