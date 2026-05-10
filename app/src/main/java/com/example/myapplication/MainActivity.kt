@@ -224,24 +224,12 @@ class MainActivity : AppCompatActivity() {
                     composable("match_templates") {
                         val templates = templateManager.getAllTemplates()
                         MatchTemplateScreen(
-                            templates = templates,
+                            initialTemplates = templates,
+                            templateManager = templateManager,
                             onNavigateBack = { navController.popBackStack() },
                             onTemplateSelected = { template ->
                                 startMatchWithTemplate(template, navController)
                             },
-                            onTemplateCreated = { template ->
-                                templateManager.saveTemplate(template)
-                                // 触发重组
-                                navController.navigate("match_templates") {
-                                    popUpTo("match_templates") { inclusive = true }
-                                }
-                            },
-                            onTemplateDeleted = { id ->
-                                templateManager.deleteTemplate(id)
-                                navController.navigate("match_templates") {
-                                    popUpTo("match_templates") { inclusive = true }
-                                }
-                            }
                         )
                     }
 
