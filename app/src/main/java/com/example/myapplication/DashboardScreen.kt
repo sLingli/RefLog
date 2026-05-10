@@ -1,5 +1,9 @@
 package com.example.myapplication
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,11 +11,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -117,7 +127,7 @@ private fun HeaderSection() {
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_watch),
+                    painter = painterResource(id = R.drawable.watch),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -175,16 +185,17 @@ private fun DashboardCard(
                 .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 左侧 40%：甜甜圈图表占位
+            // 左侧 40%：甜甜圈图表
             Box(
                 modifier = Modifier
-                    .weight(0.4f)
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    .weight(0.26f)
+                    .aspectRatio(1f),
                 contentAlignment = Alignment.Center
             ) {
-                DonutPlaceholder()
+                DonutChart(
+                    yellowCardCount = totalYellowCards,
+                    redCardCount = totalRedCards,
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -229,31 +240,112 @@ private fun DashboardCard(
     }
 }
 
+// ═══════════════════════════════════════════════
+// DonutChart 甜甜圈图表
+// ═══════════════════════════════════════════════
+
 /**
- * 甜甜圈图表占位符
+ * 红黄牌比例环 — Donut Chart
+ *
+ * 极简风格：中心完全留空，仅展示圆弧比例。
+ * - 总牌数为 0：绘制 360° 完整圆环（空状态占位色）
+ * - 总牌数 > 0：按黄/红比例分两段首尾相连
+ * - 首次出现时带 ~1000ms 的生长动画 (0° → 360°)
+ *
+ * @param yellowCardCount 黄牌数量
+ * @param redCardCount 红牌数量
  */
 @Composable
-private fun DonutPlaceholder() {
-    Box(
-        contentAlignment = Alignment.Center,
+fun DonutChart(
+    yellowCardCount: Int,
+    redCardCount: Int,
+) {
+    val total = yellowCardCount + redCardCount
+    val sweepAngle = remember { Animatable(0f) }
+
+    // 颜色定义
+    val yellowColor = Color(0xFFFFD700)
+    val redColor = Color(0xFFFF5252)
+    val emptyColor = MaterialTheme.colorScheme.surfaceVariant
+
+    // 线宽和圆角
+    val strokeWidth = 18.dp
+
+    // 生长动画
+    LaunchedEffect(Unit) {
+        sweepAngle.animateTo(
+            targetValue = 360f,
+            animationSpec = tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing
+            )
+        )
+    }
+
+    Canvas(
+        modifier = Modifier.fillMaxSize()
     ) {
-        // 外环占位
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(50))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            // 中心空洞
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center
-            ) {
-                
+        val canvasSize = minOf(size.width, size.height)
+        val arcSize = Size(canvasSize, canvasSize)
+        val topLeft = Offset(
+            x = (size.width - canvasSize) / 2f,
+            y = (size.height - canvasSize) / 2f
+        )
+
+        // 从顶部开始 (-90°)，即 12 点钟方向
+        val startAngleOffset = -90f
+        val currentSweep = sweepAngle.value
+
+        if (total == 0) {
+            // 空状态：完整圆环
+            drawArc(
+                color = emptyColor,
+                startAngle = startAngleOffset,
+                sweepAngle = currentSweep,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(
+                    width = strokeWidth.toPx(),
+                    cap = StrokeCap.Round
+                )
+            )
+        } else {
+            val yellowFraction = yellowCardCount.toFloat() / total
+            val redFraction = redCardCount.toFloat() / total
+            val yellowSweep = yellowFraction * currentSweep
+            val redSweep = redFraction * currentSweep
+
+            // 黄牌弧段
+            if (yellowSweep > 0f) {
+                drawArc(
+                    color = yellowColor,
+                    startAngle = startAngleOffset,
+                    sweepAngle = yellowSweep,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(
+                        width = strokeWidth.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                )
+            }
+
+            // 红牌弧段：紧接黄牌之后
+            if (redSweep > 0f) {
+                drawArc(
+                    color = redColor,
+                    startAngle = startAngleOffset + yellowSweep,
+                    sweepAngle = redSweep,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(
+                        width = strokeWidth.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                )
             }
         }
     }

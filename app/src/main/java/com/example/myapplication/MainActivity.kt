@@ -2,7 +2,6 @@ package com.example.myapplication
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -30,10 +29,12 @@ import java.util.Locale
 /**
  * 足球比赛计时器主界面（Compose 版本）
  *
- * 状态机流程：READY → RUNNING ↔ PAUSED → HALFTIME → FINISHED
- * 支持双半场计时、补时统计、事件记录（黄牌/红牌/进球/伤停/换人）及比赛历史管理
+ * 重构后架构：
+ * - 首页 3 Tab（首页 / 历史 / 我的）通过 HorizontalPager
+ * - 计时器为独立全屏 NavHost 路由（无底部导航栏）
+ * - 赛事预设库为独立 NavHost 路由
  *
- * UI 完全由 Compose 驱动：MainScreen + HorizontalPager + BottomNavBar
+ * 状态机流程：READY → RUNNING ↔ PAUSED → HALFTIME → FINISHED
  */
 class MainActivity : AppCompatActivity() {
 
@@ -55,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
     private lateinit var recordManager: MatchRecordManager
+    private lateinit var templateManager: MatchTemplateManager
 
     // Dashboard ViewModel
     private val dashboardViewModel: DashboardViewModel by viewModels {
@@ -80,10 +82,14 @@ class MainActivity : AppCompatActivity() {
     private var pendingEventType: String = ""
     private var selectedTeam: String = ""
 
+    // 当前赛事配置（由模板传入）
+    private var currentMatchName: String = ""
+    private var currentHomeTeamName: String = ""
+    private var currentAwayTeamName: String = ""
     private var homeTeamColor: Int = 0xFF1565C0.toInt()
     private var awayTeamColor: Int = 0xFFC62828.toInt()
 
-    // region Compose UI 状态（驱动 MainScreen）
+    // region Compose UI 状态
     private var timerStateCompose by mutableStateOf(STATE_READY)
     private var statusTextCompose by mutableStateOf("")
     private var statusColorCompose by mutableStateOf(Color(0xFF4CAF50))
@@ -98,14 +104,12 @@ class MainActivity : AppCompatActivity() {
     // region Compose 弹窗状态
     private var showTeamSelectionDialogState by mutableStateOf(false)
     private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
-    private var showTimeSettingDialogState by mutableStateOf(false)
     private var showThemeSelectionDialogState by mutableStateOf(false)
-    private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN) // 临时默认，onCreate 中更新
+    private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN)
     private var showLanguageSelectionDialogState by mutableStateOf(false)
     private var currentLanguage by mutableStateOf(AppLanguage.DEFAULT)
     private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
-    private var showColorSelectionDialogState by mutableStateOf(false)
     private var showNumberSelectionDialogState by mutableStateOf(false)
     private var numberSelectionEventType by mutableStateOf("")
     private var numberSelectionTeam by mutableStateOf("")
@@ -122,8 +126,10 @@ class MainActivity : AppCompatActivity() {
     private var matchSummaryFirstHalfStoppage by mutableStateOf("00:00")
     private var matchSummarySecondHalfStoppage by mutableStateOf("00:00")
     private var matchSummaryEvents by mutableStateOf<List<MatchEvent>>(emptyList())
+    // 比赛总结确认后回调（用于退出计时器页）
+    private var onSummaryConfirmed: (() -> Unit)? = null
 
-    // 个人资料状态（头像 & 昵称）
+    // 个人资料状态
     private var userAvatarUriString: String? by mutableStateOf(null)
     private var userNickname: String by mutableStateOf("")
     private lateinit var profilePrefs: android.content.SharedPreferences
@@ -133,12 +139,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
-        currentAppTheme = ThemeManager.currentTheme // 从持久化读取实际主题
+        currentAppTheme = ThemeManager.currentTheme
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
+        templateManager = MatchTemplateManager(this)
 
-        // 加载个人资料
         profilePrefs = getSharedPreferences("user_profile", MODE_PRIVATE)
         userAvatarUriString = profilePrefs.getString("avatar_uri", null)
         userNickname = profilePrefs.getString("nickname", null)
@@ -147,7 +153,6 @@ class MainActivity : AppCompatActivity() {
         initializeTimer()
         updateAllComposeState()
 
-        // 使用 Compose 主屏幕替代 XML 布局
         setContent {
             RefLogTheme(theme = currentAppTheme) {
                 val navController = rememberNavController()
@@ -159,37 +164,24 @@ class MainActivity : AppCompatActivity() {
                     popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 3 }) },
                     popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
                 ) {
+                    // ═══════════════════════════════════════
+                    // 首页（含底部导航栏 + 3 Tab Pager）
+                    // ═══════════════════════════════════════
                     composable("home") {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            // Dashboard 状态
                             val dashboardState by dashboardViewModel.state.collectAsState()
 
-                            // 主屏幕（含 Pager + BottomNav）
                             MainScreen(
-                                // Dashboard 数据
                                 dashboardState = dashboardState,
-                                onDashboardStartTimer = {
-                                    // 跳转到计时器页
+                                onDashboardQuickMatch = {
+                                    startQuickMatch(navController)
                                 },
-                                onDashboardEventPreset = {
-                                    // 赛事预设（占位）
+                                onDashboardMatchTemplates = {
+                                    navController.navigate("match_templates")
                                 },
                                 onDashboardRecordClick = { record ->
                                     showMatchSummary(isHistory = true, historyRecord = record)
                                 },
-
-                                timerState = timerStateCompose,
-                                currentHalf = currentHalf,
-                                statusText = statusTextCompose,
-                                statusColor = statusColorCompose,
-                                statusIconRes = statusIconResCompose,
-                                mainTimeText = mainTimeTextCompose,
-                                mainTimeColor = mainTimeColorCompose,
-                                stoppageTimeText = stoppageTimeTextCompose,
-                                stoppageActive = stoppageActiveCompose,
-                                showEndHalfButton = showEndHalfButtonCompose,
-                                onTimerMainButtonClick = { toggleTimer() },
-                                onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
                                 historyRecords = historyRecordsCompose,
                                 onHistoryRecordClick = { record ->
                                     showMatchSummary(isHistory = true, historyRecord = record)
@@ -206,25 +198,66 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 onThemeClick = { showThemeSelectionDialogState = true },
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
-                                onSettingsClick = { showColorSelectionDialog() },
+                                onSettingsClick = { /* 设置入口已移除独立颜色弹窗 */ },
                                 onAboutClick = { navController.navigate("about") },
                                 onEditProfileClick = { navController.navigate("edit_profile") },
                                 avatarUri = userAvatarUriString?.let { Uri.parse(it) },
                                 nickname = userNickname,
                                 onPageChanged = { page ->
-                                    if (page == 0) {
-                                        dashboardViewModel.refresh()
-                                    }
-                                    if (page == 2) {
-                                        historyRecordsCompose = recordManager.getAllRecords()
+                                    when (page) {
+                                        0 -> dashboardViewModel.refresh()
+                                        1 -> historyRecordsCompose = recordManager.getAllRecords()
                                     }
                                 }
                             )
 
-                            // 弹窗覆盖层（替代原 ComposeView composeDialogContainer）
-                            DialogOverlay()
+                            // 弹窗覆盖层
+                            DialogOverlay(navController)
                         }
                     }
+
+                    // ═══════════════════════════════════════
+                    // 赛事预设库
+                    // ═══════════════════════════════════════
+                    composable("match_templates") {
+                        val templates = templateManager.getAllTemplates()
+                        MatchTemplateScreen(
+                            templates = templates,
+                            onNavigateBack = { navController.popBackStack() },
+                            onTemplateSelected = { template ->
+                                startMatchWithTemplate(template, navController)
+                            },
+                            onTemplateCreated = { template ->
+                                templateManager.saveTemplate(template)
+                                // 触发重组
+                                navController.navigate("match_templates") {
+                                    popUpTo("match_templates") { inclusive = true }
+                                }
+                            },
+                            onTemplateDeleted = { id ->
+                                templateManager.deleteTemplate(id)
+                                navController.navigate("match_templates") {
+                                    popUpTo("match_templates") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // ═══════════════════════════════════════
+                    // 全屏计时器页面（无底部导航栏）
+                    // ═══════════════════════════════════════
+                    composable("timer") {
+                        FullscreenTimerContent(
+                            onNavigateBack = {
+                                resetMatch()
+                                navController.popBackStack("home", false)
+                            }
+                        )
+                    }
+
+                    // ═══════════════════════════════════════
+                    // 关于页面
+                    // ═══════════════════════════════════════
                     composable(
                         route = "about",
                         enterTransition = { slideInHorizontally { it } },
@@ -236,6 +269,10 @@ class MainActivity : AppCompatActivity() {
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
+
+                    // ═══════════════════════════════════════
+                    // 编辑资料页面
+                    // ═══════════════════════════════════════
                     composable(
                         route = "edit_profile",
                         enterTransition = { slideInHorizontally { it } },
@@ -257,9 +294,7 @@ class MainActivity : AppCompatActivity() {
                                         contentResolver.takePersistableUriPermission(
                                             uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
                                         )
-                                    } catch (_: Exception) {
-                                        // 部分设备可能不支持持久化权限
-                                    }
+                                    } catch (_: Exception) { }
                                 }
                             }
                         )
@@ -267,7 +302,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
     override fun onDestroy() {
@@ -288,29 +322,116 @@ class MainActivity : AppCompatActivity() {
         Log.i("FootballTimer", "⏱️ 计时器已初始化")
     }
 
+    // region 全屏计时器页面 Composable
 
+    /**
+     * 全屏计时器页面 - 独立路由，无底部导航栏
+     *
+     * 赛事配置由模板传入后写入 Activity 级状态变量，
+     * 此 Composable 直接读取这些状态驱动 TimerPage。
+     */
+    @androidx.compose.runtime.Composable
+    private fun FullscreenTimerContent(
+        onNavigateBack: () -> Unit,
+    ) {
+        // 设置比赛总结确认后的回调
+        onSummaryConfirmed = onNavigateBack
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            TimerPage(
+                matchName = currentMatchName,
+                homeTeamName = currentHomeTeamName,
+                awayTeamName = currentAwayTeamName,
+                homeTeamColor = homeTeamColor,
+                awayTeamColor = awayTeamColor,
+                state = timerStateCompose,
+                currentHalf = currentHalf,
+                statusText = statusTextCompose,
+                statusColor = statusColorCompose,
+                statusIconRes = statusIconResCompose,
+                mainTimeText = mainTimeTextCompose,
+                mainTimeColor = mainTimeColorCompose,
+                stoppageTimeText = stoppageTimeTextCompose,
+                stoppageActive = stoppageActiveCompose,
+                showEndHalfButton = showEndHalfButtonCompose,
+                onMainButtonClick = { toggleTimer() },
+                onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
+            )
+
+            // 事件相关弹窗（比赛中使用）
+            DialogOverlayForTimer()
+        }
+    }
+
+    // region 赛事启动
+
+    /**
+     * 快速开球 - 使用默认配置直接进入计时器
+     */
+    private fun startQuickMatch(navController: androidx.navigation.NavController) {
+        initMatchFromTemplate(
+            MatchTemplate(
+                name = getString(R.string.default_template_name),
+                homeTeamName = getString(R.string.default_home_team),
+                awayTeamName = getString(R.string.default_away_team),
+                halfTimeMinutes = DEFAULT_HALF_TIME,
+                homeTeamColor = 0xFF1565C0.toInt(),
+                awayTeamColor = 0xFFC62828.toInt(),
+            )
+        )
+        navController.navigate("timer")
+    }
+
+    /**
+     * 使用赛事预设开始比赛
+     */
+    private fun startMatchWithTemplate(
+        template: MatchTemplate,
+        navController: androidx.navigation.NavController
+    ) {
+        initMatchFromTemplate(template)
+        navController.navigate("timer")
+    }
+
+    /**
+     * 从模板初始化比赛配置
+     *
+     * 重置计时器状态，并应用模板中的赛事配置。
+     * 进入计时器页面后即处于 READY 状态，点击开始即可。
+     */
+    private fun initMatchFromTemplate(template: MatchTemplate) {
+        // 重置计时器状态
+        resetMatch()
+
+        // 应用模板配置
+        currentMatchName = template.name
+        currentHomeTeamName = template.homeTeamName
+        currentAwayTeamName = template.awayTeamName
+        homeTeamColor = template.homeTeamColor
+        awayTeamColor = template.awayTeamColor
+        halfTimeSeconds = template.halfTimeMinutes * 60L
+        matchTimeSet = true // 预设已包含所有配置，无需再弹窗确认
+    }
 
     // region 弹窗覆盖层
 
     /**
-     * 弹窗覆盖层 - 替代原 initializeComposeDialogs() 中的 ComposeView
+     * 主页弹窗覆盖层（主题、语言选择等）
      */
     @androidx.compose.runtime.Composable
-    private fun DialogOverlay() {
-        // 主题选择弹窗
+    private fun DialogOverlay(navController: androidx.navigation.NavController) {
         if (showThemeSelectionDialogState) {
             ThemeSelectionDialog(
                 currentTheme = currentAppTheme,
                 onDismiss = { showThemeSelectionDialogState = false },
                 onThemeSelected = { theme ->
                     ThemeManager.currentTheme = theme
-                    currentAppTheme = theme  // 触发 Compose 重组 + 自动颜色动画
+                    currentAppTheme = theme
                     showThemeSelectionDialogState = false
                 }
             )
         }
 
-        // 语言选择弹窗
         if (showLanguageSelectionDialogState) {
             LanguageSelectionDialog(
                 currentLanguage = currentLanguage,
@@ -324,7 +445,34 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 事件选择弹窗
+        // 比赛总结弹窗（历史记录查看 / 比赛结束总结）
+        if (showMatchSummaryDialogState) {
+            MatchSummaryDialog(
+                isHistory = matchSummaryIsHistory,
+                halfTimeMinutes = matchSummaryHalfTimeMinutes,
+                homeGoals = matchSummaryHomeGoals,
+                awayGoals = matchSummaryAwayGoals,
+                yellowCount = matchSummaryYellowCount,
+                redCount = matchSummaryRedCount,
+                firstHalfStoppage = matchSummaryFirstHalfStoppage,
+                secondHalfStoppage = matchSummarySecondHalfStoppage,
+                events = matchSummaryEvents,
+                onDismiss = {
+                    showMatchSummaryDialogState = false
+                    // 如果是比赛结束的总结（非历史），确认后退出计时器页
+                    if (!matchSummaryIsHistory) {
+                        onSummaryConfirmed?.invoke()
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * 计时器页面专用弹窗覆盖层（事件选择、队伍选择、号码选择）
+     */
+    @androidx.compose.runtime.Composable
+    private fun DialogOverlayForTimer() {
         if (showEventSelectionDialogState) {
             EventSelectionDialog(
                 onDismiss = { showEventSelectionDialogState = false },
@@ -342,7 +490,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 队伍选择弹窗
         if (showTeamSelectionDialogState) {
             TeamSelectionDialog(
                 eventType = currentEventType,
@@ -375,41 +522,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 颜色选择弹窗
-        if (showColorSelectionDialogState) {
-            ColorSelectionDialog(
-                homeTeamColor = homeTeamColor,
-                awayTeamColor = awayTeamColor,
-                onDismiss = { showColorSelectionDialogState = false },
-                onConfirm = { home, away ->
-                    homeTeamColor = home
-                    awayTeamColor = away
-                    showColorSelectionDialogState = false
-                    showTimeSettingDialog()
-                }
-            )
-        }
-
-        // 时间设置弹窗
-        if (showTimeSettingDialogState) {
-            TimeSettingDialog(
-                initialMinutes = 45,
-                onDismiss = { showTimeSettingDialogState = false },
-                onResult = { result ->
-                    showTimeSettingDialogState = false
-                    when (result) {
-                        is TimeSettingResult.Confirmed -> {
-                            halfTimeSeconds = result.minutes * 60L
-                            matchTimeSet = true
-                            startTimer()
-                        }
-                        is TimeSettingResult.Cancelled -> { }
-                    }
-                }
-            )
-        }
-
-        // 号码选择弹窗
         if (showNumberSelectionDialogState) {
             NumberSelectionDialog(
                 eventType = numberSelectionEventType,
@@ -428,23 +540,6 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         }
-
-        // 比赛总结弹窗
-        if (showMatchSummaryDialogState) {
-            MatchSummaryDialog(
-                isHistory = matchSummaryIsHistory,
-                halfTimeMinutes = matchSummaryHalfTimeMinutes,
-                homeGoals = matchSummaryHomeGoals,
-                awayGoals = matchSummaryAwayGoals,
-                yellowCount = matchSummaryYellowCount,
-                redCount = matchSummaryRedCount,
-                firstHalfStoppage = matchSummaryFirstHalfStoppage,
-                secondHalfStoppage = matchSummarySecondHalfStoppage,
-                events = matchSummaryEvents,
-                onDismiss = { showMatchSummaryDialogState = false }
-            )
-        }
-
     }
 
     // region 状态机
@@ -489,11 +584,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTimer() {
-        if (!matchTimeSet) {
-            showColorSelectionDialog()
-            return
-        }
-
         state = STATE_RUNNING
         lastUpdateTime = System.currentTimeMillis()
 
@@ -531,14 +621,13 @@ class MainActivity : AppCompatActivity() {
 
         syncComposeState()
         mainTimeTextCompose = formatTime(mainTime)
-        mainTimeColorCompose = Color(0xFF00FF00) // 亮绿色标记下半场开始
+        mainTimeColorCompose = Color(0xFF00FF00)
         stoppageActiveCompose = false
         stoppageTimeTextCompose = formatTime(stoppageTime)
 
         startUpdateLoop()
 
         addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
-        Log.i("FootballTimer", "📢 下半场开始！从 ${formatTime(mainTime)} 计时")
     }
 
     private fun endFirstHalf() {
@@ -548,13 +637,10 @@ class MainActivity : AppCompatActivity() {
 
         syncComposeState()
         mainTimeTextCompose = formatTime(mainTime)
-        mainTimeColorCompose = Color(0xFF888888) // 灰色标记半场结束
+        mainTimeColorCompose = Color(0xFF888888)
 
-        val stoppageStr = formatTime(stoppageTime)
-        addLog("📊 上半场结束 | 比赛: ${formatTime(mainTime)} | 补时: $stoppageStr")
-        Log.i("FootballTimer", "📊 上半场总结：比赛时间: ${formatTime(mainTime)}, 补时: $stoppageStr")
+        addLog("📊 上半场结束 | 比赛: ${formatTime(mainTime)} | 补时: ${formatTime(stoppageTime)}")
 
-        // 重置补时计时器准备下半场
         stoppageTime = 0
         halfTimeAlertShown = false
         stoppageTimeTextCompose = formatTime(stoppageTime)
@@ -564,26 +650,17 @@ class MainActivity : AppCompatActivity() {
         state = STATE_FINISHED
 
         syncComposeState()
-        mainTimeColorCompose = Color(0xFF888888) // 灰色标记比赛结束
+        mainTimeColorCompose = Color(0xFF888888)
         mainTimeTextCompose = formatTime(mainTime)
 
-        val stoppageStr = formatTime(stoppageTime)
-        val firstHalfStr = formatTime(firstHalfStoppage)
-        val totalStoppage = stoppageTime + firstHalfStoppage
-        val totalStr = formatTime(totalStoppage)
-
         addLog("🏆 比赛结束")
-        addLog("📊 上半场补时: $firstHalfStr")
-        addLog("📊 下半场补时: $stoppageStr")
-        addLog("📊 总补时: $totalStr")
+        addLog("📊 总补时: ${formatTime(stoppageTime + firstHalfStoppage)}")
 
         saveMatchRecord()
         historyRecordsCompose = recordManager.getAllRecords()
 
-        // 自动弹出总结页
+        // 自动弹出总结页（确认后退出计时器页回首页）
         showMatchSummary()
-
-        Log.i("FootballTimer", "📢 比赛结束！总补时: $totalStr")
     }
 
     private fun resetMatch() {
@@ -597,6 +674,13 @@ class MainActivity : AppCompatActivity() {
         halfTimeAlertShown = false
         fullTimeAlertShown = false
         matchEvents.clear()
+
+        // 重置赛事配置
+        currentMatchName = ""
+        currentHomeTeamName = ""
+        currentAwayTeamName = ""
+        homeTeamColor = 0xFF1565C0.toInt()
+        awayTeamColor = 0xFFC62828.toInt()
 
         syncComposeState()
         mainTimeTextCompose = "00:00"
@@ -625,22 +709,17 @@ class MainActivity : AppCompatActivity() {
 
         if (lastUpdateTime > 0 && (currentTime - lastUpdateTime) >= 1000) {
             if (state == STATE_RUNNING || state == STATE_PAUSED) {
-                // 主计时器：只要没吹终场哨，它就一直加
                 mainTime++
 
-                // 补时计时器：只有在"暂停"状态下，才记录浪费的时间
                 if (state == STATE_PAUSED) {
                     stoppageTime++
                 }
 
-                // 更新 Compose 状态
                 mainTimeTextCompose = formatTime(mainTime)
                 stoppageTimeTextCompose = formatTime(stoppageTime)
                 showEndHalfButtonCompose = state == STATE_RUNNING || state == STATE_PAUSED
 
                 checkTimeAlerts()
-
-                Log.d("计时器", "状态: $state, 主时间: ${formatTime(mainTime)}, 补时: ${formatTime(stoppageTime)}")
             }
 
             lastUpdateTime = currentTime
@@ -668,17 +747,13 @@ class MainActivity : AppCompatActivity() {
                     triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
                     mainTimeColorCompose = Color(0xFFF44336)
                     statusTextCompose = getString(R.string.status_second_half_stoppage)
-
-                    Log.d("时间提醒", "下半场提醒触发：当前mainTime: ${formatTime(mainTime)}, 目标: ${formatTime(targetTime)}")
                 }
             }
         }
     }
 
     private fun triggerAlert(timeStr: String, message: String) {
-        Log.i("FootballTimer", "\n🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔")
         Log.i("FootballTimer", "⏰ ${timeStr}到！$message")
-        Log.i("FootballTimer", "🔔🔔🔔🔔🔔🔔🔔🔔🔔🔔\n")
         addLog("⏰ ${timeStr}到 - $message")
     }
 
@@ -748,7 +823,12 @@ class MainActivity : AppCompatActivity() {
             injuryCount = matchEvents.count { it.event == getString(R.string.event_injury) },
             events = matchEvents.toList(),
             homeGoals = homeGoals,
-            awayGoals = awayGoals
+            awayGoals = awayGoals,
+            matchName = currentMatchName,
+            homeTeamName = currentHomeTeamName,
+            awayTeamName = currentAwayTeamName,
+            homeTeamColor = homeTeamColor,
+            awayTeamColor = awayTeamColor,
         )
 
         recordManager.saveRecord(record)
@@ -769,14 +849,6 @@ class MainActivity : AppCompatActivity() {
         showTeamSelectionDialogState = true
     }
 
-    private fun showTimeSettingDialog() {
-        showTimeSettingDialogState = true
-    }
-
-    private fun showColorSelectionDialog() {
-        showColorSelectionDialogState = true
-    }
-
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
         val eventsToShow: List<MatchEvent> = if (isHistory) {
             historyRecord?.events ?: listOf()
@@ -790,22 +862,13 @@ class MainActivity : AppCompatActivity() {
         val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
 
         val hTime: Int = if (isHistory) {
-            (historyRecord?.halfTimeMinutes ?: 0).toInt()
+            historyRecord?.halfTimeMinutes ?: 0
         } else {
             (halfTimeSeconds / 60L).toInt()
         }
 
-        val st1 = if (isHistory) {
-            historyRecord?.firstHalfStoppage ?: "00:00"
-        } else {
-            formatTime(firstHalfStoppage.toLong())
-        }
-
-        val st2 = if (isHistory) {
-            historyRecord?.secondHalfStoppage ?: "00:00"
-        } else {
-            formatTime(stoppageTime.toLong())
-        }
+        val st1 = if (isHistory) historyRecord?.firstHalfStoppage ?: "00:00" else formatTime(firstHalfStoppage.toLong())
+        val st2 = if (isHistory) historyRecord?.secondHalfStoppage ?: "00:00" else formatTime(stoppageTime.toLong())
 
         matchSummaryIsHistory = isHistory
         matchSummaryHalfTimeMinutes = hTime
@@ -821,18 +884,12 @@ class MainActivity : AppCompatActivity() {
 
     // region Compose 状态同步
 
-    /**
-     * 将内部状态机状态同步到 Compose UI 状态
-     */
     private fun syncComposeState() {
         timerStateCompose = state
         showEndHalfButtonCompose = state == STATE_RUNNING || state == STATE_PAUSED
         updateStatusLabelCompose()
     }
 
-    /**
-     * 更新状态标签的 Compose 状态
-     */
     private fun updateStatusLabelCompose() {
         when (state) {
             STATE_READY -> {
@@ -859,9 +916,6 @@ class MainActivity : AppCompatActivity() {
         statusColorCompose = Color(0xFF4CAF50)
     }
 
-    /**
-     * 初始化所有 Compose 状态
-     */
     private fun updateAllComposeState() {
         timerStateCompose = state
         updateStatusLabelCompose()
@@ -907,19 +961,5 @@ class MainActivity : AppCompatActivity() {
             else -> "--"
         }
         Log.d("FootballTimer", "[$halfIndicator $currentTime] $message")
-    }
-
-    private fun updateMainTimeDisplay() {
-        val displayTime = when (currentHalf) {
-            HALF_FIRST -> mainTime
-            HALF_SECOND -> mainTime
-            HALF_BREAK -> mainTime + firstHalfStoppage
-            else -> mainTime
-        }
-        mainTimeTextCompose = formatTime(displayTime)
-
-        if (currentHalf == HALF_SECOND) {
-            Log.d("时间显示", "下半场显示：mainTime: ${formatTime(mainTime)}, 原半场时间: ${formatTime(halfTimeSeconds)}")
-        }
     }
 }

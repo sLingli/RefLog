@@ -112,11 +112,6 @@ fun TimerPage(
             R.drawable.baseline_play_arrow_24,
             MaterialTheme.colorScheme.primary
         )
-        TIMER_STATE_FINISHED -> Triple(
-            stringResource(R.string.btn_reset),
-            R.drawable.ic_substitute,
-            MaterialTheme.colorScheme.error
-        )
         else -> Triple(
             stringResource(R.string.btn_start),
             R.drawable.baseline_play_arrow_24,
@@ -126,7 +121,7 @@ fun TimerPage(
 
     // 主按钮内容颜色（跟随主题）
     val mainButtonContentColor = when (state) {
-        TIMER_STATE_RUNNING, TIMER_STATE_FINISHED -> MaterialTheme.colorScheme.onError
+        TIMER_STATE_RUNNING -> MaterialTheme.colorScheme.onError
         else -> MaterialTheme.colorScheme.onPrimary
     }
 
@@ -136,7 +131,7 @@ fun TimerPage(
     // 按钮布局模式
     val buttonLayout = when {
         // HALFTIME 和 FINISHED 状态：合并为单个按钮
-        state == TIMER_STATE_HALFTIME || state == TIMER_STATE_FINISHED -> ButtonLayout.SINGLE_MERGED
+        state == TIMER_STATE_HALFTIME -> ButtonLayout.SINGLE_MERGED
         // RUNNING 和 PAUSED 状态且显示结束按钮：两个按钮
         showEndHalfButton -> ButtonLayout.TWO_BUTTONS
         // READY 等其他状态：仅一个按钮，填满宽度

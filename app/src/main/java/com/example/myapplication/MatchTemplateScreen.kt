@@ -1,5 +1,12 @@
 package com.example.myapplication
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,30 +20,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 /**
  * 赛事预设库页面
  *
  * 管理和存档多场比赛的配置。
  * 点击列表中的某一个存档，立即携带该配置数据进入主计时器页面。
+ *
+ * 状态管理：
+ * - 列表由内部 mutableStateListOf 驱动，增删直接操作列表，不走路由导航
+ * - 新增/删除均带 AnimatedVisibility 动画
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MatchTemplateScreen(
-    templates: List<MatchTemplate>,
+    initialTemplates: List<MatchTemplate>,
+    templateManager: MatchTemplateManager,
     onNavigateBack: () -> Unit,
     onTemplateSelected: (MatchTemplate) -> Unit,
-    onTemplateCreated: (MatchTemplate) -> Unit,
-    onTemplateDeleted: (Long) -> Unit,
 ) {
     var showNewTemplateDialog by remember { mutableStateOf(false) }
+    val templateList = remember { mutableStateListOf<MatchTemplate>().also { it.addAll(initialTemplates) } }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -47,17 +58,6 @@ fun MatchTemplateScreen(
                         text = stringResource(R.string.title_match_templates),
                         fontWeight = FontWeight.Bold,
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_arrow_up),
-                            contentDescription = stringResource(R.string.back),
-                            modifier = Modifier
-                                .size(24.dp)
-                                .graphicsLayer { rotationZ = -90f }
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -83,7 +83,7 @@ fun MatchTemplateScreen(
             }
         }
     ) { innerPadding ->
-        if (templates.isEmpty()) {
+        if (templateList.isEmpty()) {
             // 空状态
             Box(
                 modifier = Modifier
@@ -120,11 +120,20 @@ fun MatchTemplateScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(templates, key = { it.id }) { template ->
-                    TemplateCard(
+                items(
+                    items = templateList,
+                    key = { it.id },
+                ) { template ->
+                    AnimatedTemplateCard(
                         template = template,
                         onClick = { onTemplateSelected(template) },
-                        onDelete = { onTemplateDeleted(template.id) }
+                        onDelete = {
+                            templateManager.deleteTemplate(template.id)
+                            templateList.remove(template)
+                        },
+                        modifier = Modifier.animateItemPlacement(
+                            animationSpec = tween(300)
+                        )
                     )
                 }
                 // 底部留白给 FAB
@@ -138,8 +147,50 @@ fun MatchTemplateScreen(
         NewTemplateDialog(
             onDismiss = { showNewTemplateDialog = false },
             onConfirm = { template ->
+                templateManager.saveTemplate(template)
+                templateList.add(0, template)
                 showNewTemplateDialog = false
-                onTemplateCreated(template)
+            }
+        )
+    }
+}
+
+/**
+ * 带删除动画的赛事预设卡片
+ *
+ * 使用 AnimatedVisibility + fadeOut + shrinkVertically 实现平滑退出动画，
+ * 配合 LazyColumn 的 animateItemPlacement 让剩余卡片自然上移。
+ */
+@Composable
+private fun AnimatedTemplateCard(
+    template: MatchTemplate,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isDeleted by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isDeleted) {
+        if (isDeleted) {
+            delay(300) // 等动画播完再真正删除
+            onDelete()
+        }
+    }
+
+    AnimatedVisibility(
+        visible = !isDeleted,
+        modifier = modifier,
+        enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+        exit = fadeOut(tween(300)) + shrinkVertically(
+            animationSpec = tween(300),
+            shrinkTowards = Alignment.Top
+        )
+    ) {
+        TemplateCard(
+            template = template,
+            onClick = onClick,
+            onDelete = {
+                isDeleted = true
             }
         )
     }
