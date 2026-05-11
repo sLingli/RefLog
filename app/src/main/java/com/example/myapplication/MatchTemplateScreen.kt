@@ -131,9 +131,7 @@ fun MatchTemplateScreen(
                             templateManager.deleteTemplate(template.id)
                             templateList.remove(template)
                         },
-                        modifier = Modifier.animateItemPlacement(
-                            animationSpec = tween(300)
-                        )
+                        modifier = Modifier.animateItem()
                     )
                 }
                 // 底部留白给 FAB

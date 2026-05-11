@@ -13,6 +13,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -222,24 +224,12 @@ class MainActivity : AppCompatActivity() {
                     composable("match_templates") {
                         val templates = templateManager.getAllTemplates()
                         MatchTemplateScreen(
-                            templates = templates,
+                            initialTemplates = templates,
+                            templateManager = templateManager,
                             onNavigateBack = { navController.popBackStack() },
                             onTemplateSelected = { template ->
                                 startMatchWithTemplate(template, navController)
                             },
-                            onTemplateCreated = { template ->
-                                templateManager.saveTemplate(template)
-                                // 触发重组
-                                navController.navigate("match_templates") {
-                                    popUpTo("match_templates") { inclusive = true }
-                                }
-                            },
-                            onTemplateDeleted = { id ->
-                                templateManager.deleteTemplate(id)
-                                navController.navigate("match_templates") {
-                                    popUpTo("match_templates") { inclusive = true }
-                                }
-                            }
                         )
                     }
 
@@ -337,29 +327,34 @@ class MainActivity : AppCompatActivity() {
         // 设置比赛总结确认后的回调
         onSummaryConfirmed = onNavigateBack
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            TimerPage(
-                matchName = currentMatchName,
-                homeTeamName = currentHomeTeamName,
-                awayTeamName = currentAwayTeamName,
-                homeTeamColor = homeTeamColor,
-                awayTeamColor = awayTeamColor,
-                state = timerStateCompose,
-                currentHalf = currentHalf,
-                statusText = statusTextCompose,
-                statusColor = statusColorCompose,
-                statusIconRes = statusIconResCompose,
-                mainTimeText = mainTimeTextCompose,
-                mainTimeColor = mainTimeColorCompose,
-                stoppageTimeText = stoppageTimeTextCompose,
-                stoppageActive = stoppageActiveCompose,
-                showEndHalfButton = showEndHalfButtonCompose,
-                onMainButtonClick = { toggleTimer() },
-                onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
-            )
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                TimerPage(
+                    matchName = currentMatchName,
+                    homeTeamName = currentHomeTeamName,
+                    awayTeamName = currentAwayTeamName,
+                    homeTeamColor = homeTeamColor,
+                    awayTeamColor = awayTeamColor,
+                    state = timerStateCompose,
+                    currentHalf = currentHalf,
+                    statusText = statusTextCompose,
+                    statusColor = statusColorCompose,
+                    statusIconRes = statusIconResCompose,
+                    mainTimeText = mainTimeTextCompose,
+                    mainTimeColor = mainTimeColorCompose,
+                    stoppageTimeText = stoppageTimeTextCompose,
+                    stoppageActive = stoppageActiveCompose,
+                    showEndHalfButton = showEndHalfButtonCompose,
+                    onMainButtonClick = { toggleTimer() },
+                    onEndHalfButtonLongPress = { onEndHalfButtonLongPress() },
+                )
 
-            // 事件相关弹窗（比赛中使用）
-            DialogOverlayForTimer()
+                // 事件相关弹窗（比赛中使用）
+                DialogOverlayForTimer()
+            }
         }
     }
 
@@ -473,6 +468,28 @@ class MainActivity : AppCompatActivity() {
      */
     @androidx.compose.runtime.Composable
     private fun DialogOverlayForTimer() {
+        // 比赛总结弹窗（比赛结束总结）
+        if (showMatchSummaryDialogState) {
+            MatchSummaryDialog(
+                isHistory = matchSummaryIsHistory,
+                halfTimeMinutes = matchSummaryHalfTimeMinutes,
+                homeGoals = matchSummaryHomeGoals,
+                awayGoals = matchSummaryAwayGoals,
+                yellowCount = matchSummaryYellowCount,
+                redCount = matchSummaryRedCount,
+                firstHalfStoppage = matchSummaryFirstHalfStoppage,
+                secondHalfStoppage = matchSummarySecondHalfStoppage,
+                events = matchSummaryEvents,
+                onDismiss = {
+                    showMatchSummaryDialogState = false
+                    // 比赛结束总结确认后退出计时器页
+                    if (!matchSummaryIsHistory) {
+                        onSummaryConfirmed?.invoke()
+                    }
+                }
+            )
+        }
+
         if (showEventSelectionDialogState) {
             EventSelectionDialog(
                 onDismiss = { showEventSelectionDialogState = false },
@@ -562,10 +579,6 @@ class MainActivity : AppCompatActivity() {
             STATE_HALFTIME -> {
                 Log.d("状态机", "从中场休息开始下半场")
                 startSecondHalf()
-            }
-            STATE_FINISHED -> {
-                Log.d("状态机", "比赛结束，重新开始")
-                resetMatch()
             }
         }
     }

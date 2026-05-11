@@ -35,7 +35,7 @@ import androidx.compose.ui.window.DialogProperties
  * 包含：
  * - 自定义头像（点击从相册选择）
  * - 自定义昵称（点击编辑）
- * - 主题样式入口（ThemeSelectionDialog）
+ * - 主题样式入口（ThemeSettingsScreen）
  * - 语言切换入口（LanguageSelectionDialog）
  * - 关于入口（AboutScreen）
  */
@@ -125,7 +125,7 @@ fun MeScreenContent(
         // 主题样式按钮
         MeMenuItem(
             iconRes = R.drawable.ic_palette,
-            title = stringResource(R.string.title_theme),
+            title = stringResource(R.string.title_theme_settings),
             onClick = onThemeClick
         )
 

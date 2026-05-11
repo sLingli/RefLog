@@ -22,8 +22,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 /**
- * 自定义应用颜色（语义色彩，不受主题影响但可根据主题微调）
- * Custom app colors for semantic/event-specific colors
+ * 自定义应用颜色（语义色彩，不受 theme 影响但根据深浅模式微调）
  */
 @Immutable
 data class AppColors(
@@ -56,9 +55,6 @@ private const val THEME_ANIM_DURATION = 400
 
 /**
  * 动画化 ColorScheme
- *
- * 将 ColorScheme 中所有颜色字段用 animateColorAsState(tween) 包裹，
- * 使主题切换时所有颜色平滑过渡而非瞬间跳变。
  */
 @Composable
 private fun animateColorScheme(target: ColorScheme): ColorScheme {
@@ -103,8 +99,6 @@ private fun animateColorScheme(target: ColorScheme): ColorScheme {
 
 /**
  * 动画化 AppColors
- *
- * 将语义色（事件色、计时器色等）同样做平滑过渡，保持全局视觉一致性。
  */
 @Composable
 private fun animateAppColors(target: AppColors): AppColors {
@@ -130,83 +124,48 @@ val LocalAppColors = staticCompositionLocalOf { AppColors() }
 
 /**
  * RefLog 主题包装
- * RefLog Theme Wrapper
  *
- * 支持三种模式：
- * 1. 跟随系统 (FOLLOW_SYSTEM) — 根据系统深浅色自动切换
- * 2. 自定义固定主题 — 始终使用对应的 scheme
- *
- * 动态取色已集成到 FOLLOW_SYSTEM 中：Android 12+ 自动使用壁纸颜色。
- * 状态栏/导航栏颜色由 SideEffect 自动同步。
+ * 支持：
+ * 1. 外观模式：跟随系统 / 浅色 / 深色
+ * 2. 动态取色：Android 12+ 壁纸取色 (Material You)，关闭时使用品牌绿
  */
 @Composable
 fun RefLogTheme(
-    theme: AppTheme = ThemeManager.currentTheme,
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    config: ThemeConfig = ThemeManager.config,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
+    val systemDark = isSystemInDarkTheme()
+    val isDarkMode = ThemeManager.isDarkMode(systemDark)
 
     // 确定 colorScheme
     val colorScheme = when {
-        // 跟随系统 + Android 12+ → 动态取色
-        theme == AppTheme.FOLLOW_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme ->
+        // 动态取色 ON + Android 12+
+        config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDarkMode ->
             dynamicDarkColorScheme(context)
-        theme == AppTheme.FOLLOW_SYSTEM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !darkTheme ->
+        config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !isDarkMode ->
             dynamicLightColorScheme(context)
-        // 跟随系统 + 旧设备 → 使用默认深浅色方案
-        theme == AppTheme.FOLLOW_SYSTEM ->
-            ThemeManager.getColorScheme(AppTheme.FOLLOW_SYSTEM, isDark = darkTheme)
-        // 其他固定主题 → 使用对应 scheme
-        else -> ThemeManager.getColorScheme(theme)
+        // 非动态取色 或 旧 Android → 品牌色
+        isDarkMode -> BrandDarkScheme
+        else -> BrandLightScheme
     }
 
-    // 判断实际是否深色模式（用于语义颜色和状态栏）
-    val isDarkMode = when (theme) {
-        AppTheme.FOLLOW_SYSTEM -> darkTheme
-        AppTheme.LIGHT_GREEN -> false
-        else -> true // DARK_GREEN, OCEAN_BLUE, SUNSET_ORANGE, PURPLE_GALAXY 都是暗色主题
-    }
-
-    // 根据主题微调语义颜色
-    val appColors = when (theme) {
-        AppTheme.FOLLOW_SYSTEM -> if (isDarkMode) {
-            AppColors() // 深色默认
-        } else {
-            AppColors(
-                dateText = Color(0xFF2E7D32),
-                stoppageText = Color(0xFFE65100),
-                timerNormal = Color(0xFF2E7D32),
-            )
-        }
-        AppTheme.LIGHT_GREEN -> AppColors(
+    // 根据深浅模式微调语义颜色
+    val appColors = if (isDarkMode) {
+        AppColors()
+    } else {
+        AppColors(
             dateText = Color(0xFF2E7D32),
             stoppageText = Color(0xFFE65100),
             timerNormal = Color(0xFF2E7D32),
         )
-        AppTheme.OCEAN_BLUE -> AppColors(
-            dateText = Color(0xFF00BCD4),
-            stoppageText = Color(0xFFFF9800),
-            timerNormal = Color(0xFF00BCD4),
-        )
-        AppTheme.SUNSET_ORANGE -> AppColors(
-            dateText = Color(0xFFFF9800),
-            stoppageText = Color(0xFF4CAF50),
-            timerNormal = Color(0xFFFF9800),
-        )
-        AppTheme.PURPLE_GALAXY -> AppColors(
-            dateText = Color(0xFF9C27B0),
-            stoppageText = Color(0xFFFF9800),
-            timerNormal = Color(0xFF9C27B0),
-        )
-        else -> AppColors()
     }
 
     // 动画化所有颜色，实现丝滑过渡
     val animatedScheme = animateColorScheme(colorScheme)
     val animatedAppColors = animateAppColors(appColors)
 
-    // 同步状态栏/导航栏颜色（使用动画化后的颜色，消除渲染时差）
+    // 同步状态栏/导航栏颜色
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
