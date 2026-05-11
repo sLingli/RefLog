@@ -14,7 +14,7 @@ RefLog is an Android app for soccer referees featuring a dual-timer system (main
 ```
 User Action → toggleTimer() → State Change → updateButtonStyle() / updateStatusLabel()
 Timer Loop → updateTimer() (100ms) → mainTime++ / stoppageTime++ → checkTimeAlerts()
-Event → showEventDialog() → showTeamSelectionDialog() → showNumberSelectionDialog() → recordEventWithDetails()
+Event → UnifiedEventBottomSheet (pause timer) → handleEventConfirmed()
 Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JSON via Gson)
 ```
 
@@ -26,12 +26,12 @@ Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JS
 | `MatchRecordManager.kt` | SharedPreferences persistence with Gson |
 | `CenterScaleLayoutManager.kt` | Custom RecyclerView LayoutManager for physics wheel (3D scale effect) |
 | `ColorWheelAdapter.kt` | Infinite-scroll color picker adapter |
-| `HistoryDialog.kt` / `EventSelectionDialog.kt` | Compose-based dialogs |
+| `MatchEventEnums.kt` | EventType, TeamSelection, EventIconInfo enums |
 
 ## Conventions
 
 ### UI Patterns
-- **Dialogs**: All dialogs are Jetpack Compose-based (`HistoryDialog.kt`, `EventSelectionDialog.kt`, `TeamSelectionDialog.kt`, etc.), managed via `ComposeView` in MainActivity
+- **Dialogs**: All dialogs are Jetpack Compose-based (`HistoryDialog.kt`, `UnifiedEventBottomSheet.kt`, etc.)
 - **Color scheme**: Dark theme (`#121212` bg), Material 3 with custom accent colors
 - **String resources**: Localized in `values/strings.xml` and `values-zh/strings.xml` - always use `getString(R.string.*)`, never hardcode text
 - **Icons**: Vector drawables in `res/drawable/`, tinted programmatically
@@ -64,9 +64,9 @@ Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JS
 
 ### Adding New Event Type
 1. Add string to `strings.xml` (both default and zh)
-2. Add event type to `EventType` enum in `EventSelectionDialog.kt`
-3. Add button UI and click handler in `EventSelectionDialog`
-4. Add case in `initializeComposeDialogs()` in MainActivity
+2. Add event type to `EventType` enum in `MatchEventEnums.kt`
+3. Add button UI and click handler in `UnifiedEventBottomSheet.kt`
+4. Add case in `handleEventConfirmed()` in MainActivity
 5. Add icon drawable and color mapping in `showMatchSummary()` icon switch
 6. Update `MatchRecord` counts if needed
 

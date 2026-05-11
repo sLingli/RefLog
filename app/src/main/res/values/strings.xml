@@ -59,6 +59,10 @@
     <!-- Events -->
     <string name="event_injury">Injury</string>
     <string name="event_substitute">Sub</string>
+    <!-- Unified Event Bottom Sheet -->
+    <string name="event_confirm_record">Confirm Record</string>
+    <string name="event_select_first">Select Event First</string>
+    <string name="event_select_team_first">Select Team First</string>
     <!-- Clear History Dialog -->
     <string name="msg_confirm_clear_all">Clear All History?</string>
     <string name="title_history_details">Match Details</string>

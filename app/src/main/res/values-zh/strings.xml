@@ -55,6 +55,10 @@
     <!-- 事件 -->
     <string name="event_injury">受伤</string>
     <string name="event_substitute">换人</string>
+    <!-- 统一事件面板 -->
+    <string name="event_confirm_record">确认记录</string>
+    <string name="event_select_first">请先选择事件</string>
+    <string name="event_select_team_first">请先选择队伍</string>
     <!-- 清空历史弹窗 -->
     <string name="msg_confirm_clear_all">确定清空所有记录？</string>
     <string name="title_history_details">历史详情</string>
