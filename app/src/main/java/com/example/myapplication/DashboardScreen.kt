@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.util.Calendar
 
@@ -398,24 +399,26 @@ private fun QuickActionsSection(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 左侧：快速开球
+        // 左侧：选择赛事
         QuickActionCard(
             modifier = Modifier.weight(1f),
             iconRes = R.drawable.baseline_play_arrow_24,
-            label = stringResource(R.string.dashboard_quick_match),
+            iconSize = 28.dp,
+            label = stringResource(R.string.dashboard_match_templates),
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            onClick = onQuickMatch,
+            onClick = onMatchTemplates,
         )
 
-        // 右侧：赛事预设
+        // 右侧：快速开球
         QuickActionCard(
             modifier = Modifier.weight(1f),
-            iconRes = R.drawable.ic_wrench,
-            label = stringResource(R.string.dashboard_match_templates),
+            iconRes = R.drawable.lightning,
+            iconSize = 24.dp,
+            label = stringResource(R.string.dashboard_quick_match),
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            onClick = onMatchTemplates,
+            onClick = onQuickMatch,
         )
     }
 }
@@ -427,6 +430,7 @@ private fun QuickActionsSection(
 private fun QuickActionCard(
     modifier: Modifier = Modifier,
     iconRes: Int,
+    iconSize: Dp = 24.dp,
     label: String,
     containerColor: Color,
     contentColor: Color,
@@ -441,17 +445,17 @@ private fun QuickActionCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(iconSize),
                 tint = contentColor
             )
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleSmall,

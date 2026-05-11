@@ -134,7 +134,7 @@
 
     <!-- Match Templates -->
     <string name="dashboard_quick_match">Quick Match</string>
-    <string name="dashboard_match_templates">Match Presets</string>
+    <string name="dashboard_match_templates">Select Match</string>
     <string name="title_match_templates">Match Presets</string>
     <string name="btn_new_template">New Preset</string>
     <string name="hint_template_name">Match Name</string>
@@ -143,7 +143,7 @@
     <string name="label_home_team">Home Team</string>
     <string name="label_away_team">Away Team</string>
     <string name="msg_no_templates">No presets yet</string>
-    <string name="msg_no_templates_hint">Create your first match preset!</string>
+    <string name="msg_no_templates_hint">Tap a card to start the match</string>
     <string name="default_template_name">Quick Match</string>
     <string name="default_home_team">Home</string>
     <string name="default_away_team">Away</string>
