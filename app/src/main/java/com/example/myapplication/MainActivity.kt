@@ -250,7 +250,6 @@ class MainActivity : AppCompatActivity() {
                         popExitTransition = { slideOutHorizontally { it } }
                     ) {
                         ThemeSettingsScreen(
-                            onNavigateBack = { navController.popBackStack() },
                             onConfigChanged = { newConfig: ThemeConfig ->
                                 themeConfigState = newConfig
                                 ThemeManager.config = newConfig
