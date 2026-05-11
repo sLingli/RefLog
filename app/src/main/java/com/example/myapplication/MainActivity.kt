@@ -107,8 +107,7 @@ class MainActivity : AppCompatActivity() {
     private var historyRecordsCompose by mutableStateOf<List<MatchRecord>>(emptyList())
 
     // region Compose 弹窗状态
-    private var showThemeSelectionDialogState by mutableStateOf(false)
-    private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN)
+    private var themeConfigState by mutableStateOf(ThemeConfig())
     private var showLanguageSelectionDialogState by mutableStateOf(false)
     private var currentLanguage by mutableStateOf(AppLanguage.DEFAULT)
     private var showMatchSummaryDialogState by mutableStateOf(false)
@@ -136,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
-        currentAppTheme = ThemeManager.currentTheme
+        themeConfigState = ThemeManager.config
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
@@ -151,7 +150,7 @@ class MainActivity : AppCompatActivity() {
         updateAllComposeState()
 
         setContent {
-            RefLogTheme(theme = currentAppTheme) {
+            RefLogTheme(config = themeConfigState) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -193,7 +192,7 @@ class MainActivity : AppCompatActivity() {
                                     historyRecordsCompose = recordManager.getAllRecords()
                                     dashboardViewModel.refresh()
                                 },
-                                onThemeClick = { showThemeSelectionDialogState = true },
+                                onThemeClick = { navController.navigate("theme_settings") },
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
                                 onSettingsClick = { /* 设置入口已移除独立颜色弹窗 */ },
                                 onAboutClick = { navController.navigate("about") },
@@ -236,6 +235,25 @@ class MainActivity : AppCompatActivity() {
                             onNavigateBack = {
                                 resetMatch()
                                 navController.popBackStack("home", false)
+                            }
+                        )
+                    }
+
+                    // ═══════════════════════════════════════
+                    // 主题设置页面
+                    // ═══════════════════════════════════════
+                    composable(
+                        route = "theme_settings",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        ThemeSettingsScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onConfigChanged = { newConfig: ThemeConfig ->
+                                themeConfigState = newConfig
+                                ThemeManager.config = newConfig
                             }
                         )
                     }
@@ -410,18 +428,6 @@ class MainActivity : AppCompatActivity() {
      */
     @androidx.compose.runtime.Composable
     private fun DialogOverlay(navController: androidx.navigation.NavController) {
-        if (showThemeSelectionDialogState) {
-            ThemeSelectionDialog(
-                currentTheme = currentAppTheme,
-                onDismiss = { showThemeSelectionDialogState = false },
-                onThemeSelected = { theme ->
-                    ThemeManager.currentTheme = theme
-                    currentAppTheme = theme
-                    showThemeSelectionDialogState = false
-                }
-            )
-        }
-
         if (showLanguageSelectionDialogState) {
             LanguageSelectionDialog(
                 currentLanguage = currentLanguage,

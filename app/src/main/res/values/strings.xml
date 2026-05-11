@@ -100,21 +100,16 @@
     <string name="label_github">GitHub</string>
     <string name="back">Back</string>
 
-    <!-- Theme -->
-    <string name="title_theme">Theme</string>
-    <string name="theme_follow_system">Follow System</string>
-    <string name="theme_dynamic">Dynamic Color</string>
-    <string name="theme_dynamic_unavailable">Dynamic (Android 12+)</string>
-    <string name="theme_dark_green">Forest Green</string>
-    <string name="theme_ocean_blue">Ocean Blue</string>
-    <string name="theme_sunset_orange">Sunset Orange</string>
-    <string name="theme_purple_galaxy">Purple Galaxy</string>
-    <string name="theme_light_green">Light Green</string>
-    <string name="label_current_theme">Current Theme</string>
-    <string name="label_smart_themes">Smart Themes</string>
-    <string name="label_custom_themes">Custom Themes</string>
-    <string name="label_follow_system_desc">Auto light/dark</string>
-    <string name="label_dynamic_desc">Wallpaper colors</string>
+    <!-- Theme Settings -->
+    <string name="title_theme_settings">Theme Settings</string>
+    <string name="appearance_mode">Appearance Mode</string>
+    <string name="appearance_follow_system">Follow System</string>
+    <string name="appearance_follow_system_desc">Auto light/dark</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="dynamic_color">Dynamic Color</string>
+    <string name="dynamic_color_desc">Use wallpaper colors (Android 12+)</string>
+    <string name="dynamic_color_unavailable">Requires Android 12+</string>
 
     <!-- Language -->
     <string name="title_language">Language</string>
