@@ -147,7 +147,7 @@ fun HistoryDialogContent(
                         record = record,
                         onClick = { onRecordClick(record) },
                         onDelete = { onDeleteRecord(record) },
-                        modifier = Modifier.animateItemPlacement()
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
@@ -564,7 +564,7 @@ fun HistoryPageContent(
                         record = record,
                         onClick = { onRecordClick(record) },
                         onDelete = { onDeleteRecord(record) },
-                        modifier = Modifier.animateItemPlacement()
+                        modifier = Modifier.animateItem()
                     )
                 }
             }
