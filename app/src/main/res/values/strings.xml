@@ -134,7 +134,6 @@
     <!-- Match Templates -->
     <string name="dashboard_quick_match">Quick Match</string>
     <string name="dashboard_match_templates">Select Match</string>
-    <string name="title_match_templates">Match Presets</string>
     <string name="btn_new_template">New Preset</string>
     <string name="hint_template_name">Match Name</string>
     <string name="hint_team_name">Team Name</string>

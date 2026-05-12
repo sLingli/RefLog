@@ -18,15 +18,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -43,31 +38,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 
-/**
- * 编辑资料全屏页面
- *
- * UI 结构：
- * - Scaffold + TopAppBar（标题"编辑资料"，左侧返回箭头）
- * - 居中大头像（AsyncImage + CircleShape），右下角叠加编辑图标
- * - OutlinedTextField 昵称输入（20字符限制 + 计数器）
- * - 底部"保存并返回"按钮
- *
- * 裁剪流程：
- * 点击头像 → PickVisualMedia → CropImageContract（圆形 1:1 裁剪）→ 暂存本地状态
- *
- * 保存逻辑：
- * 点击"保存并返回" → onSave(nickname, avatarUri) → onNavigateBack()
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
@@ -76,24 +59,20 @@ fun EditProfileScreen(
     onNavigateBack: () -> Unit,
     onSave: (newNickname: String, newAvatarUri: Uri?) -> Unit,
 ) {
-    // 本地暂存状态：仅在点击保存时才持久化
     var pendingNickname by remember { mutableStateOf(currentNickname) }
     var pendingAvatarUri by remember { mutableStateOf(currentAvatarUri) }
     var nicknameError by remember { mutableStateOf(false) }
 
-    // 1. 裁剪器（先定义，不依赖 photoPicker）
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
             pendingAvatarUri = result.uriContent
         }
     }
 
-    // 2. 相册选择器（回调中直接调用裁剪器）
     val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let { sourceUri ->
-            // 获取 URI 后立刻传递给裁剪器，强制 1:1 圆形裁剪
             cropImageLauncher.launch(
                 CropImageContractOptions(
                     uri = sourceUri,
@@ -108,7 +87,6 @@ fun EditProfileScreen(
         }
     }
 
-    // 统一的选图触发方法
     val launchPhotoPicker = {
         photoPicker.launch(
             PickVisualMediaRequest(
@@ -123,21 +101,13 @@ fun EditProfileScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.title_edit_profile),
-                        style = MaterialTheme.typography.titleLarge
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 35.sp
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
         },
@@ -154,7 +124,7 @@ fun EditProfileScreen(
 
             // === 头像区域 ===
             Box(contentAlignment = Alignment.Center) {
-                // 主头像（120dp 圆形）
+                // 主头像圆圈
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -171,20 +141,13 @@ fun EditProfileScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
 
-                // 右下角编辑图标叠加层
+                // 右下角铅笔图标
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(32.dp)
                         .align(Alignment.BottomEnd)
                         .offset(x = 4.dp, y = 4.dp)
                         .clip(CircleShape)
@@ -193,9 +156,9 @@ fun EditProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Edit,
+                        painter = painterResource(id = R.drawable.edit_pencil),
                         contentDescription = stringResource(R.string.label_change_avatar),
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
@@ -203,7 +166,6 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 头像点击提示
             Text(
                 text = stringResource(R.string.label_change_avatar),
                 style = MaterialTheme.typography.bodySmall,
@@ -244,7 +206,6 @@ fun EditProfileScreen(
                 )
             )
 
-            // 昵称过长错误提示
             if (nicknameError) {
                 Text(
                     text = stringResource(R.string.nickname_too_long),
@@ -256,7 +217,6 @@ fun EditProfileScreen(
                 )
             }
 
-            // 弹性占位，将按钮推到底部
             Spacer(modifier = Modifier.weight(1f))
 
             // === 保存并返回按钮 ===

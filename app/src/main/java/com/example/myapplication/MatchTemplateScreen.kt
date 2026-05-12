@@ -55,8 +55,9 @@ fun MatchTemplateScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.title_match_templates),
+                        text = stringResource(R.string.msg_no_templates_hint),
                         fontWeight = FontWeight.Bold,
+                        fontSize = 35.sp
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

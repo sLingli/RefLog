@@ -130,7 +130,6 @@
     <!-- 赛事预设 -->
     <string name="dashboard_quick_match">快速开球</string>
     <string name="dashboard_match_templates">赛事选择</string>
-    <string name="title_match_templates">赛事预设库</string>
     <string name="btn_new_template">新建预设</string>
     <string name="hint_template_name">赛事名称</string>
     <string name="hint_team_name">队伍名称</string>
