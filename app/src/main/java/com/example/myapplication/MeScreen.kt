@@ -217,6 +217,12 @@ fun MeMenuItem(
                     )
                 }
             }
+            Icon(
+                painter = painterResource(id = R.drawable.arrow_forward),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -79,10 +80,9 @@ fun AboutScreen(
         ) {
             Spacer(modifier = Modifier.height(1.dp))
 
-            // Logo 圆形背景
             Box(
                 modifier = Modifier
-                    .size(200.dp)
+                    .size(150.dp)
                     .background(Color.White, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -90,7 +90,9 @@ fun AboutScreen(
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
                     contentDescription = "RefLog Logo",
                     tint = Color.Unspecified,
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier
+                        .size(135.dp)
+                        .scale(1.5f)
                 )
             }
 
