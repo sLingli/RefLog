@@ -100,7 +100,7 @@ fun TimerPage(
         TIMER_STATE_RUNNING -> Triple(
             stringResource(R.string.btn_pause),
             R.drawable.pause_circle,
-            MaterialTheme.colorScheme.error
+            Color(0xFFC62828)
         )
         TIMER_STATE_PAUSED -> Triple(
             stringResource(R.string.btn_resume),
@@ -121,7 +121,7 @@ fun TimerPage(
 
     // 主按钮内容颜色（跟随主题）
     val mainButtonContentColor = when (state) {
-        TIMER_STATE_RUNNING -> MaterialTheme.colorScheme.onError
+        TIMER_STATE_RUNNING -> Color.White
         else -> MaterialTheme.colorScheme.onPrimary
     }
 
