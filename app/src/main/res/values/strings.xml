@@ -141,7 +141,7 @@
     <string name="label_home_team">Home Team</string>
     <string name="label_away_team">Away Team</string>
     <string name="msg_no_templates">No presets yet</string>
-    <string name="msg_no_templates_hint">Tap a card to start the match</string>
+    <string name="msg_no_templates_hint">Select to Start</string>
     <string name="default_template_name">Quick Match</string>
     <string name="default_home_team">Home</string>
     <string name="default_away_team">Away</string>
