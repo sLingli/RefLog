@@ -25,28 +25,67 @@
 <h2 id="-简体中文">CN 简体中文</h2>
 
 ### 📖 项目简介
-**RefLog** (Referee Logger) 源于我对足球的热爱，也源于我作为一名新晋足球裁判员的亲身体验，为足球裁判提供一个顺手的执裁工具
+**RefLog** (Referee Logger) 源于我对足球的热爱，也源于我作为一名新晋足球裁判员的亲身体验，为足球裁判提供一个顺手的执裁和记录工具
 
-### 🛠️ 核心功能
-1.  **专业双路计时系统 ⏱️**
-    *   **主计时器 + 补时计时器**：暂停比赛时，补时计时器自动激活并记录时长
-    *   **智能提醒**：当比赛达到半场时间，主计时器自动变色（绿 -> 橙），醒目提醒裁判进入伤停补时阶段
-    *   <img src="https://github.com/user-attachments/assets/5068a371-5155-4c8f-8ace-7f6eac0e6271" width="220"/><img src="https://github.com/user-attachments/assets/962404e1-f616-4b3f-955f-6e71c2dd299d" width="220"/><img src="https://github.com/user-attachments/assets/aa431f0c-48b5-45f8-bd71-2170b020f22d" width="220"/>
-2.  **全场景事件记录 📝**
-    *   提供 **红牌、黄牌、进球、换人、取消** 等快捷选项。
-    *   **逻辑闭环**：触发事件 -> 自动弹出主客队选择（UI跟随球衣颜色变化）-> 滚轮快速选号 -> 自动保存时间戳
-    *   <img src="https://github.com/user-attachments/assets/0efb3825-fd9f-4532-a7aa-aea17d5894b3" width="220"/><img src="https://github.com/user-attachments/assets/3ac4be63-49d0-4fef-be29-6f831f22f1be" width="220"/><img src="https://github.com/user-attachments/assets/1c43de8e-4b09-4578-9729-4b0ea98fe4ed" width="220"/>
-3.  **历史回顾与赛后总结 📊**
-    *   **赛后总结**：比赛结束后，自动生成包含最终比分、所有事件时间点的总结报告
-    *   **历史记录**：所有数据本地保存，随时回溯过往比赛
-    *   <img src="https://github.com/user-attachments/assets/925bc9f5-f19b-47ce-99d5-d785d57c65c2" width="220"/>
-4.赛前可设置比赛时间
+## 📸 界面预览
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>数据总览</b></td>
+      <td align="center"><b>统一事件面板</b></td>
+      <td align="center"><b>赛事预设</b></td>
+      <td align="center"><b>历史明细</b></td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://github.com/user-attachments/assets/d2b1f718-65b0-421d-9e23-49e59cfe6a64" width="220" alt="Dashboard"/>
+      </td>
+      <td>
+        <img src="https://github.com/user-attachments/assets/90c14cc4-c3ac-4f08-9ffd-a5f81deb3b81" width="220" alt="Event Panel"/>
+      </td>
+      <td>
+        <img src="https://github.com/user-attachments/assets/0ac13259-63ca-4cbc-8a01-2204ba3d6b5d" width="220" alt="Match Presets"/>
+      </td>
+      <td>
+        <img src="https://github.com/user-attachments/assets/1101e750-e446-4aa6-aff9-d16708a473d8" width="220" alt="History Detail"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+## ⚙️ 核心功能特性 (Core Features)
+
+### 📊 数据总览 (Dashboard)
+首页提供个人执法的核心数据视图，便于快速了解整体执法情况。
+*   **多维数据统计**：汇总展示红黄牌发放比例、场均进球数等基础指标。
+*   **可视化图表**：引入环形图（Donut Chart），直观呈现各项判罚数据的占比。
+*   **近期场次列表**：快速查阅最近完成的赛事记录与比分。
+
+### ⏱️ 统一事件面板 (Unified Event Panel)
+优化了传统的事件记录交互，在计时器页面引入底部聚合面板。
+*   **集中式操作**：在同一个底部面板内，即可依次完成 **“事件类型 -> 所属队伍 -> 球员号码”** 的信息录入，避免了多级弹窗带来的操作割裂感。
+*   **非遮挡设计**：面板高度经过调整，在录入判罚事件时，屏幕上方的倒计时仍保持可见。
+
+### 📁 赛事预设管理 (Match Presets)
+为常规比赛提供配置模板功能。
+*   **参数定制**：支持预先设定主客队名称、队伍代表色以及半场比赛时长。
+*   **快捷开赛**：通过预设列表，点击对应卡片即可快速载入配置并直接进入计时状态。
+
+### 📝 历史记录 (Match History)
+提供结构化的赛后数据留存。
+*   **赛事档案**：自动保存已完赛的比分与基础配置。
+*   **时间轴明细**：详细记录每一次进球、红黄牌、换人及受伤等事件发生的精确时间与球员号码，方便赛后核对与填写裁判报告。
+
 
 ### 🤖 特别致谢 (AI 导师)
 作为一个初学者，本项目在代码架构上得到了以下 AI 伙伴的巨大帮助。没有它们，我无法独自完成这个项目：
 *   **DeepSeek**
 *   **Gemini**
 *   **Claude**
+*   **MiMo**
+
+
 
 ### 🙇‍♂️ 关于作者 & 寻找伙伴
 目前 **RefLog 只有我一个人在战斗**。
