@@ -205,9 +205,8 @@ private fun TemplateCard(
     onDelete: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -219,7 +218,6 @@ private fun TemplateCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // 顶部：赛事名称 + 删除
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

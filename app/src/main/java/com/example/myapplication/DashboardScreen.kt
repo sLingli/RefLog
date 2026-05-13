@@ -437,15 +437,13 @@ private fun QuickActionCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = modifier
-            .height(72.dp)
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
