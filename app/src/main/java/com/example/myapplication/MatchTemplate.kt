@@ -4,7 +4,7 @@ package com.example.myapplication
  * 赛事预设数据模型
  *
  * 存储一场比赛的配置信息，用于快速开始比赛。
- * 通过 [MatchTemplateManager] 进行持久化管理。
+ * 通过 [com.example.myapplication.repository.MatchTemplateRepository] 进行持久化管理。
  */
 data class MatchTemplate(
     val id: Long = System.currentTimeMillis(),
