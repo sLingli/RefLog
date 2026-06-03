@@ -27,8 +27,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.example.myapplication.db.HalfType
+import com.example.myapplication.repository.DatabaseModule
+import com.example.myapplication.repository.MatchRecordRepository
+import com.example.myapplication.repository.MatchTemplateRepository
+import com.example.myapplication.repository.MigrationHelper
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
@@ -60,12 +65,13 @@ class MainActivity : AppCompatActivity() {
     // region 计时器变量
     private var state: String = STATE_READY
     private var currentHalf: String = HALF_FIRST
-    private lateinit var recordManager: MatchRecordManager
-    private lateinit var templateManager: MatchTemplateManager
+    private lateinit var recordRepository: MatchRecordRepository
+    private lateinit var templateRepository: MatchTemplateRepository
+    private val coroutineScope = MainScope()
 
     // Dashboard ViewModel
     private val dashboardViewModel: DashboardViewModel by viewModels {
-        DashboardViewModel.Factory(MatchRecordManager(this))
+        DashboardViewModel.Factory(DatabaseModule.getMatchRecordRepository(this))
     }
 
     private var mainTime: Long = 0
@@ -138,8 +144,15 @@ class MainActivity : AppCompatActivity() {
         themeConfigState = ThemeManager.config
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
-        recordManager = MatchRecordManager(this)
-        templateManager = MatchTemplateManager(this)
+        recordRepository = DatabaseModule.getMatchRecordRepository(this)
+        templateRepository = DatabaseModule.getMatchTemplateRepository(this)
+
+        // 执行一次性 SharedPreferences → Room 迁移
+        coroutineScope.launch {
+            MigrationHelper.migrateIfNeeded(this@MainActivity)
+            historyRecordsCompose = recordRepository.getAllRecords()
+            dashboardViewModel.refresh()
+        }
 
         profilePrefs = getSharedPreferences("user_profile", MODE_PRIVATE)
         userAvatarUriString = profilePrefs.getString("avatar_uri", null)
@@ -183,14 +196,18 @@ class MainActivity : AppCompatActivity() {
                                     showMatchSummary(isHistory = true, historyRecord = record)
                                 },
                                 onHistoryDeleteRecord = { record ->
-                                    recordManager.deleteRecord(record.id)
-                                    historyRecordsCompose = recordManager.getAllRecords()
-                                    dashboardViewModel.refresh()
+                                    coroutineScope.launch {
+                                        recordRepository.deleteRecord(record.id)
+                                        historyRecordsCompose = recordRepository.getAllRecords()
+                                        dashboardViewModel.refresh()
+                                    }
                                 },
                                 onHistoryClearAll = {
-                                    recordManager.clearAllRecords()
-                                    historyRecordsCompose = recordManager.getAllRecords()
-                                    dashboardViewModel.refresh()
+                                    coroutineScope.launch {
+                                        recordRepository.clearAllRecords()
+                                        historyRecordsCompose = recordRepository.getAllRecords()
+                                        dashboardViewModel.refresh()
+                                    }
                                 },
                                 onThemeClick = { navController.navigate("theme_settings") },
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
@@ -202,7 +219,7 @@ class MainActivity : AppCompatActivity() {
                                 onPageChanged = { page ->
                                     when (page) {
                                         0 -> dashboardViewModel.refresh()
-                                        1 -> historyRecordsCompose = recordManager.getAllRecords()
+                                        1 -> coroutineScope.launch { historyRecordsCompose = recordRepository.getAllRecords() }
                                     }
                                 }
                             )
@@ -216,10 +233,8 @@ class MainActivity : AppCompatActivity() {
                     // 赛事预设库
                     // ═══════════════════════════════════════
                     composable("match_templates") {
-                        val templates = templateManager.getAllTemplates()
                         MatchTemplateScreen(
-                            initialTemplates = templates,
-                            templateManager = templateManager,
+                            templateRepository = templateRepository,
                             onNavigateBack = { navController.popBackStack() },
                             onTemplateSelected = { template ->
                                 startMatchWithTemplate(template, navController)
@@ -633,8 +648,10 @@ class MainActivity : AppCompatActivity() {
         addLog("🏆 比赛结束")
         addLog("📊 总补时: ${formatTime(stoppageTime + firstHalfStoppage)}")
 
-        saveMatchRecord()
-        historyRecordsCompose = recordManager.getAllRecords()
+        coroutineScope.launch {
+            saveMatchRecord()
+            historyRecordsCompose = recordRepository.getAllRecords()
+        }
 
         // 自动弹出总结页（确认后退出计时器页回首页）
         showMatchSummary()
@@ -736,81 +753,71 @@ class MainActivity : AppCompatActivity() {
 
     // region 事件记录
 
-    private fun recordSimpleEvent(eventType: String, emoji: String, stoppageSeconds: Int) {
+    private fun recordSimpleEvent(eventType: EventType) {
         val timeStr = formatTime(mainTime)
-        val halfName = if (currentHalf == HALF_FIRST) getString(R.string.status_first_half) else getString(R.string.status_second_half)
+        val halfType = if (currentHalf == HALF_FIRST) HalfType.FIRST_HALF else HalfType.SECOND_HALF
         val minute = (mainTime / 60).toInt()
-
-        matchEvents.add(MatchEvent(
-            timeStr = timeStr,
-            event = eventType,
-            emoji = emoji,
-            detail = "",
-            half = halfName,
-            minute = minute
-        ))
-
-        addLog("$emoji [$timeStr] $eventType")
-    }
-
-    private fun recordEventWithDetails(eventType: String, team: String, number: String) {
         val emoji = when (eventType) {
-            getString(R.string.event_yellow) -> "🟨"
-            getString(R.string.event_red) -> "🟥"
-            getString(R.string.event_goal) -> "⚽"
+            EventType.INJURY -> "🏥"
+            EventType.SUBSTITUTION -> "🔄"
             else -> "📝"
         }
 
-        val teamEmoji = if (team == getString(R.string.team_home)) "🏠" else "✈️"
-        val detailText = "$team #$number"
+        matchEvents.add(MatchEvent(
+            timeStr = timeStr,
+            event = eventType.name,
+            emoji = emoji,
+            detail = "",
+            half = halfType.name,
+            minute = minute
+        ))
+
+        addLog("$emoji [$timeStr] ${eventType.name}")
+    }
+
+    private fun recordEventWithDetails(eventType: EventType, team: TeamSelection, number: String) {
+        val emoji = when (eventType) {
+            EventType.YELLOW_CARD -> "🟨"
+            EventType.RED_CARD -> "🟥"
+            EventType.GOAL -> "⚽"
+            else -> "📝"
+        }
+
+        val teamStr = if (team == TeamSelection.HOME) "Home" else "Away"
+        val detailText = "$teamStr #$number"
         val timeStr = formatTime(mainTime)
-        val halfName = if (currentHalf == HALF_FIRST) getString(R.string.status_first_half) else getString(R.string.status_second_half)
+        val halfType = if (currentHalf == HALF_FIRST) HalfType.FIRST_HALF else HalfType.SECOND_HALF
         val minute = (mainTime / 60).toInt()
 
         matchEvents.add(MatchEvent(
             timeStr = timeStr,
-            event = eventType,
+            event = eventType.name,
             emoji = emoji,
             detail = detailText,
-            half = halfName,
+            half = halfType.name,
             minute = minute
         ))
 
         stoppageTimeTextCompose = formatTime(stoppageTime)
-        addLog("$emoji [$timeStr] $eventType - $teamEmoji $detailText")
+        addLog("$emoji [$timeStr] ${eventType.name} - $teamStr #$number")
     }
 
-    private fun saveMatchRecord() {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val currentDate = dateFormat.format(Date())
-
-        val homeGoals = matchEvents.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
-        val awayGoals = matchEvents.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
-
-        val record = MatchRecord(
-            date = currentDate,
-            halfTimeMinutes = (halfTimeSeconds / 60).toInt(),
-            firstHalfStoppage = formatTime(firstHalfStoppage.toLong()),
-            secondHalfStoppage = formatTime(stoppageTime.toLong()),
-            totalStoppage = formatTime((firstHalfStoppage + stoppageTime).toLong()),
-            goalCount = matchEvents.count { it.event == getString(R.string.event_goal) },
-            yellowCount = matchEvents.count { it.event == getString(R.string.event_yellow) },
-            redCount = matchEvents.count { it.event == getString(R.string.event_red) },
-            substitutionCount = matchEvents.count { it.event == getString(R.string.event_substitute) },
-            injuryCount = matchEvents.count { it.event == getString(R.string.event_injury) },
-            events = matchEvents.toList(),
-            homeGoals = homeGoals,
-            awayGoals = awayGoals,
-            matchName = currentMatchName,
-            homeTeamName = currentHomeTeamName,
-            awayTeamName = currentAwayTeamName,
+    private suspend fun saveMatchRecord() {
+        val record = MatchRecordRepository.buildMatchRecord(
+            matchEvents = matchEvents.toList(),
+            halfTimeSeconds = halfTimeSeconds,
+            firstHalfStoppage = firstHalfStoppage,
+            stoppageTime = stoppageTime,
+            currentMatchName = currentMatchName,
+            currentHomeTeamName = currentHomeTeamName,
+            currentAwayTeamName = currentAwayTeamName,
             homeTeamColor = homeTeamColor,
             awayTeamColor = awayTeamColor,
         )
 
-        recordManager.saveRecord(record)
+        recordRepository.saveRecord(record)
         dashboardViewModel.refresh()
-        Log.i("FootballTimer", "📁 比赛记录已保存: 主队 $homeGoals - $awayGoals 客队")
+        Log.i("FootballTimer", "📁 比赛记录已保存: 主队 ${record.homeGoals} - ${record.awayGoals} 客队")
     }
 
     // region 弹窗触发
@@ -820,26 +827,13 @@ class MainActivity : AppCompatActivity() {
      */
     private fun handleEventConfirmed(eventType: EventType, team: TeamSelection, number: String) {
         when (eventType) {
-            EventType.INJURY -> {
-                recordSimpleEvent(getString(R.string.event_injury), " ", 30)
-            }
-            EventType.SUBSTITUTION -> {
-                recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
+            EventType.INJURY, EventType.SUBSTITUTION -> {
+                recordSimpleEvent(eventType)
             }
             EventType.CANCEL -> { /* 不应到达 */ }
             else -> {
-                val eventTypeStr = when (eventType) {
-                    EventType.YELLOW_CARD -> getString(R.string.event_yellow)
-                    EventType.RED_CARD -> getString(R.string.event_red)
-                    EventType.GOAL -> getString(R.string.event_goal)
-                    else -> return
-                }
-                val teamStr = when (team) {
-                    TeamSelection.HOME -> getString(R.string.team_home)
-                    TeamSelection.AWAY -> getString(R.string.team_away)
-                    TeamSelection.CANCEL -> return
-                }
-                recordEventWithDetails(eventTypeStr, teamStr, number)
+                if (team == TeamSelection.CANCEL) return
+                recordEventWithDetails(eventType, team, number)
             }
         }
     }
@@ -848,13 +842,17 @@ class MainActivity : AppCompatActivity() {
         val eventsToShow: List<MatchEvent> = if (isHistory) {
             historyRecord?.events ?: listOf()
         } else {
-            matchEvents
+            matchEvents.toList()  // 防御性拷贝
         }
 
-        val homeGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_home)) }
-        val awayGoals = eventsToShow.count { it.event == getString(R.string.event_goal) && it.detail.contains(getString(R.string.team_away)) }
-        val yellowCount = eventsToShow.count { it.event == getString(R.string.event_yellow) }
-        val redCount = eventsToShow.count { it.event == getString(R.string.event_red) }
+        val homeGoals = historyRecord?.homeGoals ?: eventsToShow.count {
+            parseEventType(it.event) == EventType.GOAL && it.detail.contains("Home", ignoreCase = true)
+        }
+        val awayGoals = historyRecord?.awayGoals ?: eventsToShow.count {
+            parseEventType(it.event) == EventType.GOAL && it.detail.contains("Away", ignoreCase = true)
+        }
+        val yellowCount = historyRecord?.yellowCount ?: eventsToShow.count { parseEventType(it.event) == EventType.YELLOW_CARD }
+        val redCount = historyRecord?.redCount ?: eventsToShow.count { parseEventType(it.event) == EventType.RED_CARD }
 
         val hTime: Int = if (isHistory) {
             historyRecord?.halfTimeMinutes ?: 0
@@ -917,7 +915,9 @@ class MainActivity : AppCompatActivity() {
         mainTimeTextCompose = formatTime(mainTime)
         stoppageTimeTextCompose = formatTime(stoppageTime)
         showEndHalfButtonCompose = state == STATE_RUNNING || state == STATE_PAUSED
-        historyRecordsCompose = recordManager.getAllRecords()
+        coroutineScope.launch {
+            historyRecordsCompose = recordRepository.getAllRecords()
+        }
     }
 
     // region 工具方法
@@ -945,5 +945,20 @@ class MainActivity : AppCompatActivity() {
             else -> "--"
         }
         Log.d("FootballTimer", "[$halfIndicator $currentTime] $message")
+    }
+
+    /**
+     * 从事件字符串解析 EventType（支持枚举名和旧的本地化字符串）
+     */
+    private fun parseEventType(eventStr: String): EventType {
+        try { return EventType.valueOf(eventStr) } catch (_: Exception) {}
+        return when (eventStr) {
+            "进球", "Goal" -> EventType.GOAL
+            "黄牌", "Yellow Card" -> EventType.YELLOW_CARD
+            "红牌", "Red Card" -> EventType.RED_CARD
+            "换人", "Sub" -> EventType.SUBSTITUTION
+            "受伤", "Injury" -> EventType.INJURY
+            else -> EventType.GOAL
+        }
     }
 }

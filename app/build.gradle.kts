@@ -55,8 +55,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     implementation("com.google.android.material:material:1.12.0")
-    // Gson — 仅用于 MigrationHelper 读取旧 SharedPreferences 数据，迁移完成后可移除
-    implementation("com.google.code.gson:gson:2.10.1")
 
     // Room
     implementation(libs.androidx.room.runtime)
