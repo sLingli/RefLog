@@ -10,6 +10,7 @@ import com.example.myapplication.db.MatchRecordWithEvents
 import com.example.myapplication.db.dao.MatchRecordDao
 import com.example.myapplication.db.entity.MatchEventEntity
 import com.example.myapplication.db.entity.MatchRecordEntity
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -29,13 +30,16 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
         val entityId = dao.insertRecord(record.toEntity())
         val eventEntities = record.events.map { it.toEntity(entityId) }
         dao.insertEvents(eventEntities)
+        Log.i("RoomDB", "✅ 比赛记录已保存到 Room (id=$entityId, events=${eventEntities.size})")
     }
 
     /**
      * 获取所有比赛记录（含事件列表），按时间倒序
      */
     suspend fun getAllRecords(): List<MatchRecord> {
-        return dao.getAllRecordsWithEvents().map { it.toDataClass() }
+        val records = dao.getAllRecordsWithEvents().map { it.toDataClass() }
+        Log.i("RoomDB", "📖 从 Room 读取了 ${records.size} 条比赛记录")
+        return records
     }
 
     /**

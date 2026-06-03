@@ -34,11 +34,11 @@ object MigrationHelper {
         val hasOldTemplates = oldTemplatesPrefs.contains("templates")
 
         if (!hasOldRecords && !hasOldTemplates) {
-            Log.i(TAG, "无需迁移，无旧数据")
+            Log.i(TAG, "ℹ️ 无需迁移 — 未发现旧 SharedPreferences 数据（可能已是新安装或已迁移）")
             return@withContext
         }
 
-        Log.i(TAG, "开始迁移旧数据...")
+        Log.i(TAG, "🔄 检测到旧数据，开始迁移到 Room 数据库...")
         val db = RefLogDatabase.getInstance(context)
         val recordDao = db.matchRecordDao()
         val templateDao = db.matchTemplateDao()
@@ -56,10 +56,11 @@ object MigrationHelper {
                     for (record in oldRecords) {
                         recordRepo.saveRecord(record)
                     }
-                    Log.i(TAG, "✅ 比赛记录迁移完成: ${oldRecords.size} 条")
+                    Log.i(TAG, "✅ 比赛记录迁移完成: ${oldRecords.size} 条 → Room")
                 }
                 // 清除旧数据
                 oldRecordsPrefs.edit().remove("records").apply()
+                Log.i(TAG, "🗑️ 旧 SharedPreferences match_records 已清除")
             } catch (e: Exception) {
                 Log.e(TAG, "❌ 比赛记录迁移失败", e)
             }
@@ -77,15 +78,16 @@ object MigrationHelper {
                     for (template in oldTemplates) {
                         templateRepo.saveTemplate(template)
                     }
-                    Log.i(TAG, "✅ 赛事预设迁移完成: ${oldTemplates.size} 条")
+                    Log.i(TAG, "✅ 赛事预设迁移完成: ${oldTemplates.size} 条 → Room")
                 }
                 // 清除旧数据
                 oldTemplatesPrefs.edit().remove("templates").apply()
+                Log.i(TAG, "🗑️ 旧 SharedPreferences match_templates 已清除")
             } catch (e: Exception) {
                 Log.e(TAG, "❌ 赛事预设迁移失败", e)
             }
         }
 
-        Log.i(TAG, "数据迁移结束")
+        Log.i(TAG, "🎉 数据迁移全部结束！后续数据将直接读写 Room 数据库")
     }
 }
