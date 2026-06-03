@@ -31,7 +31,6 @@ import com.example.myapplication.db.HalfType
 import com.example.myapplication.repository.DatabaseModule
 import com.example.myapplication.repository.MatchRecordRepository
 import com.example.myapplication.repository.MatchTemplateRepository
-import com.example.myapplication.repository.MigrationHelper
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -146,13 +145,6 @@ class MainActivity : AppCompatActivity() {
         currentLanguage = LanguageManager.currentLanguage
         recordRepository = DatabaseModule.getMatchRecordRepository(this)
         templateRepository = DatabaseModule.getMatchTemplateRepository(this)
-
-        // 执行一次性 SharedPreferences → Room 迁移
-        coroutineScope.launch {
-            MigrationHelper.migrateIfNeeded(this@MainActivity)
-            historyRecordsCompose = recordRepository.getAllRecords()
-            dashboardViewModel.refresh()
-        }
 
         profilePrefs = getSharedPreferences("user_profile", MODE_PRIVATE)
         userAvatarUriString = profilePrefs.getString("avatar_uri", null)
