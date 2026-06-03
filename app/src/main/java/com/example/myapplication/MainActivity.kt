@@ -13,11 +13,14 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -81,8 +84,8 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var updateRunnable: Runnable
 
-    private var pendingEventType: String = ""
-    private var selectedTeam: String = ""
+    // UnifiedEventBottomSheet 触发状态
+    private var showUnifiedEventSheet by mutableStateOf(false)
 
     // 当前赛事配置（由模板传入）
     private var currentMatchName: String = ""
@@ -104,19 +107,10 @@ class MainActivity : AppCompatActivity() {
     private var historyRecordsCompose by mutableStateOf<List<MatchRecord>>(emptyList())
 
     // region Compose 弹窗状态
-    private var showTeamSelectionDialogState by mutableStateOf(false)
-    private var currentEventType by mutableStateOf(EventType.YELLOW_CARD)
-    private var showThemeSelectionDialogState by mutableStateOf(false)
-    private var currentAppTheme by mutableStateOf(AppTheme.DARK_GREEN)
+    private var themeConfigState by mutableStateOf(ThemeConfig())
     private var showLanguageSelectionDialogState by mutableStateOf(false)
     private var currentLanguage by mutableStateOf(AppLanguage.DEFAULT)
-    private var showEventSelectionDialogState by mutableStateOf(false)
     private var showMatchSummaryDialogState by mutableStateOf(false)
-    private var showNumberSelectionDialogState by mutableStateOf(false)
-    private var numberSelectionEventType by mutableStateOf("")
-    private var numberSelectionTeam by mutableStateOf("")
-    private var numberSelectionTeamColor by mutableStateOf(0)
-    private var numberSelectionEventIconInfo by mutableStateOf(EventIconInfo(R.drawable.ic_card, Color.White))
 
     // MatchSummary 数据状态
     private var matchSummaryIsHistory by mutableStateOf(false)
@@ -141,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ThemeManager.init(this)
-        currentAppTheme = ThemeManager.currentTheme
+        themeConfigState = ThemeManager.config
         LanguageManager.init(this)
         currentLanguage = LanguageManager.currentLanguage
         recordManager = MatchRecordManager(this)
@@ -156,7 +150,7 @@ class MainActivity : AppCompatActivity() {
         updateAllComposeState()
 
         setContent {
-            RefLogTheme(theme = currentAppTheme) {
+            RefLogTheme(config = themeConfigState) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
@@ -198,7 +192,7 @@ class MainActivity : AppCompatActivity() {
                                     historyRecordsCompose = recordManager.getAllRecords()
                                     dashboardViewModel.refresh()
                                 },
-                                onThemeClick = { showThemeSelectionDialogState = true },
+                                onThemeClick = { navController.navigate("theme_settings") },
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
                                 onSettingsClick = { /* 设置入口已移除独立颜色弹窗 */ },
                                 onAboutClick = { navController.navigate("about") },
@@ -241,6 +235,24 @@ class MainActivity : AppCompatActivity() {
                             onNavigateBack = {
                                 resetMatch()
                                 navController.popBackStack("home", false)
+                            }
+                        )
+                    }
+
+                    // ═══════════════════════════════════════
+                    // 主题设置页面
+                    // ═══════════════════════════════════════
+                    composable(
+                        route = "theme_settings",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        ThemeSettingsScreen(
+                            onConfigChanged = { newConfig: ThemeConfig ->
+                                themeConfigState = newConfig
+                                ThemeManager.config = newConfig
                             }
                         )
                     }
@@ -415,18 +427,6 @@ class MainActivity : AppCompatActivity() {
      */
     @androidx.compose.runtime.Composable
     private fun DialogOverlay(navController: androidx.navigation.NavController) {
-        if (showThemeSelectionDialogState) {
-            ThemeSelectionDialog(
-                currentTheme = currentAppTheme,
-                onDismiss = { showThemeSelectionDialogState = false },
-                onThemeSelected = { theme ->
-                    ThemeManager.currentTheme = theme
-                    currentAppTheme = theme
-                    showThemeSelectionDialogState = false
-                }
-            )
-        }
-
         if (showLanguageSelectionDialogState) {
             LanguageSelectionDialog(
                 currentLanguage = currentLanguage,
@@ -464,8 +464,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 计时器页面专用弹窗覆盖层（事件选择、队伍选择、号码选择）
+     * 计时器页面专用弹窗覆盖层（统一事件底部面板 + 比赛总结）
      */
+    @OptIn(ExperimentalMaterial3Api::class)
     @androidx.compose.runtime.Composable
     private fun DialogOverlayForTimer() {
         // 比赛总结弹窗（比赛结束总结）
@@ -490,71 +491,34 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        if (showEventSelectionDialogState) {
-            EventSelectionDialog(
-                onDismiss = { showEventSelectionDialogState = false },
-                onEventSelected = { eventType ->
-                    showEventSelectionDialogState = false
-                    when (eventType) {
-                        EventType.YELLOW_CARD -> showTeamSelectionDialog(getString(R.string.event_yellow))
-                        EventType.RED_CARD -> showTeamSelectionDialog(getString(R.string.event_red))
-                        EventType.GOAL -> showTeamSelectionDialog(getString(R.string.event_goal))
-                        EventType.INJURY -> recordSimpleEvent(getString(R.string.event_injury), " ", 30)
-                        EventType.SUBSTITUTION -> recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
-                        EventType.CANCEL -> { }
-                    }
-                }
+        // 统一事件底部面板
+        if (showUnifiedEventSheet) {
+            val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
             )
-        }
+            // 暂存确认回调参数，等动画播放完再执行
+            var pendingConfirm by remember { mutableStateOf<Triple<EventType, TeamSelection, String>?>(null) }
 
-        if (showTeamSelectionDialogState) {
-            TeamSelectionDialog(
-                eventType = currentEventType,
-                eventTitle = getEventTypeTitle(currentEventType),
-                homeTeamColor = homeTeamColor,
-                awayTeamColor = awayTeamColor,
-                onDismiss = { showTeamSelectionDialogState = false },
-                onTeamSelected = { selection ->
-                    showTeamSelectionDialogState = false
-                    when (selection) {
-                        TeamSelection.HOME -> {
-                            selectedTeam = getString(R.string.team_home)
-                            numberSelectionEventType = pendingEventType
-                            numberSelectionTeam = selectedTeam
-                            numberSelectionTeamColor = homeTeamColor
-                            numberSelectionEventIconInfo = getEventIconInfo(currentEventType)
-                            showNumberSelectionDialogState = true
-                        }
-                        TeamSelection.AWAY -> {
-                            selectedTeam = getString(R.string.team_away)
-                            numberSelectionEventType = pendingEventType
-                            numberSelectionTeam = selectedTeam
-                            numberSelectionTeamColor = awayTeamColor
-                            numberSelectionEventIconInfo = getEventIconInfo(currentEventType)
-                            showNumberSelectionDialogState = true
-                        }
-                        TeamSelection.CANCEL -> { }
-                    }
-                }
-            )
-        }
+            // 监听 pendingConfirm: 有数据时先播放关闭动画，动画结束后再移除面板
+            LaunchedEffect(pendingConfirm) {
+                val data = pendingConfirm ?: return@LaunchedEffect
+                // 先隐藏面板（播放下滑动画）
+                sheetState.hide()
+                // 等动画完成后再移除
+                showUnifiedEventSheet = false
+                handleEventConfirmed(data.first, data.second, data.third)
+            }
 
-        if (showNumberSelectionDialogState) {
-            NumberSelectionDialog(
-                eventType = numberSelectionEventType,
-                team = numberSelectionTeam,
-                teamColor = numberSelectionTeamColor,
-                eventIconInfo = numberSelectionEventIconInfo,
-                onDismiss = { showNumberSelectionDialogState = false },
-                onResult = { result ->
-                    showNumberSelectionDialogState = false
-                    when (result) {
-                        is NumberSelectionResult.Confirmed -> {
-                            recordEventWithDetails(numberSelectionEventType, numberSelectionTeam, result.number)
-                        }
-                        is NumberSelectionResult.Cancelled -> { }
-                    }
-                }
+            UnifiedEventBottomSheet(
+                sheetState = sheetState,
+                homeColor = Color(homeTeamColor),
+                awayColor = Color(awayTeamColor),
+                onDismiss = {
+                    showUnifiedEventSheet = false
+                },
+                onConfirm = { eventType, team, number ->
+                    pendingConfirm = Triple(eventType, team, number)
+                },
             )
         }
     }
@@ -619,8 +583,8 @@ class MainActivity : AppCompatActivity() {
         syncComposeState()
         stoppageActiveCompose = true
 
-        // 显示事件选择弹窗
-        showEventSelectionDialogState = true
+        // 显示统一事件底部面板
+        showUnifiedEventSheet = true
     }
 
     private fun startSecondHalf() {
@@ -851,15 +815,33 @@ class MainActivity : AppCompatActivity() {
 
     // region 弹窗触发
 
-    private fun showTeamSelectionDialog(eventType: String) {
-        pendingEventType = eventType
-        currentEventType = when (eventType) {
-            getString(R.string.event_yellow) -> EventType.YELLOW_CARD
-            getString(R.string.event_red) -> EventType.RED_CARD
-            getString(R.string.event_goal) -> EventType.GOAL
-            else -> EventType.YELLOW_CARD
+    /**
+     * 统一事件面板确认回调处理
+     */
+    private fun handleEventConfirmed(eventType: EventType, team: TeamSelection, number: String) {
+        when (eventType) {
+            EventType.INJURY -> {
+                recordSimpleEvent(getString(R.string.event_injury), " ", 30)
+            }
+            EventType.SUBSTITUTION -> {
+                recordSimpleEvent(getString(R.string.event_substitute), " ", 30)
+            }
+            EventType.CANCEL -> { /* 不应到达 */ }
+            else -> {
+                val eventTypeStr = when (eventType) {
+                    EventType.YELLOW_CARD -> getString(R.string.event_yellow)
+                    EventType.RED_CARD -> getString(R.string.event_red)
+                    EventType.GOAL -> getString(R.string.event_goal)
+                    else -> return
+                }
+                val teamStr = when (team) {
+                    TeamSelection.HOME -> getString(R.string.team_home)
+                    TeamSelection.AWAY -> getString(R.string.team_away)
+                    TeamSelection.CANCEL -> return
+                }
+                recordEventWithDetails(eventTypeStr, teamStr, number)
+            }
         }
-        showTeamSelectionDialogState = true
     }
 
     private fun showMatchSummary(isHistory: Boolean = false, historyRecord: MatchRecord? = null) {
@@ -939,17 +921,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     // region 工具方法
-
-    private fun getEventTypeTitle(eventType: EventType): String {
-        return when (eventType) {
-            EventType.YELLOW_CARD -> getString(R.string.event_yellow)
-            EventType.RED_CARD -> getString(R.string.event_red)
-            EventType.GOAL -> getString(R.string.event_goal)
-            EventType.INJURY -> getString(R.string.event_injury)
-            EventType.SUBSTITUTION -> getString(R.string.event_substitute)
-            EventType.CANCEL -> ""
-        }
-    }
 
     private fun getHalfText(code: String): String {
         return when (code) {

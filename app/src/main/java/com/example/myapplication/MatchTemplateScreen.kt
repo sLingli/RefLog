@@ -26,6 +26,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.repository.MatchTemplateRepository
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
 /**
@@ -41,13 +44,18 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MatchTemplateScreen(
-    initialTemplates: List<MatchTemplate>,
-    templateManager: MatchTemplateManager,
+    templateRepository: MatchTemplateRepository,
     onNavigateBack: () -> Unit,
     onTemplateSelected: (MatchTemplate) -> Unit,
 ) {
     var showNewTemplateDialog by remember { mutableStateOf(false) }
-    val templateList = remember { mutableStateListOf<MatchTemplate>().also { it.addAll(initialTemplates) } }
+    val templateList = remember { mutableStateListOf<MatchTemplate>() }
+    val scope = remember { MainScope() }
+
+    // 加载初始数据
+    LaunchedEffect(Unit) {
+        templateList.addAll(templateRepository.getAllTemplates())
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -129,8 +137,10 @@ fun MatchTemplateScreen(
                         template = template,
                         onClick = { onTemplateSelected(template) },
                         onDelete = {
-                            templateManager.deleteTemplate(template.id)
-                            templateList.remove(template)
+                            scope.launch {
+                                templateRepository.deleteTemplate(template.id)
+                                templateList.remove(template)
+                            }
                         },
                         modifier = Modifier.animateItem()
                     )
@@ -146,8 +156,10 @@ fun MatchTemplateScreen(
         NewTemplateDialog(
             onDismiss = { showNewTemplateDialog = false },
             onConfirm = { template ->
-                templateManager.saveTemplate(template)
-                templateList.add(0, template)
+                scope.launch {
+                    templateRepository.saveTemplate(template)
+                    templateList.add(0, template)
+                }
                 showNewTemplateDialog = false
             }
         )
