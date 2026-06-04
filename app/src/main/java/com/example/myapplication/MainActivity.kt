@@ -1,11 +1,9 @@
 package com.example.myapplication
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -78,7 +76,6 @@ class MainActivity : AppCompatActivity() {
     private var lastUpdateTime: Long = 0
 
     private var halfTimeSeconds: Long = DEFAULT_HALF_TIME * 60L
-    private var matchTimeSet: Boolean = false
 
     private var halfTimeAlertShown: Boolean = false
     private var fullTimeAlertShown: Boolean = false
@@ -101,7 +98,7 @@ class MainActivity : AppCompatActivity() {
     // region Compose UI 状态
     private var timerStateCompose by mutableStateOf(STATE_READY)
     private var statusTextCompose by mutableStateOf("")
-    private var statusColorCompose by mutableStateOf(Color(0xFF4CAF50))
+    private val statusColorCompose = Color(0xFF4CAF50)
     private var statusIconResCompose by mutableStateOf(R.drawable.sports_soccer)
     private var mainTimeTextCompose by mutableStateOf("00:00")
     private var mainTimeColorCompose by mutableStateOf(Color(0xFF4CAF50))
@@ -204,7 +201,7 @@ class MainActivity : AppCompatActivity() {
                                 onSettingsClick = { /* 设置入口已移除独立颜色弹窗 */ },
                                 onAboutClick = { navController.navigate("about") },
                                 onEditProfileClick = { navController.navigate("edit_profile") },
-                                avatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                                avatarUri = userAvatarUriString?.let { Uri.fromFile(java.io.File(it)) },
                                 nickname = userNickname,
                                 onPageChanged = { page ->
                                     when (page) {
@@ -288,20 +285,15 @@ class MainActivity : AppCompatActivity() {
                         popExitTransition = { slideOutHorizontally { it } }
                     ) {
                         EditProfileScreen(
-                            currentAvatarUri = userAvatarUriString?.let { Uri.parse(it) },
+                            currentAvatarPath = userAvatarUriString,
                             currentNickname = userNickname,
                             onNavigateBack = { navController.popBackStack() },
-                            onSave = { newNickname, newAvatarUri ->
+                            onSave = { newNickname, newAvatarLocalPath ->
                                 userNickname = newNickname
                                 profilePrefs.edit().putString("nickname", newNickname).apply()
-                                newAvatarUri?.let { uri ->
-                                    userAvatarUriString = uri.toString()
-                                    profilePrefs.edit().putString("avatar_uri", uri.toString()).apply()
-                                    try {
-                                        contentResolver.takePersistableUriPermission(
-                                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                        )
-                                    } catch (_: Exception) { }
+                                if (newAvatarLocalPath != null) {
+                                    userAvatarUriString = newAvatarLocalPath
+                                    profilePrefs.edit().putString("avatar_uri", newAvatarLocalPath).apply()
                                 }
                             }
                         )
@@ -409,7 +401,6 @@ class MainActivity : AppCompatActivity() {
         homeTeamColor = template.homeTeamColor
         awayTeamColor = template.awayTeamColor
         halfTimeSeconds = template.halfTimeMinutes * 60L
-        matchTimeSet = true // 预设已包含所有配置，无需再弹窗确认
     }
 
     // region 弹窗覆盖层
@@ -518,24 +509,11 @@ class MainActivity : AppCompatActivity() {
     // region 状态机
 
     private fun toggleTimer() {
-        Log.d("状态机", "toggleTimer - 当前状态: $state, 当前半场: $currentHalf")
         when (state) {
-            STATE_READY -> {
-                Log.d("状态机", "从READY开始")
-                startTimer()
-            }
-            STATE_RUNNING -> {
-                Log.d("状态机", "从RUNNING暂停")
-                pauseTimer()
-            }
-            STATE_PAUSED -> {
-                Log.d("状态机", "从PAUSED继续")
-                resumeTimer()
-            }
-            STATE_HALFTIME -> {
-                Log.d("状态机", "从中场休息开始下半场")
-                startSecondHalf()
-            }
+            STATE_READY -> startTimer()
+            STATE_RUNNING -> pauseTimer()
+            STATE_PAUSED -> resumeTimer()
+            STATE_HALFTIME -> startSecondHalf()
         }
     }
 
@@ -558,10 +536,6 @@ class MainActivity : AppCompatActivity() {
 
         syncComposeState()
         stoppageActiveCompose = false
-
-        addLog("🏁 比赛开始")
-        val halfTimeMin = halfTimeSeconds / 60
-        Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
 
         startUpdateLoop()
     }
@@ -599,8 +573,6 @@ class MainActivity : AppCompatActivity() {
         stoppageTimeTextCompose = formatTime(stoppageTime)
 
         startUpdateLoop()
-
-        addLog("🏁 下半场开始 - 从 ${formatTime(mainTime)} 继续计时")
     }
 
     private fun endFirstHalf() {
@@ -611,8 +583,6 @@ class MainActivity : AppCompatActivity() {
         syncComposeState()
         mainTimeTextCompose = formatTime(mainTime)
         mainTimeColorCompose = Color(0xFF888888)
-
-        addLog("📊 上半场结束 | 比赛: ${formatTime(mainTime)} | 补时: ${formatTime(stoppageTime)}")
 
         stoppageTime = 0
         halfTimeAlertShown = false
@@ -627,9 +597,6 @@ class MainActivity : AppCompatActivity() {
         syncComposeState()
         mainTimeColorCompose = Color(0xFF888888)
         mainTimeTextCompose = formatTime(mainTime)
-
-        addLog("🏆 比赛结束")
-        addLog("📊 总补时: ${formatTime(stoppageTime + firstHalfStoppage)}")
 
         if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
 
@@ -649,7 +616,6 @@ class MainActivity : AppCompatActivity() {
         stoppageTime = 0
         firstHalfStoppage = 0
         halfTimeSeconds = DEFAULT_HALF_TIME * 60L
-        matchTimeSet = false
         halfTimeAlertShown = false
         fullTimeAlertShown = false
         matchEvents.clear()
@@ -668,8 +634,6 @@ class MainActivity : AppCompatActivity() {
         mainTimeColorCompose = Color(0xFF4CAF50)
         stoppageTimeTextCompose = "00:00"
         stoppageActiveCompose = false
-
-        Log.i("FootballTimer", "📢 比赛已重置")
     }
 
     // region 计时器核心
@@ -710,13 +674,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkTimeAlerts() {
-        val halfTimeMin = halfTimeSeconds / 60
-
         when (currentHalf) {
             HALF_FIRST -> {
                 if (mainTime >= halfTimeSeconds && !halfTimeAlertShown) {
                     halfTimeAlertShown = true
-                    triggerAlert("${halfTimeMin}分钟", "准备中场休息")
                     mainTimeColorCompose = Color(0xFFFF9800)
                     statusTextCompose = getString(R.string.status_first_half_stoppage)
                 }
@@ -725,17 +686,11 @@ class MainActivity : AppCompatActivity() {
                 val targetTime = halfTimeSeconds * 2
                 if (mainTime >= targetTime && !fullTimeAlertShown) {
                     fullTimeAlertShown = true
-                    triggerAlert("${halfTimeMin * 2}分钟", "准备结束比赛")
                     mainTimeColorCompose = Color(0xFFF44336)
                     statusTextCompose = getString(R.string.status_second_half_stoppage)
                 }
             }
         }
-    }
-
-    private fun triggerAlert(timeStr: String, message: String) {
-        Log.i("FootballTimer", "⏰ ${timeStr}到！$message")
-        addLog("⏰ ${timeStr}到 - $message")
     }
 
     // region 事件记录
@@ -744,11 +699,7 @@ class MainActivity : AppCompatActivity() {
         val timeStr = formatTime(mainTime)
         val halfType = if (currentHalf == HALF_FIRST) HalfType.FIRST_HALF else HalfType.SECOND_HALF
         val minute = (mainTime / 60).toInt()
-        val emoji = when (eventType) {
-            EventType.INJURY -> "🏥"
-            EventType.SUBSTITUTION -> "🔄"
-            else -> "📝"
-        }
+        val emoji = eventType.toEmoji()
 
         matchEvents.add(MatchEvent(
             timeStr = timeStr,
@@ -758,17 +709,10 @@ class MainActivity : AppCompatActivity() {
             half = halfType.name,
             minute = minute
         ))
-
-        addLog("$emoji [$timeStr] ${eventType.name}")
     }
 
     private fun recordEventWithDetails(eventType: EventType, team: TeamSelection, number: String) {
-        val emoji = when (eventType) {
-            EventType.YELLOW_CARD -> "🟨"
-            EventType.RED_CARD -> "🟥"
-            EventType.GOAL -> "⚽"
-            else -> "📝"
-        }
+        val emoji = eventType.toEmoji()
 
         val teamStr = if (team == TeamSelection.HOME) "Home" else "Away"
         val detailText = "$teamStr #$number"
@@ -786,7 +730,6 @@ class MainActivity : AppCompatActivity() {
         ))
 
         stoppageTimeTextCompose = formatTime(stoppageTime)
-        addLog("$emoji [$timeStr] ${eventType.name} - $teamStr #$number")
     }
 
     private suspend fun saveMatchRecord() {
@@ -804,7 +747,6 @@ class MainActivity : AppCompatActivity() {
 
         recordRepository.saveRecord(record)
         dashboardViewModel.refresh()
-        Log.i("FootballTimer", "📁 比赛记录已保存: 主队 ${record.homeGoals} - ${record.awayGoals} 客队")
     }
 
     // region 弹窗触发
@@ -817,7 +759,7 @@ class MainActivity : AppCompatActivity() {
             EventType.INJURY, EventType.SUBSTITUTION -> {
                 recordSimpleEvent(eventType)
             }
-            EventType.CANCEL -> { /* 不应到达 */ }
+            EventType.CANCEL -> {  }
             else -> {
                 if (team == TeamSelection.CANCEL) return
                 recordEventWithDetails(eventType, team, number)
@@ -893,7 +835,6 @@ class MainActivity : AppCompatActivity() {
                 statusIconResCompose = R.drawable.sports_soccer
             }
         }
-        statusColorCompose = Color(0xFF4CAF50)
     }
 
     private fun updateAllComposeState() {
@@ -922,16 +863,6 @@ class MainActivity : AppCompatActivity() {
         val minutes = seconds / 60
         val secs = seconds % 60
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
-    }
-
-    private fun addLog(message: String) {
-        val currentTime = formatTime(mainTime)
-        val halfIndicator = when (currentHalf) {
-            HALF_FIRST -> "H1"
-            HALF_SECOND -> "H2"
-            else -> "--"
-        }
-        Log.d("FootballTimer", "[$halfIndicator $currentTime] $message")
     }
 
     /**

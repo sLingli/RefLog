@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,18 +55,29 @@ import com.canhub.cropper.CropImageView
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
-    currentAvatarUri: Uri?,
+    currentAvatarPath: String?,
     currentNickname: String,
     onNavigateBack: () -> Unit,
-    onSave: (newNickname: String, newAvatarUri: Uri?) -> Unit,
+    onSave: (newNickname: String, newAvatarLocalPath: String?) -> Unit,
 ) {
+    val context = LocalContext.current
     var pendingNickname by remember { mutableStateOf(currentNickname) }
-    var pendingAvatarUri by remember { mutableStateOf(currentAvatarUri) }
+    var pendingAvatarUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingAvatarLocalPath by remember { mutableStateOf<String?>(null) }
     var nicknameError by remember { mutableStateOf(false) }
+
+    // 当前头像显示：优先用编辑中的临时 URI，其次用本地路径
+    val displayAvatarUri: Uri? = pendingAvatarUri
+        ?: currentAvatarPath?.let { Uri.fromFile(java.io.File(it)) }
 
     val cropImageLauncher = rememberLauncherForActivityResult(CropImageContract()) { result ->
         if (result.isSuccessful) {
-            pendingAvatarUri = result.uriContent
+            val croppedUri = result.uriContent ?: return@rememberLauncherForActivityResult
+            pendingAvatarUri = croppedUri
+            // 裁剪完成后立即保存到本地存储
+            AvatarStorage.saveAvatar(context, croppedUri)?.let { localPath ->
+                pendingAvatarLocalPath = localPath
+            }
         }
     }
 
@@ -134,9 +146,9 @@ fun EditProfileScreen(
                         .clickable { launchPhotoPicker() },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (pendingAvatarUri != null) {
+                    if (displayAvatarUri != null) {
                         AsyncImage(
-                            model = pendingAvatarUri,
+                            model = displayAvatarUri,
                             contentDescription = stringResource(R.string.label_change_avatar),
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -222,7 +234,7 @@ fun EditProfileScreen(
             // === 保存并返回按钮 ===
             Button(
                 onClick = {
-                    onSave(pendingNickname, pendingAvatarUri)
+                    onSave(pendingNickname, pendingAvatarLocalPath)
                     onNavigateBack()
                 },
                 modifier = Modifier
@@ -249,7 +261,7 @@ fun EditProfileScreen(
 private fun EditProfileScreenPreview() {
     MaterialTheme {
         EditProfileScreen(
-            currentAvatarUri = null,
+            currentAvatarPath = null,
             currentNickname = "RefLog",
             onNavigateBack = {},
             onSave = { _, _ -> }

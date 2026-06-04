@@ -52,3 +52,18 @@ fun getEventIconInfo(eventType: EventType): EventIconInfo {
         else -> EventIconInfo(R.drawable.ic_card, Color.White)
     }
 }
+
+/**
+ * EventType → emoji 映射
+ * 统一在此维护，避免多处硬编码
+ */
+fun EventType.toEmoji(): String {
+    return when (this) {
+        EventType.GOAL -> "⚽"
+        EventType.YELLOW_CARD -> "🟨"
+        EventType.RED_CARD -> "🟥"
+        EventType.INJURY -> "🏥"
+        EventType.SUBSTITUTION -> "🔄"
+        EventType.CANCEL -> "❌"
+    }
+}

@@ -4,6 +4,7 @@ import com.example.myapplication.EventType
 import com.example.myapplication.MatchEvent
 import com.example.myapplication.MatchRecord
 import com.example.myapplication.TeamSelection
+import com.example.myapplication.toEmoji
 import com.example.myapplication.db.AggregateStats
 import com.example.myapplication.db.HalfType
 import com.example.myapplication.db.MatchRecordWithEvents
@@ -254,20 +255,6 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
                 }
             } catch (_: Exception) { "" }
             return if (number != null) "$teamStr #$number" else teamStr
-        }
-
-        /**
-         * EventType → emoji
-         */
-        private fun EventType.toEmoji(): String {
-            return when (this) {
-                EventType.YELLOW_CARD -> "🟨"
-                EventType.RED_CARD -> "🟥"
-                EventType.GOAL -> "⚽"
-                EventType.SUBSTITUTION -> "🔄"
-                EventType.INJURY -> "🏥"
-                EventType.CANCEL -> "❌"
-            }
         }
 
         /**
