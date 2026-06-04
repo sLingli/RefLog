@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
@@ -31,7 +32,6 @@ import com.example.myapplication.db.HalfType
 import com.example.myapplication.repository.DatabaseModule
 import com.example.myapplication.repository.MatchRecordRepository
 import com.example.myapplication.repository.MatchTemplateRepository
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -66,7 +66,6 @@ class MainActivity : AppCompatActivity() {
     private var currentHalf: String = HALF_FIRST
     private lateinit var recordRepository: MatchRecordRepository
     private lateinit var templateRepository: MatchTemplateRepository
-    private val coroutineScope = MainScope()
 
     // Dashboard ViewModel
     private val dashboardViewModel: DashboardViewModel by viewModels {
@@ -151,7 +150,6 @@ class MainActivity : AppCompatActivity() {
         userNickname = profilePrefs.getString("nickname", null)
             ?: getString(R.string.default_nickname)
 
-        initializeTimer()
         updateAllComposeState()
 
         setContent {
@@ -188,14 +186,14 @@ class MainActivity : AppCompatActivity() {
                                     showMatchSummary(isHistory = true, historyRecord = record)
                                 },
                                 onHistoryDeleteRecord = { record ->
-                                    coroutineScope.launch {
+                                    lifecycleScope.launch {
                                         recordRepository.deleteRecord(record.id)
                                         historyRecordsCompose = recordRepository.getAllRecords()
                                         dashboardViewModel.refresh()
                                     }
                                 },
                                 onHistoryClearAll = {
-                                    coroutineScope.launch {
+                                    lifecycleScope.launch {
                                         recordRepository.clearAllRecords()
                                         historyRecordsCompose = recordRepository.getAllRecords()
                                         dashboardViewModel.refresh()
@@ -211,7 +209,7 @@ class MainActivity : AppCompatActivity() {
                                 onPageChanged = { page ->
                                     when (page) {
                                         0 -> dashboardViewModel.refresh()
-                                        1 -> coroutineScope.launch { historyRecordsCompose = recordRepository.getAllRecords() }
+                                        1 -> lifecycleScope.launch { historyRecordsCompose = recordRepository.getAllRecords() }
                                     }
                                 }
                             )
@@ -315,20 +313,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        handler.removeCallbacks(updateRunnable)
-    }
-
-    // region 计时器初始化
-
-    private fun initializeTimer() {
-        updateRunnable = object : Runnable {
-            override fun run() {
-                updateTimer()
-                handler.postDelayed(this, 100)
-            }
-        }
-        handler.post(updateRunnable)
-        Log.i("FootballTimer", "⏱️ 计时器已初始化")
+        if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
     }
 
     // region 全屏计时器页面 Composable
@@ -577,12 +562,16 @@ class MainActivity : AppCompatActivity() {
         addLog("🏁 比赛开始")
         val halfTimeMin = halfTimeSeconds / 60
         Log.i("FootballTimer", "📢 比赛开始！每半场 $halfTimeMin 分钟")
+
+        startUpdateLoop()
     }
 
     private fun resumeTimer() {
         state = STATE_RUNNING
         syncComposeState()
         stoppageActiveCompose = false
+
+        startUpdateLoop()
     }
 
     private fun pauseTimer() {
@@ -628,6 +617,8 @@ class MainActivity : AppCompatActivity() {
         stoppageTime = 0
         halfTimeAlertShown = false
         stoppageTimeTextCompose = formatTime(stoppageTime)
+
+        if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
     }
 
     private fun endSecondHalf() {
@@ -640,7 +631,9 @@ class MainActivity : AppCompatActivity() {
         addLog("🏆 比赛结束")
         addLog("📊 总补时: ${formatTime(stoppageTime + firstHalfStoppage)}")
 
-        coroutineScope.launch {
+        if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
+
+        lifecycleScope.launch {
             saveMatchRecord()
             historyRecordsCompose = recordRepository.getAllRecords()
         }
@@ -661,6 +654,8 @@ class MainActivity : AppCompatActivity() {
         fullTimeAlertShown = false
         matchEvents.clear()
 
+        if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
+
         // 重置赛事配置
         currentMatchName = ""
         currentHomeTeamName = ""
@@ -680,7 +675,7 @@ class MainActivity : AppCompatActivity() {
     // region 计时器核心
 
     private fun startUpdateLoop() {
-        handler.removeCallbacks(updateRunnable)
+        if (::updateRunnable.isInitialized) handler.removeCallbacks(updateRunnable)
         updateRunnable = object : Runnable {
             override fun run() {
                 updateTimer()
@@ -907,7 +902,7 @@ class MainActivity : AppCompatActivity() {
         mainTimeTextCompose = formatTime(mainTime)
         stoppageTimeTextCompose = formatTime(stoppageTime)
         showEndHalfButtonCompose = state == STATE_RUNNING || state == STATE_PAUSED
-        coroutineScope.launch {
+        lifecycleScope.launch {
             historyRecordsCompose = recordRepository.getAllRecords()
         }
     }
