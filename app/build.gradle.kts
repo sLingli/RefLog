@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.reflog.app"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication.watch"
+        applicationId = "com.reflog.app"
         minSdk = 26
         targetSdk = 36
         versionCode = 2
