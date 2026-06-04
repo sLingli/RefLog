@@ -27,7 +27,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.repository.MatchTemplateRepository
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -50,7 +49,7 @@ fun MatchTemplateScreen(
 ) {
     var showNewTemplateDialog by remember { mutableStateOf(false) }
     val templateList = remember { mutableStateListOf<MatchTemplate>() }
-    val scope = remember { MainScope() }
+    val scope = rememberCoroutineScope()
 
     // 加载初始数据
     LaunchedEffect(Unit) {
