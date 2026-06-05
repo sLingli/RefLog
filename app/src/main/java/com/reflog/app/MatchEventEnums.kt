@@ -3,6 +3,26 @@ package com.reflog.app
 import androidx.compose.ui.graphics.Color
 
 /**
+ * 计时器状态枚举
+ */
+enum class TimerState {
+    READY,
+    RUNNING,
+    PAUSED,
+    HALFTIME,
+    FINISHED
+}
+
+/**
+ * 半场状态枚举（含中场休息，与 db/HalfType 不同）
+ */
+enum class HalfState {
+    FIRST,
+    BREAK,
+    SECOND
+}
+
+/**
  * 事件类型枚举
  * Event Type Enum
  */
