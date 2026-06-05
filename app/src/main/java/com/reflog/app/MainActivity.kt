@@ -780,13 +780,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         val homeGoals = historyRecord?.homeGoals ?: eventsToShow.count {
-            parseEventType(it.event) == EventType.GOAL && it.detail.contains("Home", ignoreCase = true)
+            EventType.valueOf(it.event) == EventType.GOAL && it.detail.contains("Home", ignoreCase = true)
         }
         val awayGoals = historyRecord?.awayGoals ?: eventsToShow.count {
-            parseEventType(it.event) == EventType.GOAL && it.detail.contains("Away", ignoreCase = true)
+            EventType.valueOf(it.event) == EventType.GOAL && it.detail.contains("Away", ignoreCase = true)
         }
-        val yellowCount = historyRecord?.yellowCount ?: eventsToShow.count { parseEventType(it.event) == EventType.YELLOW_CARD }
-        val redCount = historyRecord?.redCount ?: eventsToShow.count { parseEventType(it.event) == EventType.RED_CARD }
+        val yellowCount = historyRecord?.yellowCount ?: eventsToShow.count { EventType.valueOf(it.event) == EventType.YELLOW_CARD }
+        val redCount = historyRecord?.redCount ?: eventsToShow.count { EventType.valueOf(it.event) == EventType.RED_CARD }
 
         val hTime: Int = if (isHistory) {
             historyRecord?.halfTimeMinutes ?: 0
@@ -870,18 +870,4 @@ class MainActivity : AppCompatActivity() {
         return String.format(Locale.getDefault(), "%02d:%02d", minutes, secs)
     }
 
-    /**
-     * 从事件字符串解析 EventType（支持枚举名和旧的本地化字符串）
-     */
-    private fun parseEventType(eventStr: String): EventType {
-        try { return EventType.valueOf(eventStr) } catch (_: Exception) {}
-        return when (eventStr) {
-            "进球", "Goal" -> EventType.GOAL
-            "黄牌", "Yellow Card" -> EventType.YELLOW_CARD
-            "红牌", "Red Card" -> EventType.RED_CARD
-            "换人", "Sub" -> EventType.SUBSTITUTION
-            "受伤", "Injury" -> EventType.INJURY
-            else -> EventType.GOAL
-        }
-    }
 }

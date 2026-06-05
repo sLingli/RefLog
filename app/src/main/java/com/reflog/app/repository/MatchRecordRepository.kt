@@ -106,8 +106,7 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
          * MatchEvent → MatchEventEntity
          */
         fun MatchEvent.toEntity(recordId: Long): MatchEventEntity {
-            // 尝试从 event 字符串解析回 EventType 枚举
-            val eventType = parseEventType(event) ?: EventType.GOAL
+            val eventType = parseEventType(event)
             // 尝试从 half 字符串解析回 HalfType 枚举
             val halfType = parseHalfType(half)
             // 尝试从 detail 解析队伍和号码
@@ -197,45 +196,23 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
             }
         }
 
-        /**
-         * 从本地化字符串解析回 EventType 枚举
-         * 支持中文和英文
-         */
-        private fun parseEventType(eventStr: String): EventType? {
-            // 先尝试直接解析枚举名（新格式）
-            try { return EventType.valueOf(eventStr) } catch (_: Exception) {}
-            // 再尝试从本地化字符串解析（旧格式迁移用）
-            return when (eventStr) {
-                "进球", "Goal" -> EventType.GOAL
-                "黄牌", "Yellow Card" -> EventType.YELLOW_CARD
-                "红牌", "Red Card" -> EventType.RED_CARD
-                "换人", "Sub" -> EventType.SUBSTITUTION
-                "受伤", "Injury" -> EventType.INJURY
-                else -> null
-            }
+        private fun parseEventType(eventStr: String): EventType {
+            return try { EventType.valueOf(eventStr) } catch (_: Exception) { EventType.GOAL }
         }
 
-        /**
-         * 从本地化字符串解析回 HalfType 枚举
-         */
         private fun parseHalfType(halfStr: String): HalfType {
-            try { return HalfType.valueOf(halfStr) } catch (_: Exception) {}
-            return when (halfStr) {
-                "上半场", "1st Half" -> HalfType.FIRST_HALF
-                "下半场", "2nd Half" -> HalfType.SECOND_HALF
-                else -> HalfType.FIRST_HALF
-            }
+            return try { HalfType.valueOf(halfStr) } catch (_: Exception) { HalfType.FIRST_HALF }
         }
 
         /**
          * 从 detail 字符串解析队伍和号码
-         * 旧格式: "主队 #7" / "Home #7" / "客队 #10" / "Away #10"
+         * 格式: "Home #7" / "Away #10"
          */
         private fun parseDetail(detail: String): Pair<TeamSelection?, String?> {
             if (detail.isBlank()) return Pair(null, null)
             val team = when {
-                detail.contains("主队") || detail.contains("Home", ignoreCase = true) -> TeamSelection.HOME
-                detail.contains("客队") || detail.contains("Away", ignoreCase = true) -> TeamSelection.AWAY
+                detail.contains("Home", ignoreCase = true) -> TeamSelection.HOME
+                detail.contains("Away", ignoreCase = true) -> TeamSelection.AWAY
                 else -> null
             }
             val number = detail.substringAfter("#").trim().ifBlank { null }
@@ -303,7 +280,7 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
          * MatchEvent 的辅助扩展：从 event 字段解析 EventType
          */
         private fun MatchEvent.eventType(): EventType {
-            return parseEventType(event) ?: EventType.GOAL
+            return parseEventType(event)
         }
 
         /**
