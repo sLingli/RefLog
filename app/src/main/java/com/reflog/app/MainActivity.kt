@@ -1,5 +1,6 @@
-package com.example.myapplication
+package com.reflog.app
 
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,14 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.myapplication.db.HalfType
-import com.example.myapplication.repository.DatabaseModule
-import com.example.myapplication.repository.MatchRecordRepository
-import com.example.myapplication.repository.MatchTemplateRepository
+import com.reflog.app.db.HalfType
+import com.reflog.app.repository.DatabaseModule
+import com.reflog.app.repository.MatchRecordRepository
+import com.reflog.app.repository.MatchTemplateRepository
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.Locale
 
 /**
@@ -129,7 +134,7 @@ class MainActivity : AppCompatActivity() {
     // 个人资料状态
     private var userAvatarUriString: String? by mutableStateOf(null)
     private var userNickname: String by mutableStateOf("")
-    private lateinit var profilePrefs: android.content.SharedPreferences
+    private lateinit var profilePrefs: SharedPreferences
 
     // region 生命周期
 
@@ -201,7 +206,7 @@ class MainActivity : AppCompatActivity() {
                                 onSettingsClick = { /* 设置入口已移除独立颜色弹窗 */ },
                                 onAboutClick = { navController.navigate("about") },
                                 onEditProfileClick = { navController.navigate("edit_profile") },
-                                avatarUri = userAvatarUriString?.let { Uri.fromFile(java.io.File(it)) },
+                                avatarUri = userAvatarUriString?.let { Uri.fromFile(File(it)) },
                                 nickname = userNickname,
                                 onPageChanged = { page ->
                                     when (page) {
@@ -316,7 +321,7 @@ class MainActivity : AppCompatActivity() {
      * 赛事配置由模板传入后写入 Activity 级状态变量，
      * 此 Composable 直接读取这些状态驱动 TimerPage。
      */
-    @androidx.compose.runtime.Composable
+    @Composable
     private fun FullscreenTimerContent(
         onNavigateBack: () -> Unit,
     ) {
@@ -359,7 +364,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * 快速开球 - 使用默认配置直接进入计时器
      */
-    private fun startQuickMatch(navController: androidx.navigation.NavController) {
+    private fun startQuickMatch(navController: NavController) {
         initMatchFromTemplate(
             MatchTemplate(
                 name = getString(R.string.default_template_name),
@@ -378,7 +383,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun startMatchWithTemplate(
         template: MatchTemplate,
-        navController: androidx.navigation.NavController
+        navController: NavController
     ) {
         initMatchFromTemplate(template)
         navController.navigate("timer")
@@ -408,8 +413,8 @@ class MainActivity : AppCompatActivity() {
     /**
      * 主页弹窗覆盖层（主题、语言选择等）
      */
-    @androidx.compose.runtime.Composable
-    private fun DialogOverlay(navController: androidx.navigation.NavController) {
+    @Composable
+    private fun DialogOverlay(navController: NavController) {
         if (showLanguageSelectionDialogState) {
             LanguageSelectionDialog(
                 currentLanguage = currentLanguage,
@@ -450,7 +455,7 @@ class MainActivity : AppCompatActivity() {
      * 计时器页面专用弹窗覆盖层（统一事件底部面板 + 比赛总结）
      */
     @OptIn(ExperimentalMaterial3Api::class)
-    @androidx.compose.runtime.Composable
+    @Composable
     private fun DialogOverlayForTimer() {
         // 比赛总结弹窗（比赛结束总结）
         if (showMatchSummaryDialogState) {
@@ -476,7 +481,7 @@ class MainActivity : AppCompatActivity() {
 
         // 统一事件底部面板
         if (showUnifiedEventSheet) {
-            val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+            val sheetState = rememberModalBottomSheetState(
                 skipPartiallyExpanded = true,
             )
             // 暂存确认回调参数，等动画播放完再执行
@@ -733,7 +738,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun saveMatchRecord() {
-        val record = MatchRecordRepository.buildMatchRecord(
+        val record = MatchRecordRepository.Companion.buildMatchRecord(
             matchEvents = matchEvents.toList(),
             halfTimeSeconds = halfTimeSeconds,
             firstHalfStoppage = firstHalfStoppage,

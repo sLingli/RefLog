@@ -2,7 +2,6 @@ package com.reflog.app
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import androidx.core.content.edit
 
 /**
@@ -33,33 +32,10 @@ object ThemeManager {
     private const val KEY_APPEARANCE_MODE = "app_appearance_mode"
     private const val KEY_DYNAMIC_COLOR = "app_dynamic_color"
 
-    /** 旧版枚举键，用于迁移 */
-    private const val KEY_THEME_LEGACY = "app_theme"
-
     private lateinit var prefs: SharedPreferences
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        migrateIfNeeded()
-    }
-
-    /**
-     * 迁移旧的 AppTheme 枚举到新的 ThemeConfig
-     */
-    private fun migrateIfNeeded() {
-        val legacyTheme = prefs.getString(KEY_THEME_LEGACY, null) ?: return
-        val appearanceMode = when (legacyTheme) {
-            "LIGHT_MODE", "LIGHT_GREEN" -> AppearanceMode.LIGHT
-            "FOLLOW_SYSTEM" -> AppearanceMode.FOLLOW_SYSTEM
-            else -> AppearanceMode.DARK // DARK_GREEN, OCEAN_BLUE, SUNSET_ORANGE, PURPLE_GALAXY
-        }
-        // 旧版跟随系统非动态取色，默认关
-        val useDynamic = legacyTheme == "FOLLOW_SYSTEM" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        prefs.edit {
-            putString(KEY_APPEARANCE_MODE, appearanceMode.name)
-            putBoolean(KEY_DYNAMIC_COLOR, useDynamic)
-            remove(KEY_THEME_LEGACY)
-        }
     }
 
     /**

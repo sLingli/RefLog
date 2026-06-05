@@ -15,7 +15,7 @@ RefLog is an Android app for soccer referees featuring a dual-timer system (main
 User Action → toggleTimer() → State Change → updateButtonStyle() / updateStatusLabel()
 Timer Loop → updateTimer() (100ms) → mainTime++ / stoppageTime++ → checkTimeAlerts()
 Event → UnifiedEventBottomSheet (pause timer) → handleEventConfirmed()
-Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JSON via Gson)
+Match End → saveMatchRecord() → MatchRecordRepository → Room Database
 ```
 
 ### Key Files
@@ -23,9 +23,7 @@ Match End → saveMatchRecord() → MatchRecordManager → SharedPreferences (JS
 |------|---------|
 | `MainActivity.kt` | State machine, timers, all dialog orchestration |
 | `MatchRecord.kt` | Data classes: `MatchEvent`, `MatchRecord` |
-| `MatchRecordManager.kt` | SharedPreferences persistence with Gson |
-| `CenterScaleLayoutManager.kt` | Custom RecyclerView LayoutManager for physics wheel (3D scale effect) |
-| `ColorWheelAdapter.kt` | Infinite-scroll color picker adapter |
+| `MatchRecordRepository.kt` | Room persistence, Entity ↔ data class mapping |
 | `MatchEventEnums.kt` | EventType, TeamSelection, EventIconInfo enums |
 
 ## Conventions
