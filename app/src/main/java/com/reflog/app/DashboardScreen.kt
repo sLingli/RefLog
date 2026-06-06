@@ -556,7 +556,7 @@ private fun EmptyRecentMatchesPlaceholder() {
  *
  * 展示一条 [MatchRecord] 的摘要信息：
  * 日期 + 时长 / 比分 / 事件统计（进球 · 黄牌 · 红牌）。
- * 复用与 HistoryDialog.RecordCard 一致的视觉风格。
+ * RecentMatchCard - 近期比赛卡片组件
  */
 @Composable
 private fun MatchRecentCard(
