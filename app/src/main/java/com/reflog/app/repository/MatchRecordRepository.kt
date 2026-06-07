@@ -107,15 +107,15 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
          */
         fun MatchEvent.toEntity(recordId: Long): MatchEventEntity {
             val eventType = parseEventType(event)
-            // 尝试从 half 字符串解析回 HalfType 枚举
             val halfType = parseHalfType(half)
-            // 尝试从 detail 解析队伍和号码
-            val (team, number) = parseDetail(detail)
+            // 优先使用结构化 team 字段，兜底从 detail 解析
+            val teamSelection = team ?: parseDetail(detail).first
+            val number = if (team != null) detail.substringAfter("#").trim().ifBlank { null } else parseDetail(detail).second
 
             return MatchEventEntity(
                 recordId = recordId,
                 eventType = eventType.name,
-                team = team?.name,
+                team = teamSelection?.name,
                 playerNumber = number,
                 half = halfType.name,
                 minute = minute,
@@ -139,7 +139,7 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
                 redCount = record.redCount,
                 substitutionCount = record.substitutionCount,
                 injuryCount = record.injuryCount,
-                events = events.map { it.toDataClass() },
+                events = events.map { it.toDataClass(record.homeTeamName, record.awayTeamName) },
                 homeGoals = record.homeGoals,
                 awayGoals = record.awayGoals,
                 matchName = record.matchName,
@@ -151,9 +151,9 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
         }
 
         /**
-         * MatchEventEntity → MatchEvent
+         * MatchEventEntity → MatchEvent（带实际队名）
          */
-        fun MatchEventEntity.toDataClass(): MatchEvent {
+        fun MatchEventEntity.toDataClass(homeTeamName: String = "", awayTeamName: String = ""): MatchEvent {
             val eventType = try {
                 EventType.valueOf(eventType)
             } catch (_: Exception) {
@@ -164,14 +164,18 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
             } catch (_: Exception) {
                 HalfType.FIRST_HALF
             }
+            val teamSelection = try {
+                team?.let { TeamSelection.valueOf(it) }
+            } catch (_: Exception) { null }
 
             return MatchEvent(
                 timeStr = formatSeconds(timeSeconds),
-                event = eventType.name,  // 存枚举名，显示时再转本地化
+                event = eventType.name,
                 emoji = eventType.toEmoji(),
-                detail = buildDetailString(team, playerNumber),
+                detail = buildDetailString(team, playerNumber, homeTeamName, awayTeamName),
                 half = halfType.name,
                 minute = minute,
+                team = teamSelection,
             )
         }
 
@@ -221,13 +225,14 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
 
         /**
          * 从枚举构建 detail 字符串（用于显示）
+         * 使用实际队名替代硬编码 "Home"/"Away"
          */
-        private fun buildDetailString(team: String?, number: String?): String {
+        private fun buildDetailString(team: String?, number: String?, homeTeamName: String = "", awayTeamName: String = ""): String {
             if (team == null && number == null) return ""
             val teamStr = try {
                 when (TeamSelection.valueOf(team ?: "")) {
-                    TeamSelection.HOME -> "Home"
-                    TeamSelection.AWAY -> "Away"
+                    TeamSelection.HOME -> homeTeamName.ifEmpty { "Home" }
+                    TeamSelection.AWAY -> awayTeamName.ifEmpty { "Away" }
                     TeamSelection.CANCEL -> ""
                 }
             } catch (_: Exception) { "" }
@@ -251,8 +256,8 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
             val currentDate = dateFormat.format(Date())
 
-            val homeGoals = matchEvents.count { it.eventType() == EventType.GOAL && it.team() == TeamSelection.HOME }
-            val awayGoals = matchEvents.count { it.eventType() == EventType.GOAL && it.team() == TeamSelection.AWAY }
+            val homeGoals = matchEvents.count { it.eventType() == EventType.GOAL && it.team == TeamSelection.HOME }
+            val awayGoals = matchEvents.count { it.eventType() == EventType.GOAL && it.team == TeamSelection.AWAY }
 
             return MatchRecord(
                 date = currentDate,
@@ -281,13 +286,6 @@ class MatchRecordRepository(private val dao: MatchRecordDao) {
          */
         private fun MatchEvent.eventType(): EventType {
             return parseEventType(event)
-        }
-
-        /**
-         * MatchEvent 的辅助扩展：从 detail 字段解析 TeamSelection
-         */
-        private fun MatchEvent.team(): TeamSelection? {
-            return parseDetail(detail).first
         }
     }
 }

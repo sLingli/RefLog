@@ -348,6 +348,8 @@ class MainActivity : AppCompatActivity() {
                 sheetState = sheetState,
                 homeColor = Color(uiState.homeTeamColor),
                 awayColor = Color(uiState.awayTeamColor),
+                homeTeamName = uiState.homeTeamName,
+                awayTeamName = uiState.awayTeamName,
                 onDismiss = { timerViewModel.onEventSheetDismissed() },
                 onConfirm = { eventType, team, number ->
                     pendingConfirm = Triple(eventType, team, number)

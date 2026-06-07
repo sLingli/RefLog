@@ -7,7 +7,8 @@ data class MatchEvent(
     val emoji: String = "",
     val detail: String = "",
     val half: String = "",
-    val minute: Int = 0
+    val minute: Int = 0,
+    val team: TeamSelection? = null,
 )
 
 // 2. 再定义“整场比赛记录”的格式
