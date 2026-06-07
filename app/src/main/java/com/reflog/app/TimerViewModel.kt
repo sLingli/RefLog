@@ -155,15 +155,20 @@ class TimerViewModel(
 
     private fun tick() {
         val now = System.currentTimeMillis()
-        if (lastUpdateTime > 0 && (now - lastUpdateTime) >= 1000) {
-            if (timerState == TimerState.RUNNING || timerState == TimerState.PAUSED) {
-                mainTime++
-                if (timerState == TimerState.PAUSED) stoppageTime++
-                checkTimeAlerts()
-                syncUiState()
+        if (lastUpdateTime > 0) {
+            val elapsedMs = now - lastUpdateTime
+            if (elapsedMs >= 1000) {
+                val elapsedSec = (elapsedMs / 1000).toInt()
+                if (timerState == TimerState.RUNNING || timerState == TimerState.PAUSED) {
+                    mainTime += elapsedSec
+                    if (timerState == TimerState.PAUSED) stoppageTime += elapsedSec
+                    checkTimeAlerts()
+                    syncUiState()
+                }
+                // 精确推进，保留余量避免累积误差
+                lastUpdateTime += elapsedSec * 1000L
             }
-            lastUpdateTime = now
-        } else if (lastUpdateTime == 0L) {
+        } else {
             lastUpdateTime = now
         }
     }
