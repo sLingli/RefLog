@@ -155,15 +155,20 @@ class TimerViewModel(
 
     private fun tick() {
         val now = System.currentTimeMillis()
-        if (lastUpdateTime > 0 && (now - lastUpdateTime) >= 1000) {
-            if (timerState == TimerState.RUNNING || timerState == TimerState.PAUSED) {
-                mainTime++
-                if (timerState == TimerState.PAUSED) stoppageTime++
-                checkTimeAlerts()
-                syncUiState()
+        if (lastUpdateTime > 0) {
+            val elapsedMs = now - lastUpdateTime
+            if (elapsedMs >= 1000) {
+                val elapsedSec = (elapsedMs / 1000).toInt()
+                if (timerState == TimerState.RUNNING || timerState == TimerState.PAUSED) {
+                    mainTime += elapsedSec
+                    if (timerState == TimerState.PAUSED) stoppageTime += elapsedSec
+                    checkTimeAlerts()
+                    syncUiState()
+                }
+                // 精确推进，保留余量避免累积误差
+                lastUpdateTime += elapsedSec * 1000L
             }
-            lastUpdateTime = now
-        } else if (lastUpdateTime == 0L) {
+        } else {
             lastUpdateTime = now
         }
     }
@@ -207,11 +212,13 @@ class TimerViewModel(
     }
 
     private fun recordEventWithDetails(eventType: EventType, team: TeamSelection, number: String) {
-        val teamStr = if (team == TeamSelection.HOME) "Home" else "Away"
+        val s = _uiState.value
+        val teamName = if (team == TeamSelection.HOME) s.homeTeamName.ifEmpty { "Home" } else s.awayTeamName.ifEmpty { "Away" }
         val halfType = if (currentHalf == HalfState.FIRST) HalfType.FIRST_HALF else HalfType.SECOND_HALF
         matchEvents.add(MatchEvent(
             timeStr = formatTime(mainTime), event = eventType.name, emoji = eventType.toEmoji(),
-            detail = "$teamStr #$number", half = halfType.name, minute = (mainTime / 60).toInt(),
+            detail = "$teamName #$number", half = halfType.name, minute = (mainTime / 60).toInt(),
+            team = team,
         ))
     }
 
@@ -236,8 +243,8 @@ class TimerViewModel(
         updateUiState {
             copy(matchSummary = MatchSummaryData(
                 isHistory = false, halfTimeMinutes = (halfTimeSeconds / 60).toInt(),
-                homeGoals = events.count { EventType.valueOf(it.event) == EventType.GOAL && it.detail.contains("Home", ignoreCase = true) },
-                awayGoals = events.count { EventType.valueOf(it.event) == EventType.GOAL && it.detail.contains("Away", ignoreCase = true) },
+                homeGoals = events.count { EventType.valueOf(it.event) == EventType.GOAL && it.team == TeamSelection.HOME },
+                awayGoals = events.count { EventType.valueOf(it.event) == EventType.GOAL && it.team == TeamSelection.AWAY },
                 yellowCount = events.count { EventType.valueOf(it.event) == EventType.YELLOW_CARD },
                 redCount = events.count { EventType.valueOf(it.event) == EventType.RED_CARD },
                 firstHalfStoppage = formatTime(firstHalfStoppage),

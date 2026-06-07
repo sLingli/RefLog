@@ -27,6 +27,8 @@ import java.util.Locale
  * @param sheetState     由调用方控制的 ModalBottomSheet 状态
  * @param homeColor      主队颜色（动态传入）
  * @param awayColor      客队颜色（动态传入）
+ * @param homeTeamName   主队名称
+ * @param awayTeamName   客队名称
  * @param onDismiss      面板关闭回调
  * @param onConfirm      确认回调：(事件类型, 队伍选择, 号码字符串)
  */
@@ -36,6 +38,8 @@ fun UnifiedEventBottomSheet(
     sheetState: SheetState,
     homeColor: Color,
     awayColor: Color,
+    homeTeamName: String = "",
+    awayTeamName: String = "",
     onDismiss: () -> Unit,
     onConfirm: (eventType: EventType, team: TeamSelection, number: String) -> Unit,
 ) {
@@ -146,14 +150,14 @@ fun UnifiedEventBottomSheet(
                 ) {
                     TeamToggleButton(
                         modifier = Modifier.weight(1f),
-                        teamName = stringResource(R.string.team_home),
+                        teamName = homeTeamName.ifEmpty { stringResource(R.string.team_home) },
                         teamColor = homeColor,
                         isSelected = selectedTeam == TeamSelection.HOME,
                         onClick = { selectedTeam = TeamSelection.HOME },
                     )
                     TeamToggleButton(
                         modifier = Modifier.weight(1f),
-                        teamName = stringResource(R.string.team_away),
+                        teamName = awayTeamName.ifEmpty { stringResource(R.string.team_away) },
                         teamColor = awayColor,
                         isSelected = selectedTeam == TeamSelection.AWAY,
                         onClick = { selectedTeam = TeamSelection.AWAY },
