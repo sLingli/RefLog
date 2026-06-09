@@ -15,3 +15,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+.reasonix
+.codegraph
+.idea
+reasonix.toml
+/app/release
