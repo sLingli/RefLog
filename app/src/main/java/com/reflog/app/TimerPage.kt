@@ -25,6 +25,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -351,6 +355,10 @@ private fun EndHalfButton(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
+    val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+    val vibrationEnabled = remember { prefs.getBoolean("vibration_enabled", true) }
     var isPressed by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
     // 触发成功闪烁效果
@@ -367,6 +375,10 @@ private fun EndHalfButton(
             )
             // 动画完成 = 长按成功
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            // 强震动反馈（200ms）
+            if (vibrationEnabled) {
+                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
             onLongPress()
             // 触发闪烁
             flashTrigger = true
@@ -407,6 +419,10 @@ private fun EndHalfButton(
                 detectTapGestures(
                     onPress = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        // 按下时短震动（50ms）
+                        if (vibrationEnabled) {
+                            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                        }
                         isPressed = true
                         tryAwaitRelease()
                         isPressed = false

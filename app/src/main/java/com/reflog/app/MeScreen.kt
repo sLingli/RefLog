@@ -123,6 +123,14 @@ fun MeScreenContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         MeMenuItem(
+            iconRes = R.drawable.ic_settings,
+            title = stringResource(R.string.title_settings),
+            onClick = onSettingsClick
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        MeMenuItem(
             iconRes = R.drawable.ic_info,
             title = stringResource(R.string.title_about),
             onClick = onAboutClick
