@@ -273,6 +273,10 @@ class TimerForegroundService : Service() {
     // ── 通知 ──────────────────────────────────────
 
     private fun notifyOnce() {
+        // 检查实况窗开关
+        val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
+        if (!prefs.getBoolean("live_update_enabled", false)) return
+
         val nm = getSystemService(NotificationManager::class.java)
         nm.notify(LiveUpdateNotificationHelper.NOTIFICATION_ID, buildNotification())
     }

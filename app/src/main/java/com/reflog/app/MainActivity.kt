@@ -134,7 +134,7 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 onThemeClick = { navController.navigate("theme_settings") },
                                 onLanguageClick = { showLanguageSelectionDialogState = true },
-                                onSettingsClick = { },
+                                onSettingsClick = { navController.navigate("settings") },
                                 onAboutClick = { navController.navigate("about") },
                                 onEditProfileClick = { navController.navigate("edit_profile") },
                                 avatarUri = userAvatarUriString?.let { Uri.fromFile(File(it)) },
@@ -195,6 +195,16 @@ class MainActivity : AppCompatActivity() {
                         popExitTransition = { slideOutHorizontally { it } }
                     ) {
                         AboutScreen(onNavigateBack = { navController.popBackStack() })
+                    }
+
+                    composable(
+                        route = "settings",
+                        enterTransition = { slideInHorizontally { it } },
+                        exitTransition = { slideOutHorizontally { -it } },
+                        popEnterTransition = { slideInHorizontally { -it } },
+                        popExitTransition = { slideOutHorizontally { it } }
+                    ) {
+                        SettingsScreen(onNavigateBack = { navController.popBackStack() })
                     }
 
                     composable(

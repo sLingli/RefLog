@@ -153,4 +153,11 @@
     <string name="notif_match_in_progress">比赛进行中</string>
     <string name="notif_stoppage_time">补时: +%1$s</string>
     <string name="notif_match_name">赛事: %1$s</string>
+
+    <!-- 设置 -->
+    <string name="title_settings">设置</string>
+    <string name="setting_vibration">震动反馈</string>
+    <string name="setting_vibration_desc">长按时震动反馈</string>
+    <string name="setting_live_update">动态实时通知</string>
+    <string name="setting_live_update_desc">在状态栏显示进度通知</string>
 </resources>
