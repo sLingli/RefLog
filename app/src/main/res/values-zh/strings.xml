@@ -97,7 +97,7 @@
     <string name="back">返回</string>
 
     <!-- 主题设置 -->
-    <string name="title_theme_settings">主题设置</string>
+    <string name="title_theme_settings">主题</string>
     <string name="appearance_mode">外观模式</string>
     <string name="appearance_follow_system">跟随系统</string>
     <string name="appearance_follow_system_desc">自动切换深浅色</string>
@@ -142,4 +142,15 @@
     <string name="default_home_team">主队</string>
     <string name="default_away_team">客队</string>
     <string name="label_vs">vs</string>
+
+    <!-- 实况窗通知 -->
+    <string name="notif_channel_name">比赛计时</string>
+    <string name="notif_channel_desc">比赛计时实时通知</string>
+    <string name="notif_first_half">上半场</string>
+    <string name="notif_second_half">下半场</string>
+    <string name="notif_halftime_break">中场休息</string>
+    <string name="notif_paused">暂停中</string>
+    <string name="notif_match_in_progress">比赛进行中</string>
+    <string name="notif_stoppage_time">补时: +%1$s</string>
+    <string name="notif_match_name">赛事: %1$s</string>
 </resources>

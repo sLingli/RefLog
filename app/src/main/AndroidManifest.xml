@@ -4,6 +4,13 @@
 
     <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 通知权限（Android 13+ 需运行时申请） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 实况窗（Live Update）通知权限 -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- 前台 Service 权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <!-- Photo Picker 无需额外权限，系统级选择器自动授予文件访问权 -->
 
@@ -15,7 +22,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.Dark.NoActionBar"
-        tools:targetApi="31">
+        tools:targetApi="36">
 
         <activity
             android:name=".MainActivity"
@@ -26,6 +33,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 比赛计时前台 Service（实况窗） -->
+        <service
+            android:name=".TimerForegroundService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
 
         <!-- 图片裁剪 Activity (android-image-cropper) -->
         <activity
