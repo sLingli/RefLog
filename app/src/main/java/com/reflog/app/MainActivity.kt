@@ -1,11 +1,17 @@
 package com.reflog.app
 
+import android.Manifest
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -50,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val timerViewModel: TimerViewModel by viewModels {
-        TimerViewModel.Factory(DatabaseModule.getMatchRecordRepository(this))
+        TimerViewModel.Factory(DatabaseModule.getMatchRecordRepository(this), applicationContext)
     }
 
     // 个人资料
@@ -221,6 +227,22 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     private fun FullscreenTimerContent(onNavigateBack: () -> Unit) {
+        // Android 13+ 需要动态申请通知权限
+        val notifPermissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { /* 权限结果：无论是否授予，计时器都可以工作 */ }
+
+        LaunchedEffect(Unit) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                val perm = Manifest.permission.POST_NOTIFICATIONS
+                if (ContextCompat.checkSelfPermission(this@MainActivity, perm)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    notifPermissionLauncher.launch(perm)
+                }
+            }
+        }
+
         val uiState by timerViewModel.uiState.collectAsState()
         val formatTime = timerViewModel::formatTime
 

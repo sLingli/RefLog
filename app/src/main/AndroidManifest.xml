@@ -5,6 +5,8 @@
     <!-- 震动权限 -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Photo Picker 无需额外权限，系统级选择器自动授予文件访问权 -->
+
     <application
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"
@@ -24,6 +26,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 图片裁剪 Activity (android-image-cropper) -->
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:theme="@style/Theme.AppCompat" />
 
     </application>
 
